@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bounty.title }} - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mb-3">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4 {{ 'bounty-highlighted border-warning border-2' if bounty.is_highlighted else '' }}">
+                <div class="card-body">
+                    <div class="d-flex gap-2 mb-2 flex-wrap">
+                        <span class="badge bg-secondary">{{ bounty.bounty_type|title }}</span>
+                        <span class="badge bg-secondary">{{ bounty.bounty_direction.replace('_', ' ')|title }}</span>
+                        <span class="badge bg-{{ 'success' if bounty.status == 'open' else 'warning' }}">{{ bounty.status|title }}</span>
+                        {% if bounty.is_free_bounty %}
+                        <span class="badge bg-success">Free</span>
+                        {% endif %}
+                        {% if bounty.payment_status == 'secured' %}
+                        <span class="badge bg-{{ 'success' if bounty.is_free_bounty else 'info' }}">
+                            <i class="fas fa-check-circle"></i> {{ 'Free' if bounty.is_free_bounty else 'Secured' }}
+                        </span>
+                        {% endif %}
+                        {% for badge_info in bounty.upgrade_badges %}
+                        <span class="badge {{ badge_info.badge_class }}">{{ badge_info.badge }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <h1 class="mt-2">{{ bounty.title }}</h1>
+
+                    <div class="d-flex align-items-center gap-3 my-3 flex-wrap">
+                        <span class="fw-bold text-success fs-4">
+                            {% if bounty.reward_amount and bounty.reward_amount > 0 %}
+                                ${{ "{:,.0f}".format(bounty.reward_amount) }}
+                            {% else %}
+                                Free Bounty
+                            {% endif %}
+                        </span>
+                        {% if bounty.location %}
+                        <span class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ bounty.location }}</span>
+                        {% endif %}
+                        {% if bounty.deadline %}
+                        <span class="text-muted"><i class="fas fa-calendar"></i> Due: {{ bounty.deadline.strftime('%B %d, %Y') }}</span>
+                        <span id="countdown-{{ bounty.id }}" class="badge bg-{{ 'warning' if bounty.time_remaining_display and 'd' not in bounty.time_remaining_display else 'info' }}">
+                            <i class="fas fa-clock"></i> <span class="countdown-text">{{ bounty.time_remaining_display }}</span>
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <h4>Description</h4>
+                    <p>{{ bounty.description }}</p>
+
+                    {% if bounty.success_criteria %}
+                    <h4 class="mt-4">Success Criteria</h4>
+                    <p>{{ bounty.success_criteria }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if bounty.status != 'open' %}
+            <div class="alert alert-warning">
+                This bounty is <strong>{{ bounty.status }}</strong>.{% if bounty.payment_status == 'unsecured' %} Payment is required to publish it.{% endif %}
+            </div>
+            {% endif %}
+
+            {% if current_user.is_authenticated and current_user.id != bounty.poster_id and bounty.status == 'open' and not user_pitched %}
+            <div class="card" id="pitch-form">
+                <div class="card-body">
+                    <h4>Submit Your Pitch</h4>
+                    <form method="POST" action="{{ url_for('bounties.pitch', id=bounty.id) }}">
+                        {{ pitch_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ pitch_form.candidate_teaser.label(class="form-label") }}
+                            {{ pitch_form.candidate_teaser(class="form-control", rows=4, placeholder="Explain why you are the right person for this bounty...") }}
+                            {% if pitch_form.candidate_teaser.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in pitch_form.candidate_teaser.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Your pitch will be anonymous until the employer shows interest.</div>
+                        </div>
+                        {{ pitch_form.submit(class="btn btn-primary") }}
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user_pitched %}
+            <div class="alert alert-info">You have already pitched on this bounty.</div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Posted by</h5>
+                    <p>{{ bounty.poster.full_name }}</p>
+
+                    <hr>
+
+                    <h5>Reward</h5>
+                    <p class="fs-4 fw-bold text-success">
+                        {% if bounty.reward_amount and bounty.reward_amount > 0 %}
+                            ${{ "{:,.0f}".format(bounty.reward_amount) }}
+                        {% else %}
+                            Free
+                        {% endif %}
+                    </p>
+                    {% if bounty.payment_status == 'secured' %}
+                    <p class="text-success"><i class="fas fa-check-circle"></i> Payment Secured</p>
+                    {% endif %}
+
+                    {% if current_user.is_authenticated and current_user.id != bounty.poster_id and bounty.status == 'open' %}
+                        <a href="#pitch-form" class="btn btn-primary w-100 mt-3">Pitch Now</a>
+                    {% elif current_user.is_authenticated and current_user.id == bounty.poster_id %}
+                        <div class="d-flex flex-column gap-2 mt-3">
+                            {% if bounty.payment_status == 'unsecured' and bounty.reward_amount and bounty.reward_amount > 0 %}
+                            <a href="{{ url_for('bounties.secure_payment', id=bounty.id) }}" class="btn btn-warning">
+                                <i class="fas fa-lock"></i> Secure This Bounty (${{ "%.2f"|format(bounty.reward_amount|float * 1.03) }})
+                            </a>
+                            {% elif bounty.payment_status == 'secured' %}
+                            <div class="alert alert-success w-100 mb-0">
+                                <i class="fas fa-check-circle"></i> <strong>Secured</strong>
+                            </div>
+                            {% endif %}
+                            <a href="{{ url_for('bounties.upgrade', id=bounty.id) }}" class="btn btn-warning">
+                                <i class="fas fa-star"></i> Boost Visibility
+                            </a>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('bounties.edit', id=bounty.id) }}" class="btn btn-outline-primary flex-grow-1">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                {% if bounty.status == 'open' %}
+                                <a href="{{ url_for('bounties.close', id=bounty.id) }}" class="btn btn-outline-danger">
+                                    <i class="fas fa-times"></i> Close
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pitches %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Pitches ({{ pitches|length }})</h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for pitch in pitches %}
+                    <li class="list-group-item">
+                        {% if pitch.status == 'interested' and bounty.poster_id == current_user.id %}
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="d-flex gap-2 mb-1 flex-wrap">
+                                        <span class="badge bg-success">{{ pitch.status|title }}</span>
+                                        <small class="text-muted">Candidate revealed</small>
+                                    </div>
+                                    <strong>{{ pitch.hunter.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {% set hunter_profile = pitch.hunter.profiles.first() %}
+                                        {% if hunter_profile %}
+                                            Rep: {{ hunter_profile.reputation_score or 0 }} pts
+                                            {% if hunter_profile.location %} &middot; {{ hunter_profile.location }}{% endif %}
+                                        {% endif %}
+                                    </small>
+                                    <p class="mb-1 mt-2"><em>"{{ pitch.candidate_teaser }}"</em></p>
+                                    <small class="text-muted">Pitched {{ pitch.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                </div>
+                                <div class="d-flex flex-column gap-2 align-items-end">
+                                    <a href="{{ url_for('messages.inbox') }}" class="btn btn-success btn-sm">Message</a>
+                                    {% set existing_match = pitch.matches.first() if pitch.matches else none %}
+                                    {% if existing_match and existing_match.hunter_confirmed and existing_match.employer_confirmed %}
+                                        <span class="badge bg-success">Match Confirmed</span>
+                                    {% elif existing_match and existing_match.hunter_confirmed and current_user.id == bounty.poster_id %}
+                                        <span class="badge bg-warning text-dark">Awaiting Your Confirm</span>
+                                        <form method="POST" action="{{ url_for('bounties.confirm_match', pitch_id=pitch.id) }}">
+                                            <button type="submit" class="btn btn-primary btn-sm">Confirm Match</button>
+                                        </form>
+                                    {% elif existing_match and existing_match.employer_confirmed and current_user.id == pitch.hunter_id %}
+                                        <span class="badge bg-warning text-dark">Awaiting Your Confirm</span>
+                                        <form method="POST" action="{{ url_for('bounties.confirm_match', pitch_id=pitch.id) }}">
+                                            <button type="submit" class="btn btn-primary btn-sm">Confirm Match</button>
+                                        </form>
+                                    {% elif not existing_match %}
+                                        <form method="POST" action="{{ url_for('bounties.confirm_match', pitch_id=pitch.id) }}">
+                                            <button type="submit" class="btn btn-primary btn-sm">Confirm Match</button>
+                                        </form>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Confirmed</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% elif pitch.status == 'rejected' %}
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="d-flex gap-2 mb-1">
+                                        <span class="badge bg-secondary">{{ pitch.status|title }}</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        Anonymous hunter &middot;
+                                        Rep: ???
+                                    </small>
+                                    <p class="mb-0 text-muted small">"{{ pitch.candidate_teaser[:100] }}..."</p>
+                                    <small class="text-muted">Pitched {{ pitch.created_at.strftime('%B %d, %Y') }}</small>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge bg-warning text-dark">{{ pitch.status|title }}</span>
+                                    <p class="mb-0 text-muted">"{{ pitch.candidate_teaser[:150] }}..."</p>
+                                    <small class="text-muted">
+                                        Anonymous hunter &middot;
+                                        {% set hunter_profile = pitch.hunter.profiles.first() %}
+                                        {% if hunter_profile and hunter_profile.reputation_score is not none %}
+                                            Rep: {{ hunter_profile.reputation_score }} pts
+                                        {% else %}
+                                            Rep: ???
+                                        {% endif %}
+                                        &middot; {{ pitch.created_at.strftime('%B %d, %Y') }}
+                                    </small>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <form method="POST" action="{{ url_for('bounties.respond_to_pitch', pitch_id=pitch.id) }}">
+                                        <input type="hidden" name="response" value="interested">
+                                        <button type="submit" class="btn btn-success btn-sm">Interested</button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('bounties.respond_to_pitch', pitch_id=pitch.id) }}">
+                                        <input type="hidden" name="response" value="pass">
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Pass</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if bounty.deadline %}
+<script>
+(function() {
+    const deadline = new Date('{{ bounty.deadline.isoformat() }}').getTime();
+    const badge = document.getElementById('countdown-{{ bounty.id }}');
+    if (!badge) return;
+    
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = deadline - now;
+        
+        if (distance < 0) {
+            badge.innerHTML = '<i class="fas fa-clock"></i> Expired';
+            badge.className = 'badge bg-secondary';
+            window.location.reload();
+            return;
+        }
+        
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        
+        let display;
+        if (days > 0) {
+            display = days + 'd ' + hours + 'h';
+            badge.className = 'badge bg-info';
+        } else if (hours > 0) {
+            display = hours + 'h ' + minutes + 'm';
+            badge.className = 'badge bg-warning text-dark';
+        } else {
+            display = minutes + 'm';
+            badge.className = 'badge bg-danger';
+        }
+        
+        badge.innerHTML = '<i class="fas fa-clock"></i> ' + display;
+        setTimeout(updateCountdown, 60000);
+    }
+    
+    updateCountdown();
+})();
+</script>
+{% endif %}
+{% endblock %}

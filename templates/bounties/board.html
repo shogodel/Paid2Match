@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('All Bounties') }} - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ _('All Bounties') }}</h1>
+            <p class="text-muted">{{ _('Find Your Next Opportunity') }}</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-primary {{ 'active' if not request.args.get('urgent') }}">
+                    {{ _('All Bounties') }}
+                </a>
+                <a href="{{ url_for('bounties.board', urgent='1') }}" class="btn btn-danger {{ 'active' if request.args.get('urgent') == '1' }}">
+                    <i class="fas fa-fire"></i> {{ _('Urgent') }}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <input type="hidden" name="urgent" value="{{ request.args.get('urgent', '') }}">
+                <div class="col-md-3">
+                    <label class="form-label">{{ _('Bounty Type') }}</label>
+                    <select name="bounty_type" class="form-select">
+                        <option value="">{{ _('All Bounties') }}</option>
+                        <option value="recruitment" {% if bounty_type == 'recruitment' %}selected{% endif %}>{{ _('Recruitment') }}</option>
+                        <option value="real_estate" {% if bounty_type == 'real_estate' %}selected{% endif %}>{{ _('Real Estate') }}</option>
+                        <option value="healthcare" {% if bounty_type == 'healthcare' %}selected{% endif %}>{{ _('Healthcare') }}</option>
+                        <option value="legal" {% if bounty_type == 'legal' %}selected{% endif %}>{{ _('Legal') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ _('Location') }}</label>
+                    <input type="text" name="location" class="form-control" value="{{ location or '' }}" placeholder="{{ _('Location') }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Min Reward</label>
+                    <input type="number" name="min_reward" class="form-control" value="{{ min_reward or '' }}" placeholder="$0">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Max Reward</label>
+                    <input type="number" name="max_reward" class="form-control" value="{{ max_reward or '' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    {% if bounties %}
+        <div class="row g-4">
+            {% for bounty in bounties %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 {{ 'bounty-highlighted border-warning border-2' if bounty.is_highlighted else '' }}">
+                    <div class="card-body">
+                        <div class="d-flex gap-1 mb-2 flex-wrap">
+                            <span class="badge bg-{% if bounty.bounty_type == 'recruitment' %}primary{% elif bounty.bounty_type == 'real_estate' %}success{% elif bounty.bounty_type == 'healthcare' %}warning{% else %}secondary{% endif %}">
+                                {{ bounty.bounty_type }}
+                            </span>
+                            {% for badge_info in bounty.upgrade_badges %}
+                            <span class="badge {{ badge_info.badge_class }}">{{ badge_info.badge }}</span>
+                            {% endfor %}
+                            {% if bounty.payment_status == 'secured' %}
+                            <span class="badge bg-success"><i class="fas fa-check"></i> Secured</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> Not Secured</span>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title">{{ bounty.title }}</h5>
+                        <p class="card-text text-muted">{{ bounty.description[:100] }}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-success">${{ bounty.reward_amount or 'Free' }}</span>
+                            {% if bounty.location %}
+                            <small class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ bounty.location }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-primary btn-sm">View Details</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('bounties.board', page=pagination.prev_num) }}">Previous</a></li>
+                {% endif %}
+                {% for p in range(1, pagination.pages + 1) %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('bounties.board', page=p) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                {% if pagination.has_next %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('bounties.board', page=pagination.next_num) }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    
+    {% else %}
+        <div class="text-center py-5">
+            <h3>No bounties found</h3>
+            <p>Try adjusting your filters or check back later.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('bounties.board') }}">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" height="30">
+            Paid2Match
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">{{ _('Bounties') }}</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('bounties.board') }}">{{ _('All Bounties') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('bounties.recruitment_board') }}">{{ _('Recruitment') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('bounties.real_estate_board') }}">{{ _('Real Estate') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('bounties.healthcare_board') }}">{{ _('Healthcare') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('bounties.legal_board') }}">{{ _('Legal') }}</a></li>
+                    </ul>
+                </li>
+                
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('profile.view') }}">{{ _('Profile') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('messages.inbox') }}">{{ _('Messages') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.register') }}">{{ _('Register') }}</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

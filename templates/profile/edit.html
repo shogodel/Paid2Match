@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile{% endblock %}
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="profile-card">
+                <div class="text-center mb-4">
+                    {% if profile and profile.avatar_url %}
+                        <img src="{{ profile.avatar_url }}" class="rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <div class="profile-avatar-placeholder mx-auto mb-3" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+                    <h2 class="mb-2">Edit Your Profile</h2>
+                    <p class="text-muted">Update your information to keep your profile fresh</p>
+                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <h5 class="profile-card-title mt-4"><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.profile_type.label(class="form-label") }}
+                            {{ form.profile_type(class="form-select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.display_name.label(class="form-label") }}
+                            {{ form.display_name(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.headline.label(class="form-label") }}
+                        {{ form.headline(class="form-control", placeholder="e.g. Senior Python Developer | 5+ years experience") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.bio.label(class="form-label") }}
+                        {{ form.bio(class="form-control", rows=4, placeholder="Tell us about yourself...") }}
+                    </div>
+                    
+                    <h5 class="profile-card-title mt-4"><i class="fas fa-map-marker-alt me-2"></i>Location & Company</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.location.label(class="form-label") }}
+                            {{ form.location(class="form-control", placeholder="City, Country") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.company_name.label(class="form-label") }}
+                            {{ form.company_name(class="form-control", placeholder="Your company (optional)") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.skills.label(class="form-label") }}
+                        {{ form.skills(class="form-control", rows=3, placeholder="e.g. Python, JavaScript, Project Management") }}
+                        <small class="text-muted">Separate skills with commas</small>
+                    </div>
+                    
+                    <h5 class="profile-card-title mt-4"><i class="fas fa-link me-2"></i>Links & Social</h5>
+                    <div class="mb-3">
+                        {{ form.website.label(class="form-label") }}
+                        {{ form.website(class="form-control", placeholder="https://yourwebsite.com") }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.linkedin_url.label(class="form-label") }}
+                            {{ form.linkedin_url(class="form-control", placeholder="LinkedIn URL") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.github_url.label(class="form-label") }}
+                            {{ form.github_url(class="form-control", placeholder="GitHub URL") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.twitter_handle.label(class="form-label") }}
+                            {{ form.twitter_handle(class="form-control", placeholder="johndoe") }}
+                        </div>
+                    </div>
+                    
+                    <h5 class="profile-card-title mt-4"><i class="fas fa-camera me-2"></i>Profile Picture</h5>
+                    <div class="mb-3">
+                        {{ form.avatar.label(class="form-label") }}
+                        {{ form.avatar(class="form-control") }}
+                        {% if profile and profile.avatar_url %}
+                            <small class="text-muted">Current: <a href="{{ profile.avatar_url }}" target="_blank">View current avatar</a></small>
+                        {% endif %}
+                        <small class="text-muted d-block">Upload a professional photo (PNG, JPG, GIF - max 16MB)</small>
+                    </div>
+                    
+                    <h5 class="profile-card-title mt-4"><i class="fas fa-cog me-2"></i>Preferences</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.remote_ok(class="form-check-input") }}
+                                {{ form.remote_ok.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.relocation_assistance(class="form-check-input") }}
+                                {{ form.relocation_assistance.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.privacy_level.label(class="form-label") }}
+                            {{ form.privacy_level(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

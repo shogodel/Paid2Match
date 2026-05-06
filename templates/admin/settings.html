@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Settings{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Admin Settings</h1>
+    <form method="POST" id="settings-form">
+        {{ form.hidden_tag() }}
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header"><strong>Auth0</strong></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.auth0_domain.label(class="form-label") }}
+                            {{ form.auth0_domain(class="form-control", id="auth0_domain") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.auth0_client_id.label(class="form-label") }}
+                            {{ form.auth0_client_id(class="form-control", id="auth0_client_id") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.auth0_client_secret.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.auth0_client_secret(class="form-control secret-field", id="auth0_client_secret", autocomplete="off") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="auth0_client_secret"
+                                        data-key="AUTH0_CLIENT_SECRET">Show</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header"><strong>Stripe</strong></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.stripe_publishable_key.label(class="form-label") }}
+                            {{ form.stripe_publishable_key(class="form-control", id="stripe_publishable_key") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.stripe_secret_key.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.stripe_secret_key(class="form-control secret-field", id="stripe_secret_key", autocomplete="off") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="stripe_secret_key"
+                                        data-key="STRIPE_SECRET_KEY">Show</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.stripe_webhook_secret.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.stripe_webhook_secret(class="form-control secret-field", id="stripe_webhook_secret", autocomplete="off") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="stripe_webhook_secret"
+                                        data-key="STRIPE_WEBHOOK_SECRET">Show</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header"><strong>External APIs</strong></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.mapbox_token.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.mapbox_token(class="form-control", id="mapbox_token") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="mapbox_token"
+                                        data-key="MAPBOX_ACCESS_TOKEN">Show</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.claude_api_key.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.claude_api_key(class="form-control secret-field", id="claude_api_key", autocomplete="off") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="claude_api_key"
+                                        data-key="CLAUDE_API_KEY">Show</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.sendgrid_api_key.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.sendgrid_api_key(class="form-control secret-field", id="sendgrid_api_key", autocomplete="off") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="sendgrid_api_key"
+                                        data-key="SENDGRID_API_KEY">Show</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.facebook_page_token.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.facebook_page_token(class="form-control secret-field", id="facebook_page_token", autocomplete="off") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="facebook_page_token"
+                                        data-key="FACEBOOK_PAGE_TOKEN">Show</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.linkedin_api_token.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.linkedin_api_token(class="form-control secret-field", id="linkedin_api_token", autocomplete="off") }}
+                                <button type="button" class="btn btn-outline-secondary reveal-btn"
+                                        data-target="linkedin_api_token"
+                                        data-key="LINKEDIN_API_TOKEN">Show</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5>How it works</h5>
+                        <ul class="small mb-0">
+                            <li>Leave a field blank to keep the existing value</li>
+                            <li>Enter a new value to update it</li>
+                            <li>Click <strong>Show</strong> to reveal a stored secret</li>
+                            <li>Secrets are loaded via AJAX — never in the page source</li>
+                            <li>Only enter a new value to change it</li>
+                        </ul>
+                        <hr>
+                        <button type="submit" class="btn btn-primary w-100">
+                            Save All Settings
+                        </button>
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary w-100 mt-2">
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    document.querySelectorAll('.reveal-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var fieldId = btn.dataset.target;
+            var key = btn.dataset.key;
+            var input = document.getElementById(fieldId);
+
+            if (input.value && !input.value.startsWith('***') && input.value.length > 2) {
+                input.value = '***';
+                btn.textContent = 'Show';
+                return;
+            }
+
+            fetch('/admin/settings/reveal', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': document.querySelector('[name="csrf_token"]').value},
+                body: 'key=' + encodeURIComponent(key)
+            }).then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.value) {
+                    input.value = data.value;
+                    btn.textContent = 'Hide';
+                } else {
+                    input.value = '';
+                    btn.textContent = 'Not set';
+                }
+            }).catch(function() {
+                alert('Could not load setting');
+            });
+        });
+    });
+
+    document.querySelectorAll('.secret-field').forEach(function(input) {
+        input.addEventListener('focus', function() {
+            var btn = input.parentElement.querySelector('.reveal-btn');
+            if (!input.value || input.value.startsWith('***')) {
+                btn.click();
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

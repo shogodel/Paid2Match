@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Secure Payment - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-credit-card"></i> Secure Payment</h4>
+                </div>
+                <div class="card-body">
+                    <p>You are securing payment for this bounty:</p>
+                    
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h5>{{ bounty.title }}</h5>
+                            <p class="mb-0">
+                                <strong>Amount:</strong> ${{ "{:,.2f}".format(bounty.reward_amount) }}
+                            </p>
+                            <p class="mb-0 text-muted">
+                                <strong>Posted by:</strong> {{ bounty.poster.username }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6>Payment Breakdown</h6>
+                        <table class="table table-sm mb-0">
+                            <tr>
+                                <td>Bounty Reward</td>
+                                <td class="text-end">${{ "{:,.2f}".format(bounty.reward_amount) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Transaction Fee (3%)</td>
+                                <td class="text-end">${{ "{:,.2f}".format(bounty.reward_amount * 0.03) }}</td>
+                            </tr>
+                            <tr class="fw-bold">
+                                <td>Total</td>
+                                <td class="text-end">${{ "{:,.2f}".format(bounty.reward_amount * 1.03) }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-lock"></i> Pay ${{ "{:,.2f}".format(bounty.reward_amount * 1.03) }}
+                            </button>
+                            <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

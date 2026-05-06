@@ -1,0 +1,823 @@
+# Spanish (Latin American / South American) translations for Paid2Match
+# Copyright (C) 2024 Paid2Match
+# Latin American Spanish - general usage across South America
+msgid ""
+msgstr ""
+"Project-Id-Version: Paid2Match\n"
+"Report-Msgid-Bugs-To: support@paid2match.com\n"
+"POT-Creation-Date: 2024-04-24 12:00+0000\n"
+"PO-Revision-Date: 2024-04-24 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Spanish (Latinoamérica)\n"
+"Language: es-419\n"
+"X-Generator: Weblate\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Navigation
+msgid "Home"
+msgstr "Inicio"
+
+msgid "Bounties"
+msgstr "Bounties"
+
+msgid "Messages"
+msgstr "Mensajes"
+
+msgid "Profile"
+msgstr "Perfil"
+
+msgid "Login"
+msgstr "Iniciar sesión"
+
+msgid "Logout"
+msgstr "Cerrar sesión"
+
+msgid "Register"
+msgstr "Registrarse"
+
+msgid "All Bounties"
+msgstr "Todas las bounties"
+
+msgid "Recruitment"
+msgstr "Reclutamiento"
+
+msgid "Real Estate"
+msgstr "Bienes raíces"
+
+msgid "Healthcare"
+msgstr "Salud"
+
+# Actions
+msgid "Post a Bounty"
+msgstr "Publicar una bounty"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Delete"
+msgstr "Eliminar"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Submit"
+msgstr "Enviar"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Search"
+msgstr "Buscar"
+
+msgid "View"
+msgstr "Ver"
+
+msgid "Back"
+msgstr "Volver"
+
+msgid "Pay"
+msgstr "Pagar"
+
+msgid "Accept"
+msgstr "Aceptar"
+
+msgid "Decline"
+msgstr "Rechazar"
+
+msgid "Invite"
+msgstr "Invitar"
+
+msgid "Confirm"
+msgstr "Confirmar"
+
+# Status
+msgid "Secured"
+msgstr "Asegurado"
+
+msgid "Unsecured"
+msgstr "No asegurado"
+
+msgid "Open"
+msgstr "Abierto"
+
+msgid "Closed"
+msgstr "Cerrado"
+
+msgid "Completed"
+msgstr "Completado"
+
+msgid "Pending"
+msgstr "Pendiente"
+
+msgid "Featured"
+msgstr "Destacado"
+
+msgid "Urgent"
+msgstr "Urgente"
+
+# Form labels
+msgid "Title"
+msgstr "Título"
+
+msgid "Description"
+msgstr "Descripción"
+
+msgid "Amount"
+msgstr "Monto"
+
+msgid "Location"
+msgstr "Ubicación"
+
+msgid "Email"
+msgstr "Correo electrónico"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Username"
+msgstr "Nombre de usuario"
+
+msgid "Deadline"
+msgstr "Fecha límite"
+
+msgid "Success Criteria"
+msgstr "Criterios de éxito"
+
+msgid "Bounty Type"
+msgstr "Tipo de bounty"
+
+msgid "Direction"
+msgstr "Dirección"
+
+# Messages
+msgid "Success"
+msgstr "Éxito"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Warning"
+msgstr "Advertencia"
+
+msgid "Info"
+msgstr "Info"
+
+msgid "Success Fee"
+msgstr "Comisión de éxito"
+
+msgid "Welcome to Paid2Match"
+msgstr "Bienvenido a Paid2Match"
+
+msgid "Access denied"
+msgstr "Acceso denegado"
+
+msgid "Bounty created"
+msgstr "Bounty creada"
+
+msgid "Payment secured"
+msgstr "Pago asegurado"
+
+msgid "Bounty closed"
+msgstr "Bounty cerrada"
+
+msgid "Payment refunded"
+msgstr "Pago reembolsado"
+
+# Homepage
+msgid "Find Your Next Opportunity"
+msgstr "Encuentra tu próxima oportunidad"
+
+msgid "Connect with talent and opportunities"
+msgstr "Conéctate con talento y oportunidades"
+
+msgid "Total Users"
+msgstr "Total de usuarios"
+
+msgid "Total Bounties"
+msgstr "Total de bounties"
+
+msgid "Total Paid Out"
+msgstr "Total pagado"
+
+msgid "Successful Matches"
+msgstr "Matches exitosos"
+
+msgid "Featured Bounties"
+msgstr "Bounties destacadas"
+
+msgid "View All"
+msgstr "Ver todas"
+
+msgid "Learn More"
+msgstr "Saber más"
+
+# Auth
+msgid "Login to your account"
+msgstr "Inicia sesión en tu cuenta"
+
+msgid "Create your account"
+msgstr "Crea tu cuenta"
+
+msgid "Remember me"
+msgstr "Recordarme"
+
+msgid "Forgot Password"
+msgstr "¿Olvidaste tu contraseña?"
+
+msgid "Already have an account"
+msgstr "Ya tienes una cuenta"
+
+msgid "Dont have an account"
+msgstr "¿No tienes una cuenta?"
+
+# Board
+msgid "Filter by type"
+msgstr "Filtrar por tipo"
+
+msgid "Sort by"
+msgstr "Ordenar por"
+
+msgid "Newest"
+msgstr "Más reciente"
+
+msgid "Highest Reward"
+msgstr "Mayor recompensa"
+
+msgid "No bounties found"
+msgstr "No se encontraron bounties"
+
+# Detail
+msgid "Reward"
+msgstr "Recompensa"
+
+msgid "Posted by"
+msgstr "Publicado por"
+
+msgid "Time remaining"
+msgstr "Tiempo restante"
+
+msgid "Pitch this bounty"
+msgstr "Postular a esta bounty"
+
+msgid "Secure Payment"
+msgstr "Asegurar pago"
+
+msgid "Pitches"
+msgstr "Postulaciones"
+
+msgid "Matches"
+msgstr "Matches"
+
+# Additional Latin American Spanish
+msgid "My Bounties"
+msgstr "Mis bounties"
+
+msgid "My Profile"
+msgstr "Mi perfil"
+
+msgid "Inbox"
+msgstr "Bandeja de entrada"
+
+msgid "Sent"
+msgstr "Enviados"
+
+msgid "Compose"
+msgstr "Redactar"
+
+msgid "Free"
+msgstr "Gratis"
+
+msgid "Paid"
+msgstr "Pagado"
+
+msgid "Settings"
+msgstr "Configuración"
+
+msgid "Dashboard"
+msgstr "Panel de control"
+
+msgid "Users"
+msgstr "Usuarios"
+
+msgid "Disputes"
+msgstr "Disputas"
+
+msgid "Admin"
+msgstr "Admin"
+
+msgid "Filter"
+msgstr "Filtrar"
+
+msgid "Sort"
+msgstr "Ordenar"
+
+msgid "Apply"
+msgstr "Aplicar"
+
+msgid "Reset"
+msgstr "Restablecer"
+
+msgid "Search results"
+msgstr "Resultados de búsqueda"
+
+msgid "No results found"
+msgstr "No se encontraron resultados"
+
+msgid "Loading"
+msgstr "Cargando"
+
+msgid "Submitting"
+msgstr "Enviando"
+
+msgid "Processing"
+msgstr "Procesando"
+
+msgid "Please wait"
+msgstr "Por favor espera"
+
+msgid "Required field"
+msgstr "Campo requerido"
+
+msgid "Invalid email"
+msgstr "Correo inválido"
+
+msgid "Password too short"
+msgstr "Contraseña muy corta"
+
+msgid "Email already registered"
+msgstr "Correo ya registrado"
+
+msgid "Username already taken"
+msgstr "Nombre de usuario ya tomado"
+
+msgid "Registration successful"
+msgstr "Registro exitoso"
+
+msgid "Login successful"
+msgstr "Inicio de sesión exitoso"
+
+msgid "Logout successful"
+msgstr "Sesión cerrada exitosamente"
+
+msgid "Bounty posted successfully"
+msgstr "Bounty publicada exitosamente"
+
+msgid "Bounty updated successfully"
+msgstr "Bounty actualizada exitosamente"
+
+msgid "Bounty deleted successfully"
+msgstr "Bounty eliminada exitosamente"
+
+msgid "Pitch submitted successfully"
+msgstr "Postulación enviada exitosamente"
+
+msgid "Message sent successfully"
+msgstr "Mensaje enviado exitosamente"
+
+msgid "Profile updated successfully"
+msgstr "Perfil actualizado exitosamente"
+
+msgid "Payment successful"
+msgstr "Pago exitoso"
+
+msgid "Payment failed"
+msgstr "Pago fallido"
+
+msgid "Refund processed"
+msgstr "Reembolso procesado"
+
+msgid "Invitation sent"
+msgstr "Invitación enviada"
+
+msgid "Invitation accepted"
+msgstr "Invitación aceptada"
+
+msgid "Invitation declined"
+msgstr "Invitación rechazada"
+
+msgid "Are you sure?"
+msgstr "¿Estás seguro?"
+
+msgid "Confirm action"
+msgstr "Confirmar acción"
+
+msgid "Cancel action"
+msgstr "Cancelar acción"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "No"
+msgstr "No"
+
+msgid "OK"
+msgstr "Aceptar"
+
+msgid "Continue"
+msgstr "Continuar"
+
+msgid "Go back"
+msgstr "Volver"
+
+msgid "Next"
+msgstr "Siguiente"
+
+msgid "Previous"
+msgstr "Anterior"
+
+msgid "First"
+msgstr "Primero"
+
+msgid "Last"
+msgstr "Último"
+
+msgid "Page"
+msgstr "P��gina"
+
+msgid "of"
+msgstr "de"
+
+msgid "Showing"
+msgstr "Mostrando"
+
+msgid "results"
+msgstr "resultados"
+
+msgid "Recruitment Referrals"
+msgstr "Reclutamiento recomendado"
+
+msgid "Real Estate Referrals"
+msgstr "Bienes raíces recomendado"
+
+msgid "Healthcare Referrals"
+msgstr "Salud recomendada"
+
+msgid "My Messages"
+msgstr "Mis mensajes"
+
+msgid "Logout"
+msgstr "Cerrar sesión"
+
+msgid "Full Name"
+msgstr "Nombre completo"
+
+msgid "Confirm Password"
+msgstr "Confirmar contraseña"
+
+msgid "John Doe"
+msgstr "Juan Pérez"
+
+msgid "you@example.com"
+msgstr "tu@ejemplo.com"
+
+msgid "Minimum 8 characters"
+msgstr "Mínimo 8 caracteres"
+
+msgid "Repeat your password"
+msgstr "Repite tu contraseña"
+
+msgid "Create your account"
+msgstr "Crea tu cuenta"
+
+msgid "Already have an account"
+msgstr "Ya tienes una cuenta"
+
+msgid "Welcome Back"
+msgstr "Bienvenido de nuevo"
+
+msgid "Enter your password"
+msgstr "Ingresa tu contraseña"
+
+msgid "Remember me"
+msgstr "Recordarme"
+
+msgid "Dont have an account"
+msgstr "¿No tienes una cuenta?"
+
+msgid "Create one"
+msgstr "Crea una"msgid "How It Works"
+msgstr "Cómo funciona"
+msgid "Post a Bounty"
+msgstr "Publicar una recompensa"
+msgid "Receive Pitches"
+msgstr "Recibir pitches"
+msgid "Confirm and Earn"
+msgstr "Confirmar y ganar"
+msgid "Describe what you need and set your reward"
+msgstr "Describe lo que necesitas y establece tu recompensa"
+msgid "Hunters submit pitches with teasers"
+msgstr "Los hunters envían pitches con adelantos"
+msgid "Both parties confirm successful placement"
+msgstr "Ambas partes confirman la colocación exitosa"
+msgid "Free"
+msgstr "Gratis"
+msgid "View"
+msgstr "Ver"
+msgid "View All"
+msgstr "Ver todo"
+
+msgid "Post Bounty"
+msgstr "Publicar recompensa"
+
+msgid "Post a New Bounty"
+msgstr "Publicar nueva recompensa"
+
+msgid "Bounty Type & Direction"
+msgstr "Tipo de recompensa y dirección"
+
+msgid "Type-Specific Details"
+msgstr "Detalles específicos"
+
+msgid "Recruitment-Specific Fields"
+msgstr "Campos específicos de reclutamiento"
+
+msgid "Real Estate-Specific Fields"
+msgstr "Campos específicos de bienes raíces"
+
+msgid "Healthcare-Specific Fields"
+msgstr "Campos específicos de salud"
+
+msgid "Reward & Details"
+msgstr "Recompensa y detalles"
+
+msgid "Company"
+msgstr "Empresa"
+
+msgid "Job Title"
+msgstr "Título del puesto"
+
+msgid "Job Type"
+msgstr "Tipo de trabajo"
+
+msgid "Experience Level"
+msgstr "Nivel de experiencia"
+
+msgid "Required Skills"
+msgstr "Habilidades requeridas"
+
+msgid "Full-Time"
+msgstr "Tiempo completo"
+
+msgid "Part-Time"
+msgstr "Medio tiempo"
+
+msgid "Contract"
+msgstr "Contrato"
+
+msgid "Internship"
+msgstr "Pasantía"
+
+msgid "Remote"
+msgstr "Remoto"
+
+msgid "Entry"
+msgstr "Entrada"
+
+msgid "Mid-Level"
+msgstr "Nivel medio"
+
+msgid "Senior"
+msgstr "Senior"
+
+msgid "Lead/Manager"
+msgstr "Gerente"
+
+msgid "Executive"
+msgstr "Ejecutivo"
+
+msgid "Candidate Specialty"
+msgstr "Especialidad del candidato"
+
+msgid "Availability"
+msgstr "Disponibilidad"
+
+msgid "Additional Notes"
+msgstr "Notas adicionales"
+
+msgid "Immediately"
+msgstr "Inmediatamente"
+
+msgid "2 Weeks Notice"
+msgstr "Aviso de 2 semanas"
+
+msgid "30 Days Notice"
+msgstr "Aviso de 30 días"
+
+msgid "Passive (Open to Offers)"
+msgstr "Pasivo (abierto a ofertas)"
+
+msgid "Desired Role"
+msgstr "Puesto deseado"
+
+msgid "Target Companies"
+msgstr "Empresas objetivo"
+
+msgid "Your Background"
+msgstr "Tu experiencia"
+
+msgid "Property Type"
+msgstr "Tipo de propiedad"
+
+msgid "Buyer Budget"
+msgstr "Presupuesto del comprador"
+
+msgid "Requirements"
+msgstr "Requisitos"
+
+msgid "Price"
+msgstr "Precio"
+
+msgid "Bedrooms / Baths"
+msgstr "Habitaciones / Baños"
+
+msgid "Property Details"
+msgstr "Detalles de la propiedad"
+
+msgid "Budget"
+msgstr "Presupuesto"
+
+msgid "Preferred Areas"
+msgstr "Áreas preferidas"
+
+msgid "Provider Type"
+msgstr "Tipo de proveedor"
+
+msgid "Specialty"
+msgstr "Especialidad"
+
+msgid "Accepting New Patients?"
+msgstr "¿Acepta nuevos pacientes?"
+
+msgid "Insurance"
+msgstr "Seguro"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "No (Full)"
+msgstr "No (Completo)"
+
+msgid "Waitlist"
+msgstr "Lista de espera"
+
+msgid "Need Type"
+msgstr "Tipo de necesidad"
+
+msgid "Language Preference"
+msgstr "Idioma preferido"
+
+msgid "Who will pay the bounty reward?"
+msgstr "¿Quién pagará la recompensa?"
+
+msgid "I will pay"
+msgstr "Yo pagaré"
+
+msgid "You secure the payment with your card"
+msgstr "Aseguras el pago con tu tarjeta"
+
+msgid "Invite someone to pay"
+msgstr "Invitar a alguien a pagar"
+
+msgid "They must accept the agreement before paying"
+msgstr "Deben aceptar el acuerdo antes de pagar"
+
+msgid "Username to invite"
+msgstr "Nombre de usuario a invitar"
+
+msgid "Message (optional)"
+msgstr "Mensaje (opcional)"
+
+msgid "Optional message to the payer"
+msgstr "Mensaje opcional al pagador"
+
+msgid "This is a free bounty (no reward payment required)"
+msgstr "Es una recompensa gratuita (no requiere pago)"
+
+msgid "How it works"
+msgstr "Cómo funciona"
+
+msgid "Choose your bounty type"
+msgstr "Elige tu tipo de recompensa"
+
+msgid "recruitment, real estate, healthcare, legal"
+msgstr "reclutamiento, bienes raíces, salud, legal"
+
+msgid "Choose your direction"
+msgstr "Elige tu dirección"
+
+msgid "seeking or offering"
+msgstr "buscando u ofreciendo"
+
+msgid "Fill in the details and set your reward"
+msgstr "Completa los detalles y establece tu recompensa"
+
+msgid "Submit — free bounties go live immediately"
+msgstr "Enviar — las gratuitas se publican inmediatamente"
+
+msgid "Paid bounties need payment before publishing"
+msgstr "Las pagadas necesitan pago antes de publikar"
+
+msgid "Direction Guide"
+msgstr "Guía de dirección"
+
+msgid "You're hiring, find me someone"
+msgstr "Estás contratando, encuéntrame a alguien"
+
+msgid "I have a candidate, pay me"
+msgstr "Tengo un candidato, págame"
+
+msgid "Healthcare seeking talent bounties are not yet supported"
+msgstr "Las búsquedas de talento en salud aún no son compatibles"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Submit free bounties go live immediately"
+msgstr "Enviar — las gratuitas se publican inmediatamente"
+
+msgid "Paid bounties need payment before publishing"
+msgstr "Las pagadas necesitan pago antes de publicar"
+
+msgid "Profile Completion"
+msgstr "Perfil completado"
+
+msgid "Complete your profile to get more views!"
+msgstr "¡Completa tu perfil para obtener más visitas!"
+
+msgid "Almost done! Add more details."
+msgstr "¡Casi listo! Agrega más detalles."
+
+msgid "Just a few more touches!"
+msgstr "¡Solo unos toques más!"
+
+msgid "Tips:"
+msgstr "Consejos:"
+
+msgid "Level"
+msgstr "Nivel"
+
+msgid "points"
+msgstr "puntos"
+
+msgid "points to next level"
+msgstr "puntos para el siguiente nivel"
+
+msgid "Privacy"
+msgstr "Privacidad"
+
+msgid "Hide from search"
+msgstr "Ocultar de búsqueda"
+
+msgid "When enabled, your profile wont appear in search results."
+msgstr "Cuando esté habilitado, tu perfil no aparecerá en los resultados de búsqueda."
+
+msgid "Add your name"
+msgstr "Agrega tu nombre"
+
+msgid "Add a headline"
+msgstr "Agrega un título"
+
+msgid "Write a bio"
+msgstr "Escribe una biografía"
+
+msgid "Add location"
+msgstr "Agrega tu ubicación"
+
+msgid "Upload a photo"
+msgstr "Sube una foto"
+
+msgid "Add skills"
+msgstr "Agrega tus habilidades"
+
+msgid "Add experience"
+msgstr "Agrega tu experiencia"
+
+msgid "Add education"
+msgstr "Agrega tu formación"
+
+msgid "Add portfolio"
+msgstr "Agrega tu portafolio"
+
+msgid "Connect LinkedIn"
+msgstr "Conecta LinkedIn"
+
+msgid "My Bounties"
+msgstr "Mis recompensas"
+
+msgid "Posted"
+msgstr "Publicadas"
+
+msgid "Secured"
+msgstr "Aseguradas"
+
+msgid "Pitches Received"
+msgstr "Pitches recibidos"
+
+msgid "Activity"
+msgstr "Actividad"

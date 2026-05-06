@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Admin Dashboard</h1>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-primary">{{ stats.total_users }}</div>
+                    <small class="text-muted">Total Users</small>
+                    <small class="d-block text-success small">+{{ stats.new_users_7d }} this week</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-success">{{ stats.total_bounties }}</div>
+                    <small class="text-muted">Total Bounties</small>
+                    <small class="d-block text-success small">+{{ stats.new_bounties_7d }} this week</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-info">{{ stats.open_bounties }}</div>
+                    <small class="text-muted">Open Bounties</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-success">{{ stats.secured_bounties }}</div>
+                    <small class="text-muted">Secured</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-warning">{{ stats.total_matches }}</div>
+                    <small class="text-muted">Matches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold {{ 'text-danger' if stats.open_disputes else 'text-secondary' }}">{{ stats.open_disputes }}</div>
+                    <small class="text-muted">Open Disputes</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Recent Users</strong>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                {% if recent_users %}
+                <table class="table table-sm mb-0">
+                    <thead><tr>
+                        <th>Name</th><th>Email</th><th>Role</th><th>Joined</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for user in recent_users %}
+                        <tr>
+                            <td>{{ user.full_name }}</td>
+                            <td><small>{{ user.email }}</small></td>
+                            <td><span class="badge bg-{{ 'danger' if user.role=='admin' else 'secondary' }}">{{ user.role }}</span></td>
+                            <td><small>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="card-body text-muted">No users yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Recent Bounties</strong>
+                    <a href="{{ url_for('admin.bounties') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                {% if recent_bounties %}
+                <table class="table table-sm mb-0">
+                    <thead><tr>
+                        <th>Title</th><th>Type</th><th>Status</th><th>Reward</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for bounty in recent_bounties %}
+                        <tr>
+                            <td><small>{{ bounty.title[:40] }}...</small></td>
+                            <td><span class="badge bg-secondary">{{ bounty.bounty_type|title }}</span></td>
+                            <td><span class="badge bg-{{ 'success' if bounty.status=='open' else 'warning' }}">{{ bounty.status }}</span></td>
+                            <td><small>{% if bounty.reward_amount %}${{ "{:,.0f}".format(bounty.reward_amount) }}{% else %}Free{% endif %}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="card-body text-muted">No bounties yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <strong>Activity (Last 7 Days)</strong>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>Quick Actions</h5>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">Manage Users</a>
+                    <a href="{{ url_for('admin.bounties') }}" class="btn btn-outline-success btn-sm w-100 mb-2">Manage Bounties</a>
+                    <a href="{{ url_for('admin.disputes') }}" class="btn btn-outline-danger btn-sm w-100 mb-2">View Disputes</a>
+                    <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-secondary btn-sm w-100">API Settings</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const dailyStats = {{ daily_stats|tojson }};
+const labels = dailyStats.map(d => d.date);
+const userData = dailyStats.map(d => d.users);
+const bountyData = dailyStats.map(d => d.bounties);
+
+new Chart(document.getElementById('activityChart'), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'New Users',
+            data: userData,
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            fill: true,
+            tension: 0.3
+        }, {
+            label: 'New Bounties',
+            data: bountyData,
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            fill: true,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

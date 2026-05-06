@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Home') }} - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="mb-3">{{ _('Welcome to Paid2Match') }}</h1>
+            <p class="lead">{{ _('Connect with talent and opportunities') }}</p>
+            <div class="d-flex gap-3 justify-content-center">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ _('Register') }}</a>
+                <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-primary btn-lg">{{ _('All Bounties') }}</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5 text-center">
+        <div class="col-6 col-md-3">
+            <div class="card bg-light h-100">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-primary">{{ total_users }}</div>
+                    <small class="text-muted">{{ _('Total Users') }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light h-100">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-success">{{ total_bounties }}</div>
+                    <small class="text-muted">{{ _('Total Bounties') }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light h-100">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-warning">
+                        {% if total_rewards > 0 %}
+                            ${{ "{:,.0f}".format(total_rewards) }}
+                        {% else %}
+                            $0
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">{{ _('Total Paid Out') }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light h-100">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-info">{{ successful_matches }}</div>
+                    <small class="text-muted">{{ _('Successful Matches') }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if featured %}
+    <div class="row">
+        <div class="col">
+            <h3 class="mb-3">{{ _('Featured Bounties') }}</h3>
+            <div class="row g-4">
+                {% for bounty in featured %}
+                <div class="col-md-4">
+                    <div class="card h-100 {{ 'bounty-highlighted border-warning border-2' if bounty.is_highlighted else '' }}">
+                        <div class="card-body">
+                            <div class="d-flex gap-2 mb-2 flex-wrap">
+                                <span class="badge bg-secondary">{{ bounty.bounty_type|title }}</span>
+                                <span class="badge bg-secondary">{{ bounty.bounty_direction.replace('_', ' ')|title }}</span>
+                                {% if bounty.is_free_bounty %}
+                                    <span class="badge bg-success">{{ _('Free') }}</span>
+                                {% endif %}
+                                {% for badge_info in bounty.upgrade_badges %}
+                                <span class="badge {{ badge_info.badge_class }}">{{ badge_info.badge }}</span>
+                                {% endfor %}
+                            </div>
+                            <h5 class="card-title">{{ bounty.title }}</h5>
+                            <p class="card-text text-muted small">{{ bounty.description[:100] }}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold {% if bounty.reward_amount and bounty.reward_amount > 0 %}text-success{% else %}text-muted{% endif %}">
+                                    {% if bounty.reward_amount and bounty.reward_amount > 0 %}
+                                        ${{ "{:,.0f}".format(bounty.reward_amount) }}
+{% else %}
+                                         {{ _('Free') }}
+                                    {% endif %}
+                                </span>
+                                {% if bounty.location %}
+                                    <small class="text-muted">{{ bounty.location }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-primary btn-sm w-100">{{ _('View') }}</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-4">
+                <a href="{{ url_for('bounties.board') }}" class="btn btn-primary">{{ _('View All') }}</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mt-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h4>{{ _('How It Works') }}</h4>
+                    <div class="row g-4 mt-2 text-start">
+                        <div class="col-md-4">
+                            <div class="fs-3 mb-2">1</div>
+                            <strong>{{ _('Post a Bounty') }}</strong>
+                            <p class="small text-muted mb-0">{{ _('Describe what you need and set your reward') }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fs-3 mb-2">2</div>
+                            <strong>{{ _('Receive Pitches') }}</strong>
+                            <p class="small text-muted mb-0">{{ _('Hunters submit pitches with teasers') }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fs-3 mb-2">3</div>
+                            <strong>{{ _('Confirm and Earn') }}</strong>
+                            <p class="small text-muted mb-0">{{ _('Both parties confirm successful placement') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

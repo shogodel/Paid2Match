@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}My Payment Invitations - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4">My Payment Invitations</h2>
+    
+    {% if not invitations %}
+        <div class="alert alert-info">
+            You have no pending payment invitations.
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for inv in invitations %}
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>{{ inv.bounty.title }}</h5>
+                        <p class="mb-1">
+                            <strong>Invited by:</strong> {{ inv.inviter.username }}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Amount:</strong> ${{ "{:,.2f}".format(inv.bounty.reward_amount) }}
+                        </p>
+                        <p class="text-muted small mb-2">
+                            {{ inv.invited_at.strftime('%Y-%m-%d %H:%M') }}
+                        </p>
+                        <a href="{{ url_for('bounties.invitation', agreement_id=inv.id) }}" class="btn btn-primary btn-sm">
+                            View Invitation
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('profile.view', user_id=current_user.id) }}" class="btn btn-outline-secondary">
+            Back to Profile
+        </a>
+    </div>
+</div>
+{% endblock %}

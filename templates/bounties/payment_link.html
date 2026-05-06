@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Link - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-link"></i> Share Payment Link</h4>
+                </div>
+                <div class="card-body">
+                    <p>Share this link with the person who will pay for the bounty:</p>
+                    
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h5>{{ bounty.title }}</h5>
+                            <p class="mb-0">
+                                <strong>Amount:</strong> ${{ "{:,.2f}".format(bounty.reward_amount) }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Payment Link</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ payment_url }}" readonly id="paymentLink">
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyLink()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-info-circle"></i> 
+                            When they open this link and complete payment, the bounty will be published.
+                        </small>
+                    </div>
+                    
+                    <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                        Back to Bounty
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyLink() {
+    var copyText = document.getElementById('paymentLink');
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    alert('Link copied to clipboard!');
+}
+</script>
+{% endblock %}

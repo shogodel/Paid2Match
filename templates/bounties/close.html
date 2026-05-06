@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% set refund_fee_percent = 3.0 %}
+{% set stripe_fee_percent = 2.9 %}
+{% set stripe_fee_fixed = 0.30 %}
+
+{% block title %}Close Bounty - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-times-circle"></i> Close Bounty</h4>
+                </div>
+                <div class="card-body">
+                    <h5>{{ bounty.title }}</h5>
+                    <p class="text-muted">Amount: <strong>${{ "%.2f"|format(bounty.amount) }}</strong></p>
+                    
+                    {% if bounty.payment_status == 'secured' and bounty.stripe_payment_intent %}
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> Closing this bounty will:
+                        <ul class="mb-0">
+                            <li>Remove it from the public bounty board</li>
+                            <li>Stop accepting new pitches</li>
+                            <li>Preserve all existing pitches and matches for your records</li>
+                        </ul>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-3">What would you like to do with your payment?</h6>
+                    
+                    <form method="POST" id="closeForm">
+                        <div class="form-check mb-3 p-3 border rounded">
+                            <input type="radio" class="form-check-input" name="close_action" value="refund" id="actionRefund" required>
+                            <label class="form-check-label" for="actionRefund">
+                                <strong>Request Refund</strong>
+                                <p class="text-muted mb-0 small">Get your money back (minus fees)</p>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3 p-3 border rounded">
+                            <input type="radio" class="form-check-input" name="close_action" value="reuse" id="actionReuse">
+                            <label class="form-check-label" for="actionReuse">
+                                <strong>Post Another Bounty</strong>
+                                <p class="text-muted mb-0 small">Use this payment for a new bounty of the same amount</p>
+                            </label>
+                        </div>
+                        
+                        <div id="refundDetails" class="alert alert-warning d-none">
+                            <h6><i class="fas fa-exclamation-triangle"></i> Refund Fee Breakdown</h6>
+                            <table class="table table-sm mb-2">
+                                <tr>
+                                    <td>Original Amount</td>
+                                    <td class="text-end">${{ "%.2f"|format(bounty.amount) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Transaction Fee ({{ refund_fee_percent }}%)</td>
+                                    <td class="text-end">-${{ "%.2f"|format(bounty.amount * refund_fee_percent / 100) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Stripe Fee ({{ stripe_fee_percent }}% + ${{ "%.2f"|format(stripe_fee_fixed) }})</td>
+                                    <td class="text-end">-${{ "%.2f"|format(bounty.amount * stripe_fee_percent / 100 + stripe_fee_fixed) }}</td>
+                                </tr>
+                                <tr class="fw-bold">
+                                    <td>Total Refund</td>
+                                    <td class="text-end">
+                                        ${{ "%.2f"|format(
+                                            bounty.amount - 
+                                            (bounty.amount * refund_fee_percent / 100) - 
+                                            (bounty.amount * stripe_fee_percent / 100 + stripe_fee_fixed)
+                                        ) }}
+                                    </td>
+                                </tr>
+                            </table>
+                            <div class="alert alert-danger mb-0 py-2">
+                                <small><i class="fas fa-info-circle"></i> 
+                                    The transaction fee and Stripe fees are non-refundable and will be deducted from your refund.
+                                    You will receive approximately <strong>${{ "%.2f"|format(bounty.amount * 0.971 - stripe_fee_fixed) }}</strong> back.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div id="reuseDetails" class="alert alert-success d-none">
+                            <p class="mb-0"><i class="fas fa-check-circle"></i> 
+                                Your payment of <strong>${{ "%.2f"|format(bounty.amount) }}</strong> will be kept secure 
+                                and applied to your next bounty. No additional fees will be charged.
+                            </p>
+                        </div>
+                        
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-times"></i> Close This Bounty
+                            </button>
+                            <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> Closing this bounty will:
+                        <ul class="mb-0">
+                            <li>Remove it from the public bounty board</li>
+                            <li>Stop accepting new pitches</li>
+                            <li>Preserve all existing pitches and matches for your records</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-times"></i> Close This Bounty
+                            </button>
+                            <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const refundRadio = document.getElementById('actionRefund');
+    const reuseRadio = document.getElementById('actionReuse');
+    const refundDetails = document.getElementById('refundDetails');
+    const reuseDetails = document.getElementById('reuseDetails');
+    
+    if (refundRadio && reuseRadio) {
+        refundRadio.addEventListener('change', function() {
+            if (this.checked) {
+                refundDetails.classList.remove('d-none');
+                reuseDetails.classList.add('d-none');
+            }
+        });
+        
+        reuseRadio.addEventListener('change', function() {
+            if (this.checked) {
+                reuseDetails.classList.remove('d-none');
+                refundDetails.classList.add('d-none');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

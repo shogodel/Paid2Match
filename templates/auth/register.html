@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Register') }} - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">{{ _('Create your account') }}</h2>
+                    
+                    <form method="POST" action="{{ url_for('auth.register') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">{{ _('Full Name') }}</label>
+                            {{ form.full_name(class="form-control", id="full_name", placeholder=_("John Doe")) }}
+                            {% if form.full_name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.full_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">{{ _('Email') }}</label>
+                            {{ form.email(class="form-control", id="email", placeholder=_("you@example.com")) }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">{{ _('Password') }}</label>
+                            {{ form.password(class="form-control", id="password", placeholder=_("Minimum 8 characters")) }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">{{ _('Confirm Password') }}</label>
+                            {{ form.confirm_password(class="form-control", id="confirm_password", placeholder=_("Repeat your password")) }}
+                            {% if form.confirm_password.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        {{ form.submit(class="btn btn-primary w-100 py-2") }}
+                    </form>
+                    
+                    <p class="text-center mt-3 mb-0">
+                        {{ _('Already have an account') }}? 
+                        <a href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

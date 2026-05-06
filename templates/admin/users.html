@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Manage Users</h1>
+    {% if pagination %}
+        <table class="table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>{{ 'Active' if user.is_active else 'Inactive' }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.activate_user', id=user.id) }}" style="display:inline">
+                            <button class="btn btn-sm btn-success">Activate</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.deactivate_user', id=user.id) }}" style="display:inline">
+                            <button class="btn btn-sm btn-warning">Deactivate</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No users found.</p>
+    {% endif %}
+</div>
+{% endblock %}

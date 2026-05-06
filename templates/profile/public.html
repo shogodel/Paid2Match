@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.display_name or 'User' }} - Profile{% endblock %}
+{% block content %}
+{% if not profile or profile.privacy_level == 2 %}
+    <div class="container mt-5">
+        <div class="alert alert-warning text-center">
+            <i class="fas fa-lock fa-2x mb-3"></i>
+            <h4>This profile is private</h4>
+            <p class="mb-0">The user has set their profile to private.</p>
+        </div>
+    </div>
+{% else %}
+<!-- Public Profile Header -->
+<div class="public-profile-header">
+    <div class="container">
+        <div class="profile-header-content">
+            <div class="profile-avatar-wrapper text-center">
+                {% if profile.avatar_url %}
+                    <div class="profile-avatar mx-auto" style="overflow: hidden; width: 150px; height: 150px;">
+                        <img src="{{ profile.avatar_url }}" alt="{{ profile.display_name or 'User' }}" style="width: 150px; height: 150px; object-fit: cover;" class="rounded-circle">
+                    </div>
+                {% else %}
+                    <div class="profile-avatar-placeholder mx-auto">
+                        <i class="fas fa-user"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="profile-info">
+                <h1 class="profile-name">{{ profile.display_name or 'User' }}</h1>
+                <p class="profile-headline">{{ profile.headline or 'No headline added yet' }}</p>
+                {% if profile.location %}
+                    <p class="profile-location"><i class="fas fa-map-marker-alt me-2"></i>{{ profile.location }}</p>
+                {% endif %}
+                {% if profile.company_name %}
+                    <p class="profile-location"><i class="fas fa-building me-2"></i>{{ profile.company_name }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container profile-body">
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-4 mb-4">
+            <!-- Stats Card -->
+            <div class="profile-card public-profile-stats">
+                <h5 class="profile-card-title"><i class="fas fa-chart-bar me-2"></i>Stats</h5>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-paper-plane fa-2x mb-2 text-primary"></i>
+                        <span class="stat-number">{{ pitches_count }}</span>
+                        <span class="stat-label">Pitches</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-handshake fa-2x mb-2 text-success"></i>
+                        <span class="stat-number">{{ matches_count }}</span>
+                        <span class="stat-label">Matches</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-star fa-2x mb-2 text-warning"></i>
+                        <span class="stat-number">{{ reputation }}</span>
+                        <span class="stat-label">Reputation</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Card -->
+            {% if profile.skills %}
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-tools me-2"></i>Skills</h5>
+                <div>
+                    {% for skill in profile.skills.split(',') %}
+                        <span class="skill-badge">{{ skill.strip() }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Badges -->
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-certificate me-2"></i>Profile Type</h5>
+                <div class="text-center">
+                    <span class="skill-badge" style="font-size: 1rem;">
+                        {% if profile.profile_type == 'business' %}
+                            <i class="fas fa-building me-1"></i>Business
+                        {% elif profile.profile_type == 'hr_professional' %}
+                            <i class="fas fa-user-tie me-1"></i>HR Professional
+                        {% elif profile.profile_type == 'worker' %}
+                            <i class="fas fa-hard-hat me-1"></i>Worker
+                        {% elif profile.profile_type == 'real_estate' %}
+                            <i class="fas fa-home me-1"></i>Real Estate
+                        {% elif profile.profile_type == 'healthcare' %}
+                            <i class="fas fa-heartbeat me-1"></i>Healthcare
+                        {% elif profile.profile_type == 'independent' %}
+                            <i class="fas fa-user me-1"></i>Independent
+                        {% endif %}
+                    </span>
+                </div>
+                {% if profile.remote_ok %}
+                    <div class="mt-3">
+                        <span class="btn btn-outline-success btn-sm w-100">
+                            <i class="fas fa-globe-americas me-1"></i>Open to Remote Work
+                        </span>
+                    </div>
+                {% endif %}
+                {% if profile.relocation_assistance %}
+                    <div class="mt-2">
+                        <span class="btn btn-outline-info btn-sm w-100">
+                            <i class="fas fa-map-marked-alt me-1"></i>Needs Relocation Assistance
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-8">
+            <!-- About Card -->
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-user me-2"></i>About</h5>
+                {% if profile.bio %}
+                    <p>{{ profile.bio | replace('\n', '<br>') | safe }}</p>
+                {% else %}
+                    <p class="text-muted">No bio added yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Links Card -->
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-link me-2"></i>Links</h5>
+                {% if profile.website %}
+                    <div class="mb-2">
+                        <i class="fas fa-globe me-2 text-primary"></i>
+                        <a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a>
+                    </div>
+                {% endif %}
+                {% if profile.linkedin_url %}
+                    <div class="mb-2">
+                        <i class="fab fa-linkedin me-2 text-primary"></i>
+                        <a href="{{ profile.linkedin_url }}" target="_blank">LinkedIn Profile</a>
+                    </div>
+                {% endif %}
+                {% if profile.github_url %}
+                    <div class="mb-2">
+                        <i class="fab fa-github me-2 text-primary"></i>
+                        <a href="{{ profile.github_url }}" target="_blank">GitHub Profile</a>
+                    </div>
+                {% endif %}
+                {% if not profile.website and not profile.linkedin_url and not profile.github_url %}
+                    <p class="text-muted mb-0">No links added.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

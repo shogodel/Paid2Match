@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Disputes - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Disputes</h1>
+    {% for dispute in disputes %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <p><strong>Status:</strong> {{ dispute.status }}</p>
+                <p>{{ dispute.reason }}</p>
+                <form method="POST" action="{{ url_for('admin.resolve_dispute', id=dispute.id) }}">
+                    <textarea name="resolution" class="form-control mb-2" placeholder="Resolution notes"></textarea>
+                    <button class="btn btn-primary">Resolve</button>
+                </form>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

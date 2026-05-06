@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bounty.title }} - Premium Upgrade - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h2 class="mb-4"><i class="fas fa-star text-warning"></i> Boost Your Bounty Visibility</h2>
+            <p class="text-muted mb-4">Increase your chances of getting quality pitches with premium placement</p>
+            
+            {% if active_upgrades %}
+            <div class="alert alert-info mb-4">
+                <h5><i class="fas fa-check-circle"></i> Active Upgrades</h5>
+                <ul class="mb-0">
+                {% for upgrade in active_upgrades %}
+                    <li>
+                        <strong>{{ upgrade.info.name }}</strong> - 
+                        {% if upgrade.expires_at %}
+                            Expires {{ upgrade.expires_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        {% else %}
+                            No expiration
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <div class="row g-4">
+                {% for upgrade_type, info in upgrade_types.items() %}
+                <div class="col-md-4">
+                    <div class="card h-100 {{ 'border-warning border-2' if active_upgrades|selectattr('upgrade_type', 'equalto', upgrade_type)|list }}">
+                        <div class="card-header bg-{{ info.badge_class.split(' ')[0] if info.badge_class else 'secondary' }} text-{{ 'dark' if 'dark' in info.badge_class else 'white' }}">
+                            <h4 class="mb-0">{{ info.badge }}</h4>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="text-success mb-3">${{ "%.2f"|format(info.price_per_day) }}/day</h3>
+                            <p class="small text-muted">{{ info.description }}</p>
+                            
+                            <hr>
+                            
+                            <form method="POST" action="{{ url_for('bounties.upgrade', id=bounty.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="upgrade_type" value="{{ upgrade_type }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Duration (days)</label>
+                                    <select name="duration_days" class="form-select" required>
+                                        <option value="1">1 day - ${{ "%.2f"|format(info.price_per_day) }}</option>
+                                        <option value="3">3 days - ${{ "%.2f"|format(info.price_per_day * 3) }}</option>
+                                        <option value="7" selected>7 days - ${{ "%.2f"|format(info.price_per_day * 7) }}</option>
+                                        <option value="14">14 days - ${{ "%.2f"|format(info.price_per_day * 14) }}</option>
+                                        <option value="30">30 days - ${{ "%.2f"|format(info.price_per_day * 30) }}</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-credit-card"></i> Purchase
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4 p-4 bg-light rounded">
+                <h5><i class="fas fa-info-circle text-primary"></i> How Premium Placement Works</h5>
+                <ul class="mb-0">
+                    <li><strong>Highlight:</strong> Yellow background, top of board, stands out visually</li>
+                    <li><strong>Urgent:</strong> Red badge, priority placement, filterable by urgent tab</li>
+                    <li><strong>Featured:</strong> Maximum visibility - appears on ALL boards and homepage</li>
+                    <li>Upgrades are priced per day. Upgrade until your bounty deadline or choose custom duration.</li>
+                    <li>You can extend upgrades anytime by purchasing additional days.</li>
+                </ul>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Skip & View Bounty
+                </a>
+            </div>
+            
+            <div class="mt-2 text-center">
+                <small class="text-muted">You can upgrade anytime from the bounty detail page.</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

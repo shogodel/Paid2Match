@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Paid2Match - Global Referral Network connecting talent with opportunity">
+    <title>{% block title %}Paid2Match{% endblock %}</title>
+    
+    <!-- Bootstrap CSS first -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.min.css') }}">
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/google-fonts.css') }}">
+    <!-- Main CSS (must be last to override) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-globe-americas"></i> Paid2Match
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-briefcase"></i> {{ _('Bounties') }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('bounties.board') }}">{{ _('All Bounties') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('bounties.recruitment_board') }}">{{ _('Recruitment') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('bounties.real_estate_board') }}">{{ _('Real Estate') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('bounties.healthcare_board') }}">{{ _('Healthcare') }}</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('bounties.post') }}">
+                            <i class="fas fa-plus-circle"></i> {{ _('Post a Bounty') }}
+                        </a>
+                    </li>
+                    
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('messages.inbox') }}">
+                                <i class="fas fa-envelope"></i> {{ _('Messages') }}
+                            </a>
+                        </li>
+                        {% if current_user.role == 'admin' %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="fas fa-cog"></i> {{ _('Admin') }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">{{ _('Dashboard') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">{{ _('Users') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.bounties') }}">{{ _('Bounties') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.disputes') }}">{{ _('Disputes') }}</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">{{ _('Settings') }}</a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('profile.view') }}">
+                                <i class="fas fa-user"></i> {{ _('Profile') }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt"></i> {{ _('Logout') }}
+                            </a>
+                        </li>
+                     {% else %}
+                         <li class="nav-item">
+                             <a class="btn btn-outline-primary ms-2" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
+                         </li>
+                         <li class="nav-item">
+                             <a class="btn btn-primary ms-2" href="{{ url_for('auth.register') }}">{{ _('Register') }}</a>
+                         </li>
+                     {% endif %}
+                     
+                     <!-- Language Switcher -->
+                     <li class="nav-item dropdown">
+                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">🌐</a>
+                         <ul class="dropdown-menu dropdown-menu-end">
+                             <li><a class="dropdown-item" href="{{ url_for('set_language', lang='en') }}">English</a></li>
+                             <li><a class="dropdown-item" href="{{ url_for('set_language', lang='fr') }}">Français</a></li>
+                             <li><a class="dropdown-item" href="{{ url_for('set_language', lang='es') }}">Español</a></li>
+                         </ul>
+                     </li>
+                 </ul>
+    </div>
+    </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <div class="footer-title">
+                        <i class="fas fa-globe-americas me-2"></i>Paid2Match
+                    </div>
+                    <p class="text-white-50">Connecting talent with opportunity across the globe.</p>
+                </div>
+                
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <div class="footer-title">Our Boards</div>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('bounties.board') }}?bounty_type=recruitment">
+                            <i class="fas fa-users me-2"></i>Recruitment
+                        </a></li>
+                        <li><a href="{{ url_for('bounties.board') }}?bounty_type=real_estate">
+                            <i class="fas fa-home me-2"></i>Real Estate
+                        </a></li>
+                        <li><a href="{{ url_for('bounties.board') }}?bounty_type=healthcare">
+                            <i class="fas fa-heartbeat me-2"></i>Healthcare
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="footer-title">Legal</div>
+                    <ul class="footer-links">
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 Paid2Match. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

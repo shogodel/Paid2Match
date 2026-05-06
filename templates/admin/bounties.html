@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Bounties - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Manage Bounties</h1>
+    {% if pagination %}
+        <table class="table">
+            <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Payment</th><th>Reward</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for bounty in bounties %}
+                <tr>
+                    <td>{{ bounty.title }}</td>
+                    <td>{{ bounty.bounty_type }}</td>
+                    <td>{{ bounty.status }}</td>
+                    <td>
+                        {% if bounty.payment_status == 'secured' %}
+                            <span class="badge bg-success">Secured</span>
+                        {% else %}
+                            <span class="badge bg-warning">Unsecured</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ bounty.reward_amount or 0 }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.approve_bounty', id=bounty.id) }}" style="display:inline">
+                            <button class="btn btn-sm btn-success">Approve</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.reject_bounty', id=bounty.id) }}" style="display:inline">
+                            <button class="btn btn-sm btn-danger">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No bounties found.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bounty.title }} - Expired - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-clock"></i> Bounty Expired</h4>
+                </div>
+                <div class="card-body">
+                    <h5>{{ bounty.title }}</h5>
+                    <p class="text-muted">This bounty expired on {{ bounty.deadline.strftime('%B %d, %Y') }}</p>
+                    
+                    {% if bounty.payment_status == 'secured' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Your payment of <strong>${{ "{:,.2f}".format(bounty.reward_amount) }}</strong> is held by Stripe.
+                        Choose an option below:
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <h5>What would you like to do?</h5>
+                    
+                    <div class="list-group mt-4">
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1"><i class="fas fa-redo text-primary"></i> Repost with New Deadline</h6>
+                                    <p class="mb-1 small text-muted">Keep the same bounty active with a new deadline. Payment stays secured.</p>
+                                </div>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#repost-form">
+                                    Choose
+                                </button>
+                            </div>
+                            <div class="collapse mt-3" id="repost-form">
+                                <form method="POST" action="{{ url_for('bounties.repost', id=bounty.id) }}">
+                                    <div class="mb-3">
+                                        <label class="form-label">New Deadline</label>
+                                        <input type="datetime-local" name="deadline" class="form-control" required 
+                                               min="{{ now_date }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Repost Bounty</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1"><i class="fas fa-trash text-danger"></i> Cancel & Refund</h6>
+                                    <p class="mb-1 small text-muted">Close this bounty and refund your payment. Bounty will be marked as closed.</p>
+                                </div>
+                                {% if bounty.payment_status == 'secured' %}
+                                <form method="POST" action="{{ url_for('bounties.cancel_refund', id=bounty.id) }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('Are you sure? Your payment will be refunded.')">
+                                        Cancel & Refund
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('bounties.cancel_refund', id=bounty.id) }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        Close Bounty
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Bounty
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

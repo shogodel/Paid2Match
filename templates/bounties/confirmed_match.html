@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Match Confirmed{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-check-circle"></i> Match Confirmed!</h4>
+                </div>
+                <div class="card-body">
+                    <h5>{{ bounty.title }}</h5>
+                    <hr>
+
+                    <div class="alert alert-success">
+                        <i class="fas fa-check"></i>
+                        Both parties have confirmed! Payment is being processed.
+                    </div>
+
+                    <table class="table table-sm mb-4">
+                        <tr>
+                            <td><strong>Reward:</strong></td>
+                            <td>
+                                {% if bounty.reward_amount and bounty.reward_amount > 0 %}
+                                    ${{ "{:,.2f}".format(bounty.reward_amount) }}
+                                {% else %}
+                                    Free Bounty
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Platform Fee (10%):</strong></td>
+                            <td>
+                                {% if match.platform_fee %}
+                                    ${{ "{:,.2f}".format(match.platform_fee) }}
+                                {% else %}
+                                    $0.00
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Net Payout:</strong></td>
+                            <td>
+                                {% if match.payout_amount and match.platform_fee %}
+                                    ${{ "{:,.2f}".format(match.payout_amount - match.platform_fee) }}
+                                {% else %}
+                                    $0.00
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Confirmed:</strong></td>
+                            <td>{{ match.confirmed_at.strftime('%B %d, %Y at %I:%M %p') if match.confirmed_at else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if match.payout_status == 'pending_release' else 'secondary' }}">
+                                    {{ match.payout_status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <p class="small text-muted">
+                        Both parties' reputation scores have been updated.
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('messages.inbox') }}" class="btn btn-success">
+                        <i class="fas fa-envelope"></i> Message Counterpart
+                    </a>
+                    <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-secondary">
+                        Browse More Bounties
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

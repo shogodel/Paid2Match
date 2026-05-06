@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h2 class="mb-4"><i class="fas fa-cog"></i> Account Settings</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Email:</div>
+                        <div class="col-md-9">{{ current_user.email }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Name:</div>
+                        <div class="col-md-9">{{ current_user.full_name }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Role:</div>
+                        <div class="col-md-9">{{ current_user.role|title }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 text-muted">Member Since:</div>
+                        <div class="col-md-9">{{ current_user.created_at.strftime('%B %d, %Y') }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Delete Account</h6>
+                    <p class="text-muted">Once you delete your account, there is no going back. Your profile will be anonymized but your match history will be preserved.</p>
+                    <a href="{{ url_for('auth.delete_account') }}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete My Account
+                    </a>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <a href="{{ url_for('profile.view', user_id=current_user.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

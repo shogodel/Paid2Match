@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Compose Message{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">New Message</div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">To (Email)</label>
+                            <input type="email" name="recipient_email" class="form-control" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Message</label>
+                            <textarea name="content" class="form-control" rows="5" required></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Send</button>
+                            <a href="{{ url_for('messages.inbox') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Account - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Delete Account</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+                    
+                    <h5>What happens when you delete your account:</h5>
+                    <ul>
+                        <li>Your profile will be removed from public view</li>
+                        <li>Your email will be anonymized</li>
+                        <li>Your name will be changed to "Deleted User"</li>
+                        <li>Your pitches will remain linked to the bounty</li>
+                        <li>Your match history will be preserved</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <p>To confirm deletion, please enter your password:</p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Delete My Account
+                            </button>
+                            <a href="{{ url_for('profile.view', user_id=current_user.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

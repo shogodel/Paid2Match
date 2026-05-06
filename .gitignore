@@ -1,0 +1,68 @@
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so/
+
+# Environment variables - NEVER COMMIT
+.env
+.env.local
+.env.production/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~/
+
+# OS files
+.DS_Store
+Thumbs.db
+.Trash-*
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.tox/
+
+# Logs
+*.log
+/tmp/
+logs/
+
+# User uploads
+/static/uploads/
+/uploads/
+
+# Compiled translations
+*.mo/
+
+# Backup files
+*.bak
+*.backup
+*-backup-*
+*.tar.gz/
+
+# Server config (contains sensitive paths)
+uwsgi.ini
+nginx.conf
+servers.txt
+webhook.txt/
+
+# Migration instances (keep versions/ but ignore pyc)
+migrations/__pycache__/
