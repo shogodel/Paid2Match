@@ -1,6 +1,8 @@
 """Admin routes for Paid2Match."""
+import os
+import hmac
 from functools import wraps
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, abort
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, BooleanField, SubmitField
@@ -372,25 +374,41 @@ def all_settings():
 
 @admin_bp.route('/create-admin', methods=['GET', 'POST'])
 def create_admin():
-    """Create first admin user - only runs once."""
-    # Check if admin already exists
+    """Bootstrap the first admin user.
+
+    SECURITY: This must never be anonymously reachable. It only works when an
+    ADMIN_SETUP_TOKEN env var is configured AND the caller supplies it (form/query
+    param `token`). If the token is unset, self-service creation is disabled entirely
+    (create the first admin via a trusted method such as a shell/seed script instead).
+    There is no default password.
+    """
+    # Already bootstrapped?
     if User.query.filter_by(role='admin').first():
         flash('Admin already exists', 'warning')
         return redirect(url_for('bounties.board'))
-    
-    # Get email from form or use default
-    email = request.form.get('email') if request.method == 'POST' else 'admin@paid2match.com'
-    password = request.form.get('password') if request.method == 'POST' else 'Admin123!@#'
-    
+
+    setup_token = os.getenv('ADMIN_SETUP_TOKEN')
+    if not setup_token:
+        # Self-service admin creation is disabled. Bootstrap via a trusted method.
+        abort(403)
+
+    supplied = request.form.get('token') or request.args.get('token')
+    if not hmac.compare_digest(supplied or '', setup_token):
+        abort(403)
+
+    email = request.form.get('email')
+    password = request.form.get('password')
+
     if not email or not password:
         return '''
         <form method="POST">
+            <p>Token: <input type="text" name="token" required></p>
             <p>Email: <input type="email" name="email" required></p>
             <p>Password: <input type="password" name="password" required></p>
             <button type="submit">Create Admin</button>
         </form>
         '''
-    
+
     user = User(
         email=email,
         full_name='Admin',
@@ -400,6 +418,6 @@ def create_admin():
     )
     db.session.add(user)
     db.session.commit()
-    
+
     flash(f'Admin created: {email}', 'success')
     return redirect(url_for('bounties.board'))

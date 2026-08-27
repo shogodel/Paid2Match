@@ -790,39 +790,25 @@ def stripe_webhook():
     webhook_secret = AdminSettings.get('STRIPE_WEBHOOK_SECRET', '')
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
-    is_dev = current_app.config.get('DEBUG', False) or os.getenv('STRIPE_WEBHOOK_DEV_MODE', '').lower() == 'true'
-    
-    # Verify webhook signature (critical for security)
-    if webhook_secret:
-        # Dev mode: accept requests without signature for testing
-        if is_dev and not sig_header:
-            logger.warning('Dev mode: accepting webhook without signature verification')
-            try:
-                event = request.get_json()
-            except Exception as e:
-                logger.error(f'Failed to parse webhook JSON: {e}')
-                return '', 400
-        elif not sig_header:
-            logger.warning('Missing Stripe-Signature header')
-            return '', 400
-        else:
-            try:
-                event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-                logger.info(f'Webhook signature verified: {event.get("id")}')
-            except stripe.error.SignatureVerificationError as e:
-                logger.error(f'Invalid webhook signature: {e}')
-                return '', 400
-            except ValueError as e:
-                logger.error(f'Invalid webhook payload: {e}')
-                return '', 400
-    else:
-        # Only fall back to unverified in development (not recommended for production)
-        logger.warning('No webhook secret configured - skipping signature verification')
-        try:
-            event = request.get_json()
-        except Exception as e:
-            logger.error(f'Failed to parse webhook JSON: {e}')
-            return '', 400
+    # SECURITY: Always verify the Stripe signature. The previous dev-mode bypass
+    # (STRIPE_WEBHOOK_DEV_MODE / DEBUG skipping verification) has been removed — a
+    # webhook without a valid signature is rejected (fail closed), otherwise an
+    # attacker could forge checkout.session.completed events and mark bounties paid.
+    if not webhook_secret:
+        logger.error('Stripe webhook secret not configured — refusing unverified webhook')
+        return '', 400
+    if not sig_header:
+        logger.warning('Missing Stripe-Signature header')
+        return '', 400
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        logger.info(f'Webhook signature verified: {event.get("id")}')
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f'Invalid webhook signature: {e}')
+        return '', 400
+    except ValueError as e:
+        logger.error(f'Invalid webhook payload: {e}')
+        return '', 400
     
     event_id = event.get('id')
     event_type = event.get('type')
