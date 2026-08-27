@@ -14,8 +14,6 @@ class ProfileForm(FlaskForm):
             ('business', 'Business'),
             ('hr_professional', 'HR Professional'),
             ('worker', 'Worker'),
-            ('real_estate', 'Real Estate'),
-            ('healthcare', 'Healthcare'),
             ('independent', 'Independent')
         ],
         validators=[DataRequired()]
@@ -49,8 +47,6 @@ class SetupForm(FlaskForm):
             ('business', 'Business'),
             ('hr_professional', 'HR Professional'),
             ('worker', 'Worker'),
-            ('real_estate', 'Real Estate'),
-            ('healthcare', 'Healthcare'),
             ('independent', 'Independent')
         ],
         validators=[DataRequired()]

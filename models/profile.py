@@ -9,7 +9,7 @@ class Profile(db.Model):
     """User profile model - LinkedIn style."""
     __tablename__ = 'profiles'
 
-    VALID_PROFILE_TYPES = ['business', 'hr_professional', 'worker', 'real_estate', 'healthcare', 'independent']
+    VALID_PROFILE_TYPES = ['business', 'hr_professional', 'worker', 'independent']
     
     # Basic Info
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
