@@ -62,9 +62,15 @@ def _is_safe_url(target: str) -> bool:
     from urllib.parse import urlparse
     ref_url = urlparse(request.host_url)
     target_url = urlparse(target)
-    return target_url.scheme in ('', 'http', 'https') and (
-        target_url.netloc in ('', ref_url.netloc) or target_url.netloc.startswith('localhost')
-    )
+    # Reject any URL with a disallowed scheme, or a host that is not this app's host
+    # (this also blocks protocol-relative URLs like //evil.com and the previous
+    # 'localhost'.evil.com substring bypass). Only relative paths or same-origin
+    # absolute URLs are allowed.
+    if target_url.scheme not in ('', 'http', 'https'):
+        return False
+    if target_url.netloc and target_url.netloc != ref_url.netloc:
+        return False
+    return True
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])

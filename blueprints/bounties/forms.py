@@ -10,13 +10,10 @@ class BountyForm(FlaskForm):
         DataRequired(message='Title is required'),
         Length(min=10, max=200, message='Title must be between 10 and 200 characters')
     ])
+    # Recruitment-only platform: only the 'recruitment' type remains.
     bounty_type = SelectField('Bounty Type', choices=[
-        ('', 'Select bounty type...'),
-        ('recruitment', 'Recruitment'),
-        ('real_estate', 'Real Estate'),
-        ('healthcare', 'Healthcare'),
-        ('legal', 'Legal')
-    ], validators=[DataRequired(message='Please select a bounty type')])
+        ('recruitment', 'Recruitment')
+    ], default='recruitment', validators=[DataRequired(message='Please select a bounty type')])
     bounty_direction = SelectField('Direction', choices=[
         ('', 'What are you doing?'),
         ('seeking_opportunity', 'Seeking Opportunity'),

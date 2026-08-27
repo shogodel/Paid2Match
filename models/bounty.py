@@ -9,7 +9,8 @@ class Bounty(db.Model):
     """Job/recruitment bounty model."""
     __tablename__ = 'bounties'
 
-    VALID_BOUNTY_TYPES = ['recruitment', 'real_estate', 'healthcare', 'legal']
+    # Recruitment-only platform: only 'recruitment' is a valid type.
+    VALID_BOUNTY_TYPES = ['recruitment']
     VALID_STATUSES = ['pending', 'open', 'funded', 'closed', 'completed', 'expired']
     VALID_PAYMENT_STATUSES = ['unsecured', 'secured', 'released', 'refunded']
     VALID_PAYER_TYPES = ['poster', 'third_party']
