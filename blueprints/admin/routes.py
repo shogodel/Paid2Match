@@ -1,6 +1,6 @@
 """Admin routes for Paid2Match."""
 from functools import wraps
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, BooleanField, SubmitField
@@ -61,6 +61,14 @@ SETTINGS_MAP = {
     'facebook_page_token': 'FACEBOOK_PAGE_TOKEN',
     'sendgrid_api_key': 'SENDGRID_API_KEY',
     'linkedin_api_token': 'LINKEDIN_API_TOKEN',
+}
+
+# Stripe keys are skipped entirely when payments are disabled (STRIPE_ENABLED=false).
+# TODO(STRIPE): Remove this set / the skipping logic once Stripe is reconfigured.
+STRIPE_SETTING_KEYS = {
+    'STRIPE_PUBLISHABLE_KEY',
+    'STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET',
 }
 
 
@@ -312,14 +320,20 @@ def settings():
     form = SettingsForm()
 
     if request.method == 'POST' and form.validate_on_submit():
+        # TODO(STRIPE): Skip saving Stripe keys while payments are disabled.
+        stripe_enabled = current_app.config.get('STRIPE_ENABLED', True)
         for field_name, key in SETTINGS_MAP.items():
+            if not stripe_enabled and key in STRIPE_SETTING_KEYS:
+                continue
             raw = request.form.get(field_name)
             if raw and not raw.startswith('***') and raw.strip():
                 AdminSettings.set(key, raw.strip())
         flash('Settings saved successfully', 'success')
         return redirect(url_for('admin.settings'))
 
-    return render_template('admin/settings.html', form=form)
+    # TODO(STRIPE): Tell the template to hide the Stripe card when payments are disabled.
+    return render_template('admin/settings.html', form=form,
+                          stripe_enabled=current_app.config.get('STRIPE_ENABLED', True))
 
 
 @admin_bp.route('/settings/reveal', methods=['POST'])
@@ -329,6 +343,9 @@ def reveal_setting():
     key = request.form.get('key')
     if key not in SETTINGS_MAP.values():
         return jsonify({'error': 'Invalid key'}), 403
+    # TODO(STRIPE): Don't reveal Stripe keys while payments are disabled.
+    if key in STRIPE_SETTING_KEYS and not current_app.config.get('STRIPE_ENABLED', True):
+        return jsonify({'error': 'Stripe disabled'}), 403
     if current_user.role != 'admin':
         return jsonify({'error': 'Admin only'}), 403
     value = AdminSettings.get(key)
@@ -340,7 +357,11 @@ def reveal_setting():
 def all_settings():
     """GET /admin/settings/all - List all keys with masked values."""
     keys_and_values = {}
+    # TODO(STRIPE): Exclude Stripe keys from the listing while payments are disabled.
+    stripe_enabled = current_app.config.get('STRIPE_ENABLED', True)
     for key in SETTINGS_MAP.values():
+        if not stripe_enabled and key in STRIPE_SETTING_KEYS:
+            continue
         val = AdminSettings.get(key)
         if val and len(val) > 4:
             keys_and_values[key] = val[:2] + '***' + val[-2:]

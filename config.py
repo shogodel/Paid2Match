@@ -43,6 +43,18 @@ class Config:
     STRIPE_API_KEY = os.getenv('STRIPE_API_KEY')
     STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
     STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+
+    # TODO(STRIPE): Master switch for all Stripe/payment functionality.
+    # Set STRIPE_ENABLED=false in the environment to completely disable payments
+    # (checkout, upgrades, refunds, and the webhook). When False, the monetization
+    # routes short-circuit to a free passthrough so the app stays usable, and the
+    # public webhook fails closed (returns 400). Default True = payments active.
+    # When reconfiguring Stripe later, set this back to true and supply the keys
+    # via AdminSettings (STRIPE_PUBLISHABLE_KEY / STRIPE_SECRET_KEY /
+    # STRIPE_WEBHOOK_SECRET). Remember to also remove the free-passthrough branches
+    # that were added in blueprints/bounties/routes.py and the key-skipping logic in
+    # blueprints/admin/routes.py.
+    STRIPE_ENABLED = os.getenv('STRIPE_ENABLED', 'true').lower() == 'true'
     
     AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN')
     AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID')

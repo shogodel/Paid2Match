@@ -587,6 +587,16 @@ def secure_payment(id):
         flash('Payment already secured', 'info')
         return redirect(url_for('bounties.detail', id=id))
 
+    # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
+    # Marks the bounty secured without charging, so posting stays functional. Remove this
+    # branch when Stripe is reconfigured.
+    if not current_app.config.get('STRIPE_ENABLED', True):
+        if bounty.payment_status != 'secured':
+            bounty.payment_status = 'secured'
+            db.session.commit()
+        flash('Payments are currently disabled — bounty marked secured (no charge).', 'info')
+        return redirect(url_for('bounties.detail', id=id))
+
     base_url = request.host_url.rstrip('/')
     success_url = f'{base_url}{url_for("bounties.detail", id=id)}?paid=1'
     cancel_url = f'{base_url}{url_for("bounties.detail", id=id)}'
@@ -631,6 +641,16 @@ def secure_third_party(id):
 
     if bounty.payment_status == 'secured':
         flash('Payment already secured', 'info')
+        return redirect(url_for('bounties.detail', id=id))
+
+    # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
+    # Third-party payer "pays" by simply securing the bounty for free. Remove when Stripe
+    # is reconfigured.
+    if not current_app.config.get('STRIPE_ENABLED', True):
+        if bounty.payment_status != 'secured':
+            bounty.payment_status = 'secured'
+            db.session.commit()
+        flash('Payments are currently disabled — bounty marked secured (no charge).', 'info')
         return redirect(url_for('bounties.detail', id=id))
 
     agreement = BountyPaymentAgreement.query.filter_by(
@@ -749,7 +769,13 @@ def stripe_webhook():
     - Log structured information for debugging
     """
     import logging
-    
+
+    # TODO(STRIPE): When payments are disabled (STRIPE_ENABLED=false), the webhook is
+    # inert — fail closed so it cannot be abused to flip payment state. Remove this guard
+    # (or just ensure STRIPE_ENABLED=true) when Stripe is reconfigured.
+    if not current_app.config.get('STRIPE_ENABLED', True):
+        return '', 400
+
     logger = logging.getLogger(__name__)
     logger.info(f'Webhook called from {request.remote_addr}')
     logger.info(f'Headers: {dict(request.headers)}')
@@ -987,9 +1013,21 @@ def cancel_refund(id):
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
         return redirect(url_for('bounties.detail', id=id))
-    
+
+    # TODO(STRIPE): When payments are disabled (STRIPE_ENABLED=false) there is nothing to
+    # refund via Stripe, so just close/refund the record locally. Remove this branch when
+    # Stripe is reconfigured (note: the live refund path also references bounty.amount which
+    # does not exist — see audit; should be bounty.reward_amount).
+    if not current_app.config.get('STRIPE_ENABLED', True):
+        if bounty.payment_status == 'secured':
+            bounty.payment_status = 'refunded'
+        bounty.status = 'closed'
+        db.session.commit()
+        flash('Bounty cancelled. Payments are disabled — no Stripe refund issued.', 'info')
+        return redirect(url_for('profile.view', user_id=current_user.id))
+
     refund_amount = bounty.amount
-    
+
     if bounty.payment_status == 'secured' and bounty.stripe_payment_intent:
         keys = _get_stripe_keys()
         if keys['secret']:
@@ -1055,6 +1093,26 @@ def upgrade(id):
         
         info = BountyUpgrade.UPGRADE_TYPES[upgrade_type]
         price_per_day = info['price_per_day']
+
+        # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
+        # Activates the upgrade at no charge instead of creating a Stripe Checkout session.
+        # Remove this branch (and the ones in extend_upgrade) when Stripe is reconfigured.
+        if not current_app.config.get('STRIPE_ENABLED', True):
+            now = datetime.now(timezone.utc)
+            expires_at = now + timedelta(days=duration_days)
+            upgrade = BountyUpgrade(
+                bounty_id=bounty.id,
+                upgrade_type=upgrade_type,
+                duration_days=duration_days,
+                price_paid=0,
+                is_active=True,
+                starts_at=now,
+                expires_at=expires_at
+            )
+            db.session.add(upgrade)
+            db.session.commit()
+            flash(f"{info['name']} upgrade activated (free — Stripe disabled).", 'info')
+            return redirect(url_for('bounties.detail', id=id))
         total_price = price_per_day * duration_days
         
         base_url = request.host_url.rstrip('/')
@@ -1137,7 +1195,15 @@ def extend_upgrade(id):
     
     info = BountyUpgrade.UPGRADE_TYPES[upgrade_type]
     total_price = info['price_per_day'] * additional_days
-    
+
+    # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
+    # Extends the upgrade at no charge. Remove when Stripe is reconfigured.
+    if not current_app.config.get('STRIPE_ENABLED', True):
+        existing.expires_at = existing.expires_at + timedelta(days=additional_days)
+        db.session.commit()
+        flash(f"{info['name']} upgrade extended (free — Stripe disabled).", 'info')
+        return redirect(url_for('bounties.detail', id=id))
+
     base_url = request.host_url.rstrip('/')
     success_url = f'{base_url}{url_for("bounties.upgrade_success", id=id, upgrade_type=upgrade_type)}?days={additional_days}&extend=true'
     cancel_url = f'{base_url}{url_for("bounties.upgrade", id=id)}'
