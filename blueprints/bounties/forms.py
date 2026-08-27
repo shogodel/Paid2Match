@@ -1,6 +1,6 @@
 """Bounties forms for Paid2Match."""
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, DecimalField, DateField, SubmitField
+from wtforms import StringField, TextAreaField, SelectField, DecimalField, DateField, SubmitField, HiddenField
 from wtforms.validators import DataRequired, Length, NumberRange
 
 
@@ -10,10 +10,8 @@ class BountyForm(FlaskForm):
         DataRequired(message='Title is required'),
         Length(min=10, max=200, message='Title must be between 10 and 200 characters')
     ])
-    # Recruitment-only platform: only the 'recruitment' type remains.
-    bounty_type = SelectField('Bounty Type', choices=[
-        ('recruitment', 'Recruitment')
-    ], default='recruitment', validators=[DataRequired(message='Please select a bounty type')])
+    # Recruitment-only platform: bounty_type is fixed to 'recruitment'.
+    bounty_type = HiddenField(default='recruitment')
     bounty_direction = SelectField('Direction', choices=[
         ('', 'What are you doing?'),
         ('seeking_opportunity', 'Seeking Opportunity'),

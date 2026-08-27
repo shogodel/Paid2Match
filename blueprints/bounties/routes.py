@@ -182,7 +182,7 @@ def edit(id):
     if request.method == 'POST' and form.validate_on_submit():
         bounty.title = form.title.data
         bounty.description = form.description.data
-        bounty.bounty_type = form.bounty_type.data
+        bounty.bounty_type = 'recruitment'
         bounty.bounty_direction = form.bounty_direction.data
         bounty.reward_amount = form.reward_amount.data or None
         bounty.location = form.location.data or None

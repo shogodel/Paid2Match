@@ -31,9 +31,6 @@
                     <select name="bounty_type" class="form-select">
                         <option value="">{{ _('All Bounties') }}</option>
                         <option value="recruitment" {% if bounty_type == 'recruitment' %}selected{% endif %}>{{ _('Recruitment') }}</option>
-                        <option value="real_estate" {% if bounty_type == 'real_estate' %}selected{% endif %}>{{ _('Real Estate') }}</option>
-                        <option value="healthcare" {% if bounty_type == 'healthcare' %}selected{% endif %}>{{ _('Healthcare') }}</option>
-                        <option value="legal" {% if bounty_type == 'legal' %}selected{% endif %}>{{ _('Legal') }}</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -63,7 +60,7 @@
                 <div class="card h-100 {{ 'bounty-highlighted border-warning border-2' if bounty.is_highlighted else '' }}">
                     <div class="card-body">
                         <div class="d-flex gap-1 mb-2 flex-wrap">
-                            <span class="badge bg-{% if bounty.bounty_type == 'recruitment' %}primary{% elif bounty.bounty_type == 'real_estate' %}success{% elif bounty.bounty_type == 'healthcare' %}warning{% else %}secondary{% endif %}">
+                            <span class="badge bg-primary">
                                 {{ bounty.bounty_type }}
                             </span>
                             {% for badge_info in bounty.upgrade_badges %}

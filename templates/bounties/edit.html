@@ -26,13 +26,6 @@
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">{{ form.bounty_type.label }}</label>
-                                {{ form.bounty_type(class="form-select") }}
-                                {% for error in form.bounty_type.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-6">
                                 <label class="form-label">{{ form.bounty_direction.label }}</label>
                                 {{ form.bounty_direction(class="form-select") }}
                                 {% for error in form.bounty_direction.errors %}
