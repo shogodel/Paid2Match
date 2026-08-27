@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  Paid2Match\n"
 "Report-Msgid-Bugs-To: support@paid2match.com\n"
-"POT-Creation-Date: 2026-08-26 23:14-0400\n"
+"POT-Creation-Date: 2026-08-26 23:32-0400\n"
 "PO-Revision-Date: 2024-04-24 12:00+0000\n"
 "Last-Translator: \n"
 "Language: en\n"
@@ -16,14 +16,14 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 #: templates/base.html:50 templates/base.html:77 templates/partials/nav.html:15
-msgid "Bounties"
+msgid "Opportunities"
 msgstr ""
 
 #: templates/base.html:53 templates/bounties/board.html:3
 #: templates/bounties/board.html:9 templates/bounties/board.html:15
 #: templates/bounties/board.html:32 templates/index.html:13
 #: templates/partials/nav.html:17
-msgid "All Bounties"
+msgid "All Opportunities"
 msgstr ""
 
 #: templates/base.html:54 templates/bounties/board.html:33
@@ -95,7 +95,7 @@ msgid "Total Users"
 msgstr ""
 
 #: templates/index.html:31
-msgid "Total Bounties"
+msgid "Total Opportunities"
 msgstr ""
 
 #: templates/index.html:45
@@ -107,7 +107,7 @@ msgid "Successful Matches"
 msgstr ""
 
 #: templates/index.html:62
-msgid "Featured Bounties"
+msgid "Featured Opportunities"
 msgstr ""
 
 #: templates/index.html:72 templates/index.html:85
@@ -297,7 +297,7 @@ msgstr ""
 #~ msgstr "Home"
 
 #~ msgid "Bounties"
-#~ msgstr "Bounties"
+#~ msgstr ""
 
 #~ msgid "Messages"
 #~ msgstr "Messages"
@@ -315,7 +315,7 @@ msgstr ""
 #~ msgstr "Register"
 
 #~ msgid "All Bounties"
-#~ msgstr "All Bounties"
+#~ msgstr ""
 
 #~ msgid "Recruitment"
 #~ msgstr "Recruitment"
@@ -476,7 +476,7 @@ msgstr ""
 #~ msgstr "Total Users"
 
 #~ msgid "Total Bounties"
-#~ msgstr "Total Bounties"
+#~ msgstr ""
 
 #~ msgid "Total Paid Out"
 #~ msgstr "Total Paid Out"
@@ -485,7 +485,7 @@ msgstr ""
 #~ msgstr "Successful Matches"
 
 #~ msgid "Featured Bounties"
-#~ msgstr "Featured Bounties"
+#~ msgstr ""
 
 #~ msgid "View All"
 #~ msgstr "View All"

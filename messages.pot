@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-26 23:14-0400\n"
+"POT-Creation-Date: 2026-08-26 23:32-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,14 +18,14 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 #: templates/base.html:50 templates/base.html:77 templates/partials/nav.html:15
-msgid "Bounties"
+msgid "Opportunities"
 msgstr ""
 
 #: templates/base.html:53 templates/bounties/board.html:3
 #: templates/bounties/board.html:9 templates/bounties/board.html:15
 #: templates/bounties/board.html:32 templates/index.html:13
 #: templates/partials/nav.html:17
-msgid "All Bounties"
+msgid "All Opportunities"
 msgstr ""
 
 #: templates/base.html:54 templates/bounties/board.html:33
@@ -97,7 +97,7 @@ msgid "Total Users"
 msgstr ""
 
 #: templates/index.html:31
-msgid "Total Bounties"
+msgid "Total Opportunities"
 msgstr ""
 
 #: templates/index.html:45
@@ -109,7 +109,7 @@ msgid "Successful Matches"
 msgstr ""
 
 #: templates/index.html:62
-msgid "Featured Bounties"
+msgid "Featured Opportunities"
 msgstr ""
 
 #: templates/index.html:72 templates/index.html:85

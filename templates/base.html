@@ -47,10 +47,10 @@
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-briefcase"></i> {{ _('Bounties') }}
+                            <i class="fas fa-briefcase"></i> {{ _('Opportunities') }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('bounties.board') }}">{{ _('All Bounties') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('bounties.board') }}">{{ _('All Opportunities') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('bounties.recruitment_board') }}">{{ _('Recruitment') }}</a></li>
                         </ul>
                     </li>
@@ -74,7 +74,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">{{ _('Dashboard') }}</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">{{ _('Users') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.bounties') }}">{{ _('Bounties') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.bounties') }}">{{ _('Opportunities') }}</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('admin.disputes') }}">{{ _('Disputes') }}</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">{{ _('Settings') }}</a></li>
@@ -131,7 +131,7 @@
                 </div>
                 
                 <div class="col-lg-4 mb-4 mb-lg-0">
-                    <div class="footer-title">Our Boards</div>
+                    <div class="footer-title">Our Opportunities</div>
                     <ul class="footer-links">
                         <li><a href="{{ url_for('bounties.board') }}?bounty_type=recruitment">
                             <i class="fas fa-users me-2"></i>Recruitment

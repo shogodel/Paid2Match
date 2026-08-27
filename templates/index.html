@@ -10,7 +10,7 @@
             <p class="lead">{{ _('Connect with talent and opportunities') }}</p>
             <div class="d-flex gap-3 justify-content-center">
                 <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ _('Register') }}</a>
-                <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-primary btn-lg">{{ _('All Bounties') }}</a>
+                <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-primary btn-lg">{{ _('All Opportunities') }}</a>
             </div>
         </div>
     </div>
@@ -28,7 +28,7 @@
             <div class="card bg-light h-100">
                 <div class="card-body">
                     <div class="fs-2 fw-bold text-success">{{ total_bounties }}</div>
-                    <small class="text-muted">{{ _('Total Bounties') }}</small>
+                    <small class="text-muted">{{ _('Total Opportunities') }}</small>
                 </div>
             </div>
         </div>
@@ -59,7 +59,7 @@
     {% if featured %}
     <div class="row">
         <div class="col">
-            <h3 class="mb-3">{{ _('Featured Bounties') }}</h3>
+            <h3 class="mb-3">{{ _('Featured Opportunities') }}</h3>
             <div class="row g-4">
                 {% for bounty in featured %}
                 <div class="col-md-4">
