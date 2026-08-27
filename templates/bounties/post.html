@@ -151,149 +151,7 @@
                             </div>
                         </div>
 
-                        <div id="real_estate-fields" class="type-group d-none">
-                            <h6 class="text-muted mb-3">{{ _('Real Estate-Specific Fields') }}</h6>
-                            <div id="re-seeking_opportunity" class="direction-group d-none">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Property Type</label>
-                                        <select name="property_type" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="single-family">Single Family</option>
-                                            <option value="multi-family">Multi-Family</option>
-                                            <option value="condo">Condo</option>
-                                            <option value="commercial">Commercial</option>
-                                            <option value="land">Land</option>
-                                            <option value="industrial">Industrial</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Buyer Budget</label>
-                                        <input type="number" name="buyer_budget" class="form-control" placeholder="$">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Requirements</label>
-                                        <textarea name="re_requirements" class="form-control" rows="2" placeholder="Beds, baths, location, features needed..."></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="re-offering_opportunity" class="direction-group d-none">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Property Type</label>
-                                        <select name="re_property_type" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="single-family">Single Family</option>
-                                            <option value="multi-family">Multi-Family</option>
-                                            <option value="condo">Condo</option>
-                                            <option value="commercial">Commercial</option>
-                                            <option value="land">Land</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Price</label>
-                                        <input type="number" name="property_price" class="form-control" placeholder="$">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Bedrooms / Baths</label>
-                                        <input type="text" name="beds_baths" class="form-control" placeholder="3bd / 2ba">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Property Details</label>
-                                        <textarea name="re_property_details" class="form-control" rows="3" placeholder="Address, features, condition..."></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="re-seeking_opportunity" class="direction-group d-none">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Budget</label>
-                                        <input type="number" name="re_budget" class="form-control" placeholder="$">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Property Type</label>
-                                        <select name="re_opp_property_type" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="single-family">Single Family</option>
-                                            <option value="multi-family">Multi-Family</option>
-                                            <option value="condo">Condo</option>
-                                            <option value="commercial">Commercial</option>
-                                            <option value="land">Land</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Preferred Areas</label>
-                                        <input type="text" name="preferred_areas" class="form-control" placeholder="Zip codes, neighborhoods, cities...">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div id="healthcare-fields" class="type-group d-none">
-                            <h6 class="text-muted mb-3">{{ _('Healthcare-Specific Fields') }}</h6>
-                            <div id="hc-offering_opportunity" class="direction-group d-none">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Provider Type</label>
-                                        <select name="provider_type" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="doctor">Doctor/Physician</option>
-                                            <option value="specialist">Specialist</option>
-                                            <option value="nurse">Nurse Practitioner</option>
-                                            <option value="dentist">Dentist</option>
-                                            <option value="therapist">Therapist</option>
-                                            <option value="mental-health">Mental Health</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Specialty</label>
-                                        <input type="text" name="hc_specialty" class="form-control" placeholder="e.g. Cardiology">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Accepting New Patients?</label>
-                                        <select name="accepting_patients" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="yes">Yes</option>
-                                            <option value="no">No (Full)</option>
-                                            <option value="waitlist">Waitlist</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Insurance</label>
-                                        <input type="text" name="insurance_accepted" class="form-control" placeholder="e.g. Aetna, BlueCross">
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="hc-seeking_opportunity" class="direction-group d-none">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Need Type</label>
-                                        <select name="need_type" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="primary-care">Primary Care Doctor</option>
-                                            <option value="specialist">Specialist</option>
-                                            <option value="dentist">Dentist</option>
-                                            <option value="therapist">Therapist</option>
-                                            <option value="mental-health">Mental Health Provider</option>
-                                            <option value="urgent">Urgent Care</option>
-                                            <option value="clinic">Clinic</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Insurance</label>
-                                        <input type="text" name="hc_insurance" class="form-control" placeholder="Your insurance">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Language Preference</label>
-                                        <input type="text" name="language_preference" class="form-control" placeholder="e.g. Spanish, Mandarin">
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="hc-seeking_opportunity" class="direction-group d-none">
-                                <p class="text-muted small">{{ _('Healthcare seeking talent bounties are not yet supported') }}</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -365,7 +223,7 @@
                     <div class="card-body">
                         <h6 class="text-muted">{{ _('How it works') }}</h6>
                         <ol class="small mb-0">
-                            <li>{{ _('Choose your bounty type') }} ({{ _('recruitment, real estate, healthcare, legal') }})</li>
+                            <li>{{ _('This is a recruitment opportunity') }} &mdash; {{ _('choose your direction and fill in the details below') }}</li>
                             <li>{{ _('Choose your direction') }} ({{ _('seeking or offering') }})</li>
                             <li>{{ _('Fill in the details and set your reward') }}</li>
                             <li>{{ _('Submit free bounties go live immediately') }}</li>
@@ -397,9 +255,7 @@
     var invitePayerFields = document.getElementById('invitePayerFields');
 
     var typeGroups = {
-        recruitment: document.getElementById('recruitment-fields'),
-        real_estate: document.getElementById('real_estate-fields'),
-        healthcare: document.getElementById('healthcare-fields')
+        recruitment: document.getElementById('recruitment-fields')
     };
 
     var directionGroups = {};
@@ -423,7 +279,7 @@
         hideAll();
         var type = typeSelect.value;
         var dir = directionSelect.value;
-        var prefix = type === 'recruitment' ? 'rec' : type === 'real_estate' ? 're' : 'hc';
+        var prefix = 'rec';
 
         if (type && typeGroups[type]) {
             typeGroups[type].classList.remove('d-none');
