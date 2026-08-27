@@ -2,6 +2,7 @@
 import math
 from datetime import datetime, timedelta, timezone
 from extensions import db
+from sqlalchemy.orm import validates
 from models import generate_uuid, utc_now
 
 
@@ -19,6 +20,14 @@ class Bounty(db.Model):
         'seeking_opportunity': 'Seeking Opportunity',
         'offering_opportunity': 'Offering Opportunity'
     }
+
+    @validates('bounty_type')
+    def _validate_bounty_type(self, key, value):
+        if value is not None and value not in self.VALID_BOUNTY_TYPES:
+            raise ValueError(
+                f"bounty_type must be one of {self.VALID_BOUNTY_TYPES}, got {value!r}"
+            )
+        return value
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     poster_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, index=True)
