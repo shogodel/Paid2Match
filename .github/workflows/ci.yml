@@ -21,7 +21,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # uwsgi is a C-extension WSGI server used only for deployment; it is not
+          # needed to run the app or tests and frequently fails to build on CI
+          # runners, which would abort the whole install. Exclude it here.
+          grep -v '^uwsgi' requirements.txt > requirements_ci.txt
+          pip install -r requirements_ci.txt
 
       - name: Compile check
         run: python -m compileall -q app.py blueprints models extensions config.py
