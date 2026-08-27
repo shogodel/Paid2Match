@@ -31,4 +31,4 @@ jobs:
           FLASK_ENV: testing
           SECRET_KEY: ci-secret-key
           DATABASE_URL: sqlite:///:memory:
-        run: python -m pytest -q
+        run: python -m pytest tests/ -q

@@ -57,7 +57,7 @@ class TestBountyPost:
         r = logged_in_user.post('/bounties/post', data={
             'title': 'A Paid Bounty For Recruitment Here',
             'description': 'This bounty has a paid reward and goes live immediately. Owner can secure later.',
-            'bounty_type': 'real_estate',
+            'bounty_type': 'recruitment',
             'bounty_direction': 'offering_opportunity',
             'reward_amount': '2500',
         }, follow_redirects=False)

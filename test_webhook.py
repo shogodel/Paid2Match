@@ -8,7 +8,7 @@ WEBHOOK_URL = "https://paid2match.work/bounties/stripe-webhook"
 
 TEST_BOUNTY_ID = "40d54945-084c-499b-9782-443191b018ae"
 
-def test_webhook_dev_mode():
+def run_webhook_dev_mode():
     """Test webhook in development mode (no signature required)."""
     payload = {
         "id": "evt_test_123",
@@ -44,7 +44,7 @@ def test_webhook_dev_mode():
         return False
 
 
-def test_webhook_with_signature():
+def run_webhook_with_signature():
     """Test webhook with proper Stripe signature (production mode)."""
     import hmac
     import hashlib
@@ -58,7 +58,7 @@ def test_webhook_with_signature():
                 "id": "cs_test_session_456",
                 "payment_intent": "pi_test_456",
                 "metadata": {
-                    "bounty_id": TEST_BOUNtY_ID,
+                    "bounty_id": TEST_BOUNTY_ID,
                     "bounty_amount": "5000",
                     "transaction_fee": "150"
                 }
@@ -103,9 +103,9 @@ if __name__ == "__main__":
     print("=" * 50)
     print("TEST 1: Dev mode (no signature)")
     print("=" * 50)
-    test_webhook_dev_mode()
+    run_webhook_dev_mode()
     
     print("\n" + "=" * 50)
     print("TEST 2: With signature")
     print("=" * 50)
-    test_webhook_with_signature()
+    run_webhook_with_signature()

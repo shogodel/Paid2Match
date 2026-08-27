@@ -35,6 +35,25 @@ class Profile(db.Model):
     def __repr__(self):
         return f'<Profile {self.display_name or self.id}>'
 
+    def to_dict(self):
+        """Serialize the profile (mirrors other models' to_dict)."""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'profile_type': self.profile_type,
+            'display_name': self.display_name,
+            'bio': self.bio,
+            'location': self.location,
+            'company_name': self.company_name,
+            'skills': self.skills,
+            'website': self.website,
+            'avatar_url': self.avatar_url,
+            'reputation_score': self.reputation_score,
+            'verified': self.verified,
+            'privacy_level': self.privacy_level,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
     @property
     def completion_percentage(self):
         """Calculate profile completion percentage."""
