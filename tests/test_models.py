@@ -52,7 +52,7 @@ class TestBountyModel:
                 poster_id=sample_user.id,
                 title='Default Direction Bounty Test',
                 description='This bounty uses the default seeking_opportunity direction as the system default setting.',
-                bounty_type='healthcare',
+                bounty_type='recruitment',
                 status='open',
                 payment_status='released',
             )

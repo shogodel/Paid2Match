@@ -68,7 +68,7 @@ class TestBountyPost:
         r = logged_in_user.post('/bounties/post', data={
             'title': 'Short',
             'description': 'This description is long enough to pass validation checks.',
-            'bounty_type': 'healthcare',
+            'bounty_type': 'recruitment',
             'bounty_direction': 'seeking_opportunity',
         })
         assert r.status_code == 200
