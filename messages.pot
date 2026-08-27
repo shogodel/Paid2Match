@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-04-25 01:52+0000\n"
+"POT-Creation-Date: 2026-08-26 23:14-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,4 +16,281 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: templates/base.html:50 templates/base.html:77 templates/partials/nav.html:15
+msgid "Bounties"
+msgstr ""
+
+#: templates/base.html:53 templates/bounties/board.html:3
+#: templates/bounties/board.html:9 templates/bounties/board.html:15
+#: templates/bounties/board.html:32 templates/index.html:13
+#: templates/partials/nav.html:17
+msgid "All Bounties"
+msgstr ""
+
+#: templates/base.html:54 templates/bounties/board.html:33
+#: templates/partials/nav.html:18
+msgid "Recruitment"
+msgstr ""
+
+#: templates/base.html:59 templates/index.html:115
+msgid "Post a Bounty"
+msgstr ""
+
+#: templates/base.html:66 templates/partials/nav.html:27
+msgid "Messages"
+msgstr ""
+
+#: templates/base.html:72
+msgid "Admin"
+msgstr ""
+
+#: templates/base.html:75
+msgid "Dashboard"
+msgstr ""
+
+#: templates/base.html:76
+msgid "Users"
+msgstr ""
+
+#: templates/base.html:78
+msgid "Disputes"
+msgstr ""
+
+#: templates/base.html:80
+msgid "Settings"
+msgstr ""
+
+#: templates/base.html:86 templates/partials/nav.html:24
+msgid "Profile"
+msgstr ""
+
+#: templates/base.html:91 templates/partials/nav.html:30
+msgid "Logout"
+msgstr ""
+
+#: templates/auth/login.html:3 templates/auth/register.html:69
+#: templates/base.html:96 templates/partials/nav.html:34
+msgid "Login"
+msgstr ""
+
+#: templates/auth/login.html:54 templates/auth/register.html:3
+#: templates/base.html:99 templates/index.html:12
+#: templates/partials/nav.html:37
+msgid "Register"
+msgstr ""
+
+#: templates/index.html:3
+msgid "Home"
+msgstr ""
+
+#: templates/index.html:9
+msgid "Welcome to Paid2Match"
+msgstr ""
+
+#: templates/index.html:10
+msgid "Connect with talent and opportunities"
+msgstr ""
+
+#: templates/index.html:23
+msgid "Total Users"
+msgstr ""
+
+#: templates/index.html:31
+msgid "Total Bounties"
+msgstr ""
+
+#: templates/index.html:45
+msgid "Total Paid Out"
+msgstr ""
+
+#: templates/index.html:53
+msgid "Successful Matches"
+msgstr ""
+
+#: templates/index.html:62
+msgid "Featured Bounties"
+msgstr ""
+
+#: templates/index.html:72 templates/index.html:85
+msgid "Free"
+msgstr ""
+
+#: templates/index.html:94
+msgid "View"
+msgstr ""
+
+#: templates/index.html:101
+msgid "View All"
+msgstr ""
+
+#: templates/index.html:111
+msgid "How It Works"
+msgstr ""
+
+#: templates/index.html:116
+msgid "Describe what you need and set your reward"
+msgstr ""
+
+#: templates/index.html:120
+msgid "Receive Pitches"
+msgstr ""
+
+#: templates/index.html:121
+msgid "Hunters submit pitches with teasers"
+msgstr ""
+
+#: templates/index.html:125
+msgid "Confirm and Earn"
+msgstr ""
+
+#: templates/index.html:126
+msgid "Both parties confirm successful placement"
+msgstr ""
+
+#: templates/auth/login.html:11
+msgid "Welcome Back"
+msgstr ""
+
+#: templates/auth/login.html:17 templates/auth/register.html:27
+msgid "Email"
+msgstr ""
+
+#: templates/auth/login.html:18 templates/auth/register.html:28
+msgid "you@example.com"
+msgstr ""
+
+#: templates/auth/login.html:27 templates/auth/register.html:37
+msgid "Password"
+msgstr ""
+
+#: templates/auth/login.html:28
+msgid "Enter your password"
+msgstr ""
+
+#: templates/auth/login.html:38
+msgid "Remember me"
+msgstr ""
+
+#: templates/auth/login.html:53
+msgid "Dont have an account"
+msgstr ""
+
+#: templates/auth/register.html:11
+msgid "Create your account"
+msgstr ""
+
+#: templates/auth/register.html:17
+msgid "Full Name"
+msgstr ""
+
+#: templates/auth/register.html:18
+msgid "John Doe"
+msgstr ""
+
+#: templates/auth/register.html:38
+msgid "Minimum 8 characters"
+msgstr ""
+
+#: templates/auth/register.html:47
+msgid "Confirm Password"
+msgstr ""
+
+#: templates/auth/register.html:48
+msgid "Repeat your password"
+msgstr ""
+
+#: templates/auth/register.html:68
+msgid "Already have an account"
+msgstr ""
+
+#: templates/bounties/board.html:10
+msgid "Find Your Next Opportunity"
+msgstr ""
+
+#: templates/bounties/board.html:18
+msgid "Urgent"
+msgstr ""
+
+#: templates/bounties/board.html:30
+msgid "Bounty Type"
+msgstr ""
+
+#: templates/bounties/board.html:37 templates/bounties/board.html:38
+msgid "Location"
+msgstr ""
+
+#: templates/bounties/post.html:3
+msgid "Post Bounty"
+msgstr ""
+
+#: templates/bounties/post.html:7
+msgid "Post a New Bounty"
+msgstr ""
+
+#: templates/bounties/post.html:24
+msgid "Bounty Type & Direction"
+msgstr ""
+
+#: templates/bounties/post.html:60
+msgid "Type-Specific Details"
+msgstr ""
+
+#: templates/bounties/post.html:65
+msgid "Recruitment-Specific Fields"
+msgstr ""
+
+#: templates/bounties/post.html:160
+msgid "Reward & Details"
+msgstr ""
+
+#: templates/bounties/post.html:217
+msgid "Cancel"
+msgstr ""
+
+#: templates/bounties/post.html:224
+msgid "How it works"
+msgstr ""
+
+#: templates/bounties/post.html:226
+msgid "This is a recruitment opportunity"
+msgstr ""
+
+#: templates/bounties/post.html:226
+msgid "choose your direction and fill in the details below"
+msgstr ""
+
+#: templates/bounties/post.html:227
+msgid "Choose your direction"
+msgstr ""
+
+#: templates/bounties/post.html:227
+msgid "seeking or offering"
+msgstr ""
+
+#: templates/bounties/post.html:228
+msgid "Fill in the details and set your reward"
+msgstr ""
+
+#: templates/bounties/post.html:229
+msgid "Submit free bounties go live immediately"
+msgstr ""
+
+#: templates/bounties/post.html:230
+msgid "Paid bounties need payment before publishing"
+msgstr ""
+
+#: templates/bounties/post.html:233
+msgid "Direction Guide"
+msgstr ""
+
+#: templates/bounties/post.html:235
+#: templates/bounties/recruitment_board.html:24
+msgid "Seeking Opportunity"
+msgstr ""
+
+#: templates/bounties/post.html:236
+#: templates/bounties/recruitment_board.html:25
+msgid "Offering Opportunity"
+msgstr ""
 

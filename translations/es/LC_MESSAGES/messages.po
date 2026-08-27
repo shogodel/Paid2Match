@@ -3,821 +3,1067 @@
 # Latin American Spanish - general usage across South America
 msgid ""
 msgstr ""
-"Project-Id-Version: Paid2Match\n"
+"Project-Id-Version:  Paid2Match\n"
 "Report-Msgid-Bugs-To: support@paid2match.com\n"
-"POT-Creation-Date: 2024-04-24 12:00+0000\n"
+"POT-Creation-Date: 2026-08-26 23:14-0400\n"
 "PO-Revision-Date: 2024-04-24 12:00+0000\n"
 "Last-Translator: \n"
+"Language: es_419\n"
 "Language-Team: Spanish (Latinoamérica)\n"
-"Language: es-419\n"
-"X-Generator: Weblate\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: templates/base.html:50 templates/base.html:77 templates/partials/nav.html:15
+msgid "Bounties"
+msgstr ""
+
+#: templates/base.html:53 templates/bounties/board.html:3
+#: templates/bounties/board.html:9 templates/bounties/board.html:15
+#: templates/bounties/board.html:32 templates/index.html:13
+#: templates/partials/nav.html:17
+msgid "All Bounties"
+msgstr ""
+
+#: templates/base.html:54 templates/bounties/board.html:33
+#: templates/partials/nav.html:18
+msgid "Recruitment"
+msgstr ""
+
+#: templates/base.html:59 templates/index.html:115
+msgid "Post a Bounty"
+msgstr ""
+
+#: templates/base.html:66 templates/partials/nav.html:27
+msgid "Messages"
+msgstr ""
+
+#: templates/base.html:72
+msgid "Admin"
+msgstr ""
+
+#: templates/base.html:75
+msgid "Dashboard"
+msgstr ""
+
+#: templates/base.html:76
+msgid "Users"
+msgstr ""
+
+#: templates/base.html:78
+msgid "Disputes"
+msgstr ""
+
+#: templates/base.html:80
+msgid "Settings"
+msgstr ""
+
+#: templates/base.html:86 templates/partials/nav.html:24
+msgid "Profile"
+msgstr ""
+
+#: templates/base.html:91 templates/partials/nav.html:30
+msgid "Logout"
+msgstr ""
+
+#: templates/auth/login.html:3 templates/auth/register.html:69
+#: templates/base.html:96 templates/partials/nav.html:34
+msgid "Login"
+msgstr ""
+
+#: templates/auth/login.html:54 templates/auth/register.html:3
+#: templates/base.html:99 templates/index.html:12
+#: templates/partials/nav.html:37
+msgid "Register"
+msgstr ""
+
+#: templates/index.html:3
+msgid "Home"
+msgstr ""
+
+#: templates/index.html:9
+msgid "Welcome to Paid2Match"
+msgstr ""
+
+#: templates/index.html:10
+msgid "Connect with talent and opportunities"
+msgstr ""
+
+#: templates/index.html:23
+msgid "Total Users"
+msgstr ""
+
+#: templates/index.html:31
+msgid "Total Bounties"
+msgstr ""
+
+#: templates/index.html:45
+msgid "Total Paid Out"
+msgstr ""
+
+#: templates/index.html:53
+msgid "Successful Matches"
+msgstr ""
+
+#: templates/index.html:62
+msgid "Featured Bounties"
+msgstr ""
+
+#: templates/index.html:72 templates/index.html:85
+msgid "Free"
+msgstr ""
+
+#: templates/index.html:94
+msgid "View"
+msgstr ""
+
+#: templates/index.html:101
+msgid "View All"
+msgstr ""
+
+#: templates/index.html:111
+msgid "How It Works"
+msgstr ""
+
+#: templates/index.html:116
+msgid "Describe what you need and set your reward"
+msgstr ""
+
+#: templates/index.html:120
+msgid "Receive Pitches"
+msgstr ""
+
+#: templates/index.html:121
+msgid "Hunters submit pitches with teasers"
+msgstr ""
+
+#: templates/index.html:125
+msgid "Confirm and Earn"
+msgstr ""
+
+#: templates/index.html:126
+msgid "Both parties confirm successful placement"
+msgstr ""
+
+#: templates/auth/login.html:11
+msgid "Welcome Back"
+msgstr ""
+
+#: templates/auth/login.html:17 templates/auth/register.html:27
+msgid "Email"
+msgstr ""
+
+#: templates/auth/login.html:18 templates/auth/register.html:28
+msgid "you@example.com"
+msgstr ""
+
+#: templates/auth/login.html:27 templates/auth/register.html:37
+msgid "Password"
+msgstr ""
+
+#: templates/auth/login.html:28
+msgid "Enter your password"
+msgstr ""
+
+#: templates/auth/login.html:38
+msgid "Remember me"
+msgstr ""
+
+#: templates/auth/login.html:53
+msgid "Dont have an account"
+msgstr ""
+
+#: templates/auth/register.html:11
+msgid "Create your account"
+msgstr ""
+
+#: templates/auth/register.html:17
+msgid "Full Name"
+msgstr ""
+
+#: templates/auth/register.html:18
+msgid "John Doe"
+msgstr ""
+
+#: templates/auth/register.html:38
+msgid "Minimum 8 characters"
+msgstr ""
+
+#: templates/auth/register.html:47
+msgid "Confirm Password"
+msgstr ""
+
+#: templates/auth/register.html:48
+msgid "Repeat your password"
+msgstr ""
+
+#: templates/auth/register.html:68
+msgid "Already have an account"
+msgstr ""
+
+#: templates/bounties/board.html:10
+msgid "Find Your Next Opportunity"
+msgstr ""
+
+#: templates/bounties/board.html:18
+msgid "Urgent"
+msgstr ""
+
+#: templates/bounties/board.html:30
+msgid "Bounty Type"
+msgstr ""
+
+#: templates/bounties/board.html:37 templates/bounties/board.html:38
+msgid "Location"
+msgstr ""
+
+#: templates/bounties/post.html:3
+msgid "Post Bounty"
+msgstr ""
+
+#: templates/bounties/post.html:7
+msgid "Post a New Bounty"
+msgstr ""
+
+#: templates/bounties/post.html:24
+msgid "Bounty Type & Direction"
+msgstr ""
+
+#: templates/bounties/post.html:60
+msgid "Type-Specific Details"
+msgstr ""
+
+#: templates/bounties/post.html:65
+msgid "Recruitment-Specific Fields"
+msgstr ""
+
+#: templates/bounties/post.html:160
+msgid "Reward & Details"
+msgstr ""
+
+#: templates/bounties/post.html:217
+msgid "Cancel"
+msgstr ""
+
+#: templates/bounties/post.html:224
+msgid "How it works"
+msgstr ""
+
+#: templates/bounties/post.html:226
+msgid "This is a recruitment opportunity"
+msgstr ""
+
+#: templates/bounties/post.html:226
+msgid "choose your direction and fill in the details below"
+msgstr ""
+
+#: templates/bounties/post.html:227
+msgid "Choose your direction"
+msgstr ""
+
+#: templates/bounties/post.html:227
+msgid "seeking or offering"
+msgstr ""
+
+#: templates/bounties/post.html:228
+msgid "Fill in the details and set your reward"
+msgstr ""
+
+#: templates/bounties/post.html:229
+msgid "Submit free bounties go live immediately"
+msgstr ""
+
+#: templates/bounties/post.html:230
+msgid "Paid bounties need payment before publishing"
+msgstr ""
+
+#: templates/bounties/post.html:233
+msgid "Direction Guide"
+msgstr ""
+
+#: templates/bounties/post.html:235
+#: templates/bounties/recruitment_board.html:24
+msgid "Seeking Opportunity"
+msgstr ""
+
+#: templates/bounties/post.html:236
+#: templates/bounties/recruitment_board.html:25
+msgid "Offering Opportunity"
+msgstr ""
 
 # Navigation
-msgid "Home"
-msgstr "Inicio"
+#~ msgid "Home"
+#~ msgstr "Inicio"
 
-msgid "Bounties"
-msgstr "Bounties"
+#~ msgid "Bounties"
+#~ msgstr "Bounties"
 
-msgid "Messages"
-msgstr "Mensajes"
+#~ msgid "Messages"
+#~ msgstr "Mensajes"
 
-msgid "Profile"
-msgstr "Perfil"
+#~ msgid "Profile"
+#~ msgstr "Perfil"
 
-msgid "Login"
-msgstr "Iniciar sesión"
+#~ msgid "Login"
+#~ msgstr "Iniciar sesión"
 
-msgid "Logout"
-msgstr "Cerrar sesión"
+#~ msgid "Logout"
+#~ msgstr "Cerrar sesión"
 
-msgid "Register"
-msgstr "Registrarse"
+#~ msgid "Register"
+#~ msgstr "Registrarse"
 
-msgid "All Bounties"
-msgstr "Todas las bounties"
+#~ msgid "All Bounties"
+#~ msgstr "Todas las bounties"
 
-msgid "Recruitment"
-msgstr "Reclutamiento"
+#~ msgid "Recruitment"
+#~ msgstr "Reclutamiento"
 
-msgid "Real Estate"
-msgstr "Bienes raíces"
+#~ msgid "Real Estate"
+#~ msgstr "Bienes raíces"
 
-msgid "Healthcare"
-msgstr "Salud"
+#~ msgid "Healthcare"
+#~ msgstr "Salud"
 
 # Actions
-msgid "Post a Bounty"
-msgstr "Publicar una bounty"
+#~ msgid "Post a Bounty"
+#~ msgstr "Publicar una bounty"
 
-msgid "Edit"
-msgstr "Editar"
+#~ msgid "Edit"
+#~ msgstr "Editar"
 
-msgid "Delete"
-msgstr "Eliminar"
+#~ msgid "Delete"
+#~ msgstr "Eliminar"
 
-msgid "Save"
-msgstr "Guardar"
+#~ msgid "Save"
+#~ msgstr "Guardar"
 
-msgid "Cancel"
-msgstr "Cancelar"
+#~ msgid "Cancel"
+#~ msgstr "Cancelar"
 
-msgid "Submit"
-msgstr "Enviar"
+#~ msgid "Submit"
+#~ msgstr "Enviar"
 
-msgid "Close"
-msgstr "Cerrar"
+#~ msgid "Close"
+#~ msgstr "Cerrar"
 
-msgid "Search"
-msgstr "Buscar"
+#~ msgid "Search"
+#~ msgstr "Buscar"
 
-msgid "View"
-msgstr "Ver"
+#~ msgid "View"
+#~ msgstr "Ver"
 
-msgid "Back"
-msgstr "Volver"
+#~ msgid "Back"
+#~ msgstr "Volver"
 
-msgid "Pay"
-msgstr "Pagar"
+#~ msgid "Pay"
+#~ msgstr "Pagar"
 
-msgid "Accept"
-msgstr "Aceptar"
+#~ msgid "Accept"
+#~ msgstr "Aceptar"
 
-msgid "Decline"
-msgstr "Rechazar"
+#~ msgid "Decline"
+#~ msgstr "Rechazar"
 
-msgid "Invite"
-msgstr "Invitar"
+#~ msgid "Invite"
+#~ msgstr "Invitar"
 
-msgid "Confirm"
-msgstr "Confirmar"
+#~ msgid "Confirm"
+#~ msgstr "Confirmar"
 
 # Status
-msgid "Secured"
-msgstr "Asegurado"
+#~ msgid "Secured"
+#~ msgstr "Asegurado"
 
-msgid "Unsecured"
-msgstr "No asegurado"
+#~ msgid "Unsecured"
+#~ msgstr "No asegurado"
 
-msgid "Open"
-msgstr "Abierto"
+#~ msgid "Open"
+#~ msgstr "Abierto"
 
-msgid "Closed"
-msgstr "Cerrado"
+#~ msgid "Closed"
+#~ msgstr "Cerrado"
 
-msgid "Completed"
-msgstr "Completado"
+#~ msgid "Completed"
+#~ msgstr "Completado"
 
-msgid "Pending"
-msgstr "Pendiente"
+#~ msgid "Pending"
+#~ msgstr "Pendiente"
 
-msgid "Featured"
-msgstr "Destacado"
+#~ msgid "Featured"
+#~ msgstr "Destacado"
 
-msgid "Urgent"
-msgstr "Urgente"
+#~ msgid "Urgent"
+#~ msgstr "Urgente"
 
 # Form labels
-msgid "Title"
-msgstr "Título"
+#~ msgid "Title"
+#~ msgstr "Título"
 
-msgid "Description"
-msgstr "Descripción"
+#~ msgid "Description"
+#~ msgstr "Descripción"
 
-msgid "Amount"
-msgstr "Monto"
+#~ msgid "Amount"
+#~ msgstr "Monto"
 
-msgid "Location"
-msgstr "Ubicación"
+#~ msgid "Location"
+#~ msgstr "Ubicación"
 
-msgid "Email"
-msgstr "Correo electrónico"
+#~ msgid "Email"
+#~ msgstr "Correo electrónico"
 
-msgid "Password"
-msgstr "Contraseña"
+#~ msgid "Password"
+#~ msgstr "Contraseña"
 
-msgid "Username"
-msgstr "Nombre de usuario"
+#~ msgid "Username"
+#~ msgstr "Nombre de usuario"
 
-msgid "Deadline"
-msgstr "Fecha límite"
+#~ msgid "Deadline"
+#~ msgstr "Fecha límite"
 
-msgid "Success Criteria"
-msgstr "Criterios de éxito"
+#~ msgid "Success Criteria"
+#~ msgstr "Criterios de éxito"
 
-msgid "Bounty Type"
-msgstr "Tipo de bounty"
+#~ msgid "Bounty Type"
+#~ msgstr "Tipo de bounty"
 
-msgid "Direction"
-msgstr "Dirección"
+#~ msgid "Direction"
+#~ msgstr "Dirección"
 
 # Messages
-msgid "Success"
-msgstr "Éxito"
+#~ msgid "Success"
+#~ msgstr "Éxito"
 
-msgid "Error"
-msgstr "Error"
+#~ msgid "Error"
+#~ msgstr "Error"
 
-msgid "Warning"
-msgstr "Advertencia"
+#~ msgid "Warning"
+#~ msgstr "Advertencia"
 
-msgid "Info"
-msgstr "Info"
+#~ msgid "Info"
+#~ msgstr "Info"
 
-msgid "Success Fee"
-msgstr "Comisión de éxito"
+#~ msgid "Success Fee"
+#~ msgstr "Comisión de éxito"
 
-msgid "Welcome to Paid2Match"
-msgstr "Bienvenido a Paid2Match"
+#~ msgid "Welcome to Paid2Match"
+#~ msgstr "Bienvenido a Paid2Match"
 
-msgid "Access denied"
-msgstr "Acceso denegado"
+#~ msgid "Access denied"
+#~ msgstr "Acceso denegado"
 
-msgid "Bounty created"
-msgstr "Bounty creada"
+#~ msgid "Bounty created"
+#~ msgstr "Bounty creada"
 
-msgid "Payment secured"
-msgstr "Pago asegurado"
+#~ msgid "Payment secured"
+#~ msgstr "Pago asegurado"
 
-msgid "Bounty closed"
-msgstr "Bounty cerrada"
+#~ msgid "Bounty closed"
+#~ msgstr "Bounty cerrada"
 
-msgid "Payment refunded"
-msgstr "Pago reembolsado"
+#~ msgid "Payment refunded"
+#~ msgstr "Pago reembolsado"
 
 # Homepage
-msgid "Find Your Next Opportunity"
-msgstr "Encuentra tu próxima oportunidad"
+#~ msgid "Find Your Next Opportunity"
+#~ msgstr "Encuentra tu próxima oportunidad"
 
-msgid "Connect with talent and opportunities"
-msgstr "Conéctate con talento y oportunidades"
+#~ msgid "Connect with talent and opportunities"
+#~ msgstr "Conéctate con talento y oportunidades"
 
-msgid "Total Users"
-msgstr "Total de usuarios"
+#~ msgid "Total Users"
+#~ msgstr "Total de usuarios"
 
-msgid "Total Bounties"
-msgstr "Total de bounties"
+#~ msgid "Total Bounties"
+#~ msgstr "Total de bounties"
 
-msgid "Total Paid Out"
-msgstr "Total pagado"
+#~ msgid "Total Paid Out"
+#~ msgstr "Total pagado"
 
-msgid "Successful Matches"
-msgstr "Matches exitosos"
+#~ msgid "Successful Matches"
+#~ msgstr "Matches exitosos"
 
-msgid "Featured Bounties"
-msgstr "Bounties destacadas"
+#~ msgid "Featured Bounties"
+#~ msgstr "Bounties destacadas"
 
-msgid "View All"
-msgstr "Ver todas"
+#~ msgid "View All"
+#~ msgstr "Ver todas"
 
-msgid "Learn More"
-msgstr "Saber más"
+#~ msgid "Learn More"
+#~ msgstr "Saber más"
 
 # Auth
-msgid "Login to your account"
-msgstr "Inicia sesión en tu cuenta"
+#~ msgid "Login to your account"
+#~ msgstr "Inicia sesión en tu cuenta"
 
-msgid "Create your account"
-msgstr "Crea tu cuenta"
+#~ msgid "Create your account"
+#~ msgstr "Crea tu cuenta"
 
-msgid "Remember me"
-msgstr "Recordarme"
+#~ msgid "Remember me"
+#~ msgstr "Recordarme"
 
-msgid "Forgot Password"
-msgstr "¿Olvidaste tu contraseña?"
+#~ msgid "Forgot Password"
+#~ msgstr "¿Olvidaste tu contraseña?"
 
-msgid "Already have an account"
-msgstr "Ya tienes una cuenta"
+#~ msgid "Already have an account"
+#~ msgstr "Ya tienes una cuenta"
 
-msgid "Dont have an account"
-msgstr "¿No tienes una cuenta?"
+#~ msgid "Dont have an account"
+#~ msgstr "¿No tienes una cuenta?"
 
 # Board
-msgid "Filter by type"
-msgstr "Filtrar por tipo"
+#~ msgid "Filter by type"
+#~ msgstr "Filtrar por tipo"
 
-msgid "Sort by"
-msgstr "Ordenar por"
+#~ msgid "Sort by"
+#~ msgstr "Ordenar por"
 
-msgid "Newest"
-msgstr "Más reciente"
+#~ msgid "Newest"
+#~ msgstr "Más reciente"
 
-msgid "Highest Reward"
-msgstr "Mayor recompensa"
+#~ msgid "Highest Reward"
+#~ msgstr "Mayor recompensa"
 
-msgid "No bounties found"
-msgstr "No se encontraron bounties"
+#~ msgid "No bounties found"
+#~ msgstr "No se encontraron bounties"
 
 # Detail
-msgid "Reward"
-msgstr "Recompensa"
+#~ msgid "Reward"
+#~ msgstr "Recompensa"
 
-msgid "Posted by"
-msgstr "Publicado por"
+#~ msgid "Posted by"
+#~ msgstr "Publicado por"
 
-msgid "Time remaining"
-msgstr "Tiempo restante"
+#~ msgid "Time remaining"
+#~ msgstr "Tiempo restante"
 
-msgid "Pitch this bounty"
-msgstr "Postular a esta bounty"
+#~ msgid "Pitch this bounty"
+#~ msgstr "Postular a esta bounty"
 
-msgid "Secure Payment"
-msgstr "Asegurar pago"
+#~ msgid "Secure Payment"
+#~ msgstr "Asegurar pago"
 
-msgid "Pitches"
-msgstr "Postulaciones"
+#~ msgid "Pitches"
+#~ msgstr "Postulaciones"
 
-msgid "Matches"
-msgstr "Matches"
+#~ msgid "Matches"
+#~ msgstr "Matches"
 
 # Additional Latin American Spanish
-msgid "My Bounties"
-msgstr "Mis bounties"
+#~ msgid "My Bounties"
+#~ msgstr "Mis bounties"
 
-msgid "My Profile"
-msgstr "Mi perfil"
+#~ msgid "My Profile"
+#~ msgstr "Mi perfil"
 
-msgid "Inbox"
-msgstr "Bandeja de entrada"
+#~ msgid "Inbox"
+#~ msgstr "Bandeja de entrada"
 
-msgid "Sent"
-msgstr "Enviados"
+#~ msgid "Sent"
+#~ msgstr "Enviados"
 
-msgid "Compose"
-msgstr "Redactar"
+#~ msgid "Compose"
+#~ msgstr "Redactar"
 
-msgid "Free"
-msgstr "Gratis"
+#~ msgid "Free"
+#~ msgstr "Gratis"
 
-msgid "Paid"
-msgstr "Pagado"
+#~ msgid "Paid"
+#~ msgstr "Pagado"
 
-msgid "Settings"
-msgstr "Configuración"
+#~ msgid "Settings"
+#~ msgstr "Configuración"
 
-msgid "Dashboard"
-msgstr "Panel de control"
+#~ msgid "Dashboard"
+#~ msgstr "Panel de control"
 
-msgid "Users"
-msgstr "Usuarios"
+#~ msgid "Users"
+#~ msgstr "Usuarios"
 
-msgid "Disputes"
-msgstr "Disputas"
+#~ msgid "Disputes"
+#~ msgstr "Disputas"
 
-msgid "Admin"
-msgstr "Admin"
+#~ msgid "Admin"
+#~ msgstr "Admin"
 
-msgid "Filter"
-msgstr "Filtrar"
+#~ msgid "Filter"
+#~ msgstr "Filtrar"
 
-msgid "Sort"
-msgstr "Ordenar"
+#~ msgid "Sort"
+#~ msgstr "Ordenar"
 
-msgid "Apply"
-msgstr "Aplicar"
+#~ msgid "Apply"
+#~ msgstr "Aplicar"
 
-msgid "Reset"
-msgstr "Restablecer"
+#~ msgid "Reset"
+#~ msgstr "Restablecer"
 
-msgid "Search results"
-msgstr "Resultados de búsqueda"
+#~ msgid "Search results"
+#~ msgstr "Resultados de búsqueda"
 
-msgid "No results found"
-msgstr "No se encontraron resultados"
+#~ msgid "No results found"
+#~ msgstr "No se encontraron resultados"
 
-msgid "Loading"
-msgstr "Cargando"
+#~ msgid "Loading"
+#~ msgstr "Cargando"
 
-msgid "Submitting"
-msgstr "Enviando"
+#~ msgid "Submitting"
+#~ msgstr "Enviando"
 
-msgid "Processing"
-msgstr "Procesando"
+#~ msgid "Processing"
+#~ msgstr "Procesando"
 
-msgid "Please wait"
-msgstr "Por favor espera"
+#~ msgid "Please wait"
+#~ msgstr "Por favor espera"
 
-msgid "Required field"
-msgstr "Campo requerido"
+#~ msgid "Required field"
+#~ msgstr "Campo requerido"
 
-msgid "Invalid email"
-msgstr "Correo inválido"
+#~ msgid "Invalid email"
+#~ msgstr "Correo inválido"
 
-msgid "Password too short"
-msgstr "Contraseña muy corta"
+#~ msgid "Password too short"
+#~ msgstr "Contraseña muy corta"
 
-msgid "Email already registered"
-msgstr "Correo ya registrado"
+#~ msgid "Email already registered"
+#~ msgstr "Correo ya registrado"
 
-msgid "Username already taken"
-msgstr "Nombre de usuario ya tomado"
+#~ msgid "Username already taken"
+#~ msgstr "Nombre de usuario ya tomado"
 
-msgid "Registration successful"
-msgstr "Registro exitoso"
+#~ msgid "Registration successful"
+#~ msgstr "Registro exitoso"
 
-msgid "Login successful"
-msgstr "Inicio de sesión exitoso"
+#~ msgid "Login successful"
+#~ msgstr "Inicio de sesión exitoso"
 
-msgid "Logout successful"
-msgstr "Sesión cerrada exitosamente"
+#~ msgid "Logout successful"
+#~ msgstr "Sesión cerrada exitosamente"
 
-msgid "Bounty posted successfully"
-msgstr "Bounty publicada exitosamente"
+#~ msgid "Bounty posted successfully"
+#~ msgstr "Bounty publicada exitosamente"
 
-msgid "Bounty updated successfully"
-msgstr "Bounty actualizada exitosamente"
+#~ msgid "Bounty updated successfully"
+#~ msgstr "Bounty actualizada exitosamente"
 
-msgid "Bounty deleted successfully"
-msgstr "Bounty eliminada exitosamente"
+#~ msgid "Bounty deleted successfully"
+#~ msgstr "Bounty eliminada exitosamente"
 
-msgid "Pitch submitted successfully"
-msgstr "Postulación enviada exitosamente"
+#~ msgid "Pitch submitted successfully"
+#~ msgstr "Postulación enviada exitosamente"
 
-msgid "Message sent successfully"
-msgstr "Mensaje enviado exitosamente"
+#~ msgid "Message sent successfully"
+#~ msgstr "Mensaje enviado exitosamente"
 
-msgid "Profile updated successfully"
-msgstr "Perfil actualizado exitosamente"
+#~ msgid "Profile updated successfully"
+#~ msgstr "Perfil actualizado exitosamente"
 
-msgid "Payment successful"
-msgstr "Pago exitoso"
+#~ msgid "Payment successful"
+#~ msgstr "Pago exitoso"
 
-msgid "Payment failed"
-msgstr "Pago fallido"
+#~ msgid "Payment failed"
+#~ msgstr "Pago fallido"
 
-msgid "Refund processed"
-msgstr "Reembolso procesado"
+#~ msgid "Refund processed"
+#~ msgstr "Reembolso procesado"
 
-msgid "Invitation sent"
-msgstr "Invitación enviada"
+#~ msgid "Invitation sent"
+#~ msgstr "Invitación enviada"
 
-msgid "Invitation accepted"
-msgstr "Invitación aceptada"
+#~ msgid "Invitation accepted"
+#~ msgstr "Invitación aceptada"
 
-msgid "Invitation declined"
-msgstr "Invitación rechazada"
+#~ msgid "Invitation declined"
+#~ msgstr "Invitación rechazada"
 
-msgid "Are you sure?"
-msgstr "¿Estás seguro?"
+#~ msgid "Are you sure?"
+#~ msgstr "¿Estás seguro?"
 
-msgid "Confirm action"
-msgstr "Confirmar acción"
+#~ msgid "Confirm action"
+#~ msgstr "Confirmar acción"
 
-msgid "Cancel action"
-msgstr "Cancelar acción"
+#~ msgid "Cancel action"
+#~ msgstr "Cancelar acción"
 
-msgid "Yes"
-msgstr "Sí"
+#~ msgid "Yes"
+#~ msgstr "Sí"
 
-msgid "No"
-msgstr "No"
+#~ msgid "No"
+#~ msgstr "No"
 
-msgid "OK"
-msgstr "Aceptar"
+#~ msgid "OK"
+#~ msgstr "Aceptar"
 
-msgid "Continue"
-msgstr "Continuar"
+#~ msgid "Continue"
+#~ msgstr "Continuar"
 
-msgid "Go back"
-msgstr "Volver"
+#~ msgid "Go back"
+#~ msgstr "Volver"
 
-msgid "Next"
-msgstr "Siguiente"
+#~ msgid "Next"
+#~ msgstr "Siguiente"
 
-msgid "Previous"
-msgstr "Anterior"
+#~ msgid "Previous"
+#~ msgstr "Anterior"
 
-msgid "First"
-msgstr "Primero"
+#~ msgid "First"
+#~ msgstr "Primero"
 
-msgid "Last"
-msgstr "Último"
+#~ msgid "Last"
+#~ msgstr "Último"
 
-msgid "Page"
-msgstr "P��gina"
+#~ msgid "Page"
+#~ msgstr "P��gina"
 
-msgid "of"
-msgstr "de"
+#~ msgid "of"
+#~ msgstr "de"
 
-msgid "Showing"
-msgstr "Mostrando"
+#~ msgid "Showing"
+#~ msgstr "Mostrando"
 
-msgid "results"
-msgstr "resultados"
+#~ msgid "results"
+#~ msgstr "resultados"
 
-msgid "Recruitment Referrals"
-msgstr "Reclutamiento recomendado"
+#~ msgid "Recruitment Referrals"
+#~ msgstr "Reclutamiento recomendado"
 
-msgid "Real Estate Referrals"
-msgstr "Bienes raíces recomendado"
+#~ msgid "Real Estate Referrals"
+#~ msgstr "Bienes raíces recomendado"
 
-msgid "Healthcare Referrals"
-msgstr "Salud recomendada"
+#~ msgid "Healthcare Referrals"
+#~ msgstr "Salud recomendada"
 
-msgid "My Messages"
-msgstr "Mis mensajes"
+#~ msgid "My Messages"
+#~ msgstr "Mis mensajes"
 
-msgid "Logout"
-msgstr "Cerrar sesión"
+#~ msgid "Full Name"
+#~ msgstr "Nombre completo"
 
-msgid "Full Name"
-msgstr "Nombre completo"
+#~ msgid "Confirm Password"
+#~ msgstr "Confirmar contraseña"
 
-msgid "Confirm Password"
-msgstr "Confirmar contraseña"
+#~ msgid "John Doe"
+#~ msgstr "Juan Pérez"
 
-msgid "John Doe"
-msgstr "Juan Pérez"
+#~ msgid "you@example.com"
+#~ msgstr "tu@ejemplo.com"
 
-msgid "you@example.com"
-msgstr "tu@ejemplo.com"
+#~ msgid "Minimum 8 characters"
+#~ msgstr "Mínimo 8 caracteres"
 
-msgid "Minimum 8 characters"
-msgstr "Mínimo 8 caracteres"
+#~ msgid "Repeat your password"
+#~ msgstr "Repite tu contraseña"
 
-msgid "Repeat your password"
-msgstr "Repite tu contraseña"
+#~ msgid "Welcome Back"
+#~ msgstr "Bienvenido de nuevo"
 
-msgid "Create your account"
-msgstr "Crea tu cuenta"
+#~ msgid "Enter your password"
+#~ msgstr "Ingresa tu contraseña"
 
-msgid "Already have an account"
-msgstr "Ya tienes una cuenta"
+#~ msgid "Create one"
+#~ msgstr "Crea una\"msgid \"How It Works"
 
-msgid "Welcome Back"
-msgstr "Bienvenido de nuevo"
+#~ msgid "Receive Pitches"
+#~ msgstr "Recibir pitches"
 
-msgid "Enter your password"
-msgstr "Ingresa tu contraseña"
+#~ msgid "Confirm and Earn"
+#~ msgstr "Confirmar y ganar"
 
-msgid "Remember me"
-msgstr "Recordarme"
+#~ msgid "Describe what you need and set your reward"
+#~ msgstr "Describe lo que necesitas y establece tu recompensa"
 
-msgid "Dont have an account"
-msgstr "¿No tienes una cuenta?"
+#~ msgid "Hunters submit pitches with teasers"
+#~ msgstr "Los hunters envían pitches con adelantos"
 
-msgid "Create one"
-msgstr "Crea una"msgid "How It Works"
-msgstr "Cómo funciona"
-msgid "Post a Bounty"
-msgstr "Publicar una recompensa"
-msgid "Receive Pitches"
-msgstr "Recibir pitches"
-msgid "Confirm and Earn"
-msgstr "Confirmar y ganar"
-msgid "Describe what you need and set your reward"
-msgstr "Describe lo que necesitas y establece tu recompensa"
-msgid "Hunters submit pitches with teasers"
-msgstr "Los hunters envían pitches con adelantos"
-msgid "Both parties confirm successful placement"
-msgstr "Ambas partes confirman la colocación exitosa"
-msgid "Free"
-msgstr "Gratis"
-msgid "View"
-msgstr "Ver"
-msgid "View All"
-msgstr "Ver todo"
+#~ msgid "Both parties confirm successful placement"
+#~ msgstr "Ambas partes confirman la colocación exitosa"
 
-msgid "Post Bounty"
-msgstr "Publicar recompensa"
+#~ msgid "Post Bounty"
+#~ msgstr "Publicar recompensa"
 
-msgid "Post a New Bounty"
-msgstr "Publicar nueva recompensa"
+#~ msgid "Post a New Bounty"
+#~ msgstr "Publicar nueva recompensa"
 
-msgid "Bounty Type & Direction"
-msgstr "Tipo de recompensa y dirección"
+#~ msgid "Bounty Type & Direction"
+#~ msgstr "Tipo de recompensa y dirección"
 
-msgid "Type-Specific Details"
-msgstr "Detalles específicos"
+#~ msgid "Type-Specific Details"
+#~ msgstr "Detalles específicos"
 
-msgid "Recruitment-Specific Fields"
-msgstr "Campos específicos de reclutamiento"
+#~ msgid "Recruitment-Specific Fields"
+#~ msgstr "Campos específicos de reclutamiento"
 
-msgid "Real Estate-Specific Fields"
-msgstr "Campos específicos de bienes raíces"
+#~ msgid "Real Estate-Specific Fields"
+#~ msgstr "Campos específicos de bienes raíces"
 
-msgid "Healthcare-Specific Fields"
-msgstr "Campos específicos de salud"
+#~ msgid "Healthcare-Specific Fields"
+#~ msgstr "Campos específicos de salud"
 
-msgid "Reward & Details"
-msgstr "Recompensa y detalles"
+#~ msgid "Reward & Details"
+#~ msgstr "Recompensa y detalles"
 
-msgid "Company"
-msgstr "Empresa"
+#~ msgid "Company"
+#~ msgstr "Empresa"
 
-msgid "Job Title"
-msgstr "Título del puesto"
+#~ msgid "Job Title"
+#~ msgstr "Título del puesto"
 
-msgid "Job Type"
-msgstr "Tipo de trabajo"
+#~ msgid "Job Type"
+#~ msgstr "Tipo de trabajo"
 
-msgid "Experience Level"
-msgstr "Nivel de experiencia"
+#~ msgid "Experience Level"
+#~ msgstr "Nivel de experiencia"
 
-msgid "Required Skills"
-msgstr "Habilidades requeridas"
+#~ msgid "Required Skills"
+#~ msgstr "Habilidades requeridas"
 
-msgid "Full-Time"
-msgstr "Tiempo completo"
+#~ msgid "Full-Time"
+#~ msgstr "Tiempo completo"
 
-msgid "Part-Time"
-msgstr "Medio tiempo"
+#~ msgid "Part-Time"
+#~ msgstr "Medio tiempo"
 
-msgid "Contract"
-msgstr "Contrato"
+#~ msgid "Contract"
+#~ msgstr "Contrato"
 
-msgid "Internship"
-msgstr "Pasantía"
+#~ msgid "Internship"
+#~ msgstr "Pasantía"
 
-msgid "Remote"
-msgstr "Remoto"
+#~ msgid "Remote"
+#~ msgstr "Remoto"
 
-msgid "Entry"
-msgstr "Entrada"
+#~ msgid "Entry"
+#~ msgstr "Entrada"
 
-msgid "Mid-Level"
-msgstr "Nivel medio"
+#~ msgid "Mid-Level"
+#~ msgstr "Nivel medio"
 
-msgid "Senior"
-msgstr "Senior"
+#~ msgid "Senior"
+#~ msgstr "Senior"
 
-msgid "Lead/Manager"
-msgstr "Gerente"
+#~ msgid "Lead/Manager"
+#~ msgstr "Gerente"
 
-msgid "Executive"
-msgstr "Ejecutivo"
+#~ msgid "Executive"
+#~ msgstr "Ejecutivo"
 
-msgid "Candidate Specialty"
-msgstr "Especialidad del candidato"
+#~ msgid "Candidate Specialty"
+#~ msgstr "Especialidad del candidato"
 
-msgid "Availability"
-msgstr "Disponibilidad"
+#~ msgid "Availability"
+#~ msgstr "Disponibilidad"
 
-msgid "Additional Notes"
-msgstr "Notas adicionales"
+#~ msgid "Additional Notes"
+#~ msgstr "Notas adicionales"
 
-msgid "Immediately"
-msgstr "Inmediatamente"
+#~ msgid "Immediately"
+#~ msgstr "Inmediatamente"
 
-msgid "2 Weeks Notice"
-msgstr "Aviso de 2 semanas"
+#~ msgid "2 Weeks Notice"
+#~ msgstr "Aviso de 2 semanas"
 
-msgid "30 Days Notice"
-msgstr "Aviso de 30 días"
+#~ msgid "30 Days Notice"
+#~ msgstr "Aviso de 30 días"
 
-msgid "Passive (Open to Offers)"
-msgstr "Pasivo (abierto a ofertas)"
+#~ msgid "Passive (Open to Offers)"
+#~ msgstr "Pasivo (abierto a ofertas)"
 
-msgid "Desired Role"
-msgstr "Puesto deseado"
+#~ msgid "Desired Role"
+#~ msgstr "Puesto deseado"
 
-msgid "Target Companies"
-msgstr "Empresas objetivo"
+#~ msgid "Target Companies"
+#~ msgstr "Empresas objetivo"
 
-msgid "Your Background"
-msgstr "Tu experiencia"
+#~ msgid "Your Background"
+#~ msgstr "Tu experiencia"
 
-msgid "Property Type"
-msgstr "Tipo de propiedad"
+#~ msgid "Property Type"
+#~ msgstr "Tipo de propiedad"
 
-msgid "Buyer Budget"
-msgstr "Presupuesto del comprador"
+#~ msgid "Buyer Budget"
+#~ msgstr "Presupuesto del comprador"
 
-msgid "Requirements"
-msgstr "Requisitos"
+#~ msgid "Requirements"
+#~ msgstr "Requisitos"
 
-msgid "Price"
-msgstr "Precio"
+#~ msgid "Price"
+#~ msgstr "Precio"
 
-msgid "Bedrooms / Baths"
-msgstr "Habitaciones / Baños"
+#~ msgid "Bedrooms / Baths"
+#~ msgstr "Habitaciones / Baños"
 
-msgid "Property Details"
-msgstr "Detalles de la propiedad"
+#~ msgid "Property Details"
+#~ msgstr "Detalles de la propiedad"
 
-msgid "Budget"
-msgstr "Presupuesto"
+#~ msgid "Budget"
+#~ msgstr "Presupuesto"
 
-msgid "Preferred Areas"
-msgstr "Áreas preferidas"
+#~ msgid "Preferred Areas"
+#~ msgstr "Áreas preferidas"
 
-msgid "Provider Type"
-msgstr "Tipo de proveedor"
+#~ msgid "Provider Type"
+#~ msgstr "Tipo de proveedor"
 
-msgid "Specialty"
-msgstr "Especialidad"
+#~ msgid "Specialty"
+#~ msgstr "Especialidad"
 
-msgid "Accepting New Patients?"
-msgstr "¿Acepta nuevos pacientes?"
+#~ msgid "Accepting New Patients?"
+#~ msgstr "¿Acepta nuevos pacientes?"
 
-msgid "Insurance"
-msgstr "Seguro"
+#~ msgid "Insurance"
+#~ msgstr "Seguro"
 
-msgid "Yes"
-msgstr "Sí"
+#~ msgid "No (Full)"
+#~ msgstr "No (Completo)"
 
-msgid "No (Full)"
-msgstr "No (Completo)"
+#~ msgid "Waitlist"
+#~ msgstr "Lista de espera"
 
-msgid "Waitlist"
-msgstr "Lista de espera"
+#~ msgid "Need Type"
+#~ msgstr "Tipo de necesidad"
 
-msgid "Need Type"
-msgstr "Tipo de necesidad"
+#~ msgid "Language Preference"
+#~ msgstr "Idioma preferido"
 
-msgid "Language Preference"
-msgstr "Idioma preferido"
+#~ msgid "Who will pay the bounty reward?"
+#~ msgstr "¿Quién pagará la recompensa?"
 
-msgid "Who will pay the bounty reward?"
-msgstr "¿Quién pagará la recompensa?"
+#~ msgid "I will pay"
+#~ msgstr "Yo pagaré"
 
-msgid "I will pay"
-msgstr "Yo pagaré"
+#~ msgid "You secure the payment with your card"
+#~ msgstr "Aseguras el pago con tu tarjeta"
 
-msgid "You secure the payment with your card"
-msgstr "Aseguras el pago con tu tarjeta"
+#~ msgid "Invite someone to pay"
+#~ msgstr "Invitar a alguien a pagar"
 
-msgid "Invite someone to pay"
-msgstr "Invitar a alguien a pagar"
+#~ msgid "They must accept the agreement before paying"
+#~ msgstr "Deben aceptar el acuerdo antes de pagar"
 
-msgid "They must accept the agreement before paying"
-msgstr "Deben aceptar el acuerdo antes de pagar"
+#~ msgid "Username to invite"
+#~ msgstr "Nombre de usuario a invitar"
 
-msgid "Username to invite"
-msgstr "Nombre de usuario a invitar"
+#~ msgid "Message (optional)"
+#~ msgstr "Mensaje (opcional)"
 
-msgid "Message (optional)"
-msgstr "Mensaje (opcional)"
+#~ msgid "Optional message to the payer"
+#~ msgstr "Mensaje opcional al pagador"
 
-msgid "Optional message to the payer"
-msgstr "Mensaje opcional al pagador"
+#~ msgid "This is a free bounty (no reward payment required)"
+#~ msgstr "Es una recompensa gratuita (no requiere pago)"
 
-msgid "This is a free bounty (no reward payment required)"
-msgstr "Es una recompensa gratuita (no requiere pago)"
+#~ msgid "How it works"
+#~ msgstr "Cómo funciona"
 
-msgid "How it works"
-msgstr "Cómo funciona"
+#~ msgid "Choose your bounty type"
+#~ msgstr "Elige tu tipo de recompensa"
 
-msgid "Choose your bounty type"
-msgstr "Elige tu tipo de recompensa"
+#~ msgid "recruitment, real estate, healthcare, legal"
+#~ msgstr "reclutamiento, bienes raíces, salud, legal"
 
-msgid "recruitment, real estate, healthcare, legal"
-msgstr "reclutamiento, bienes raíces, salud, legal"
+#~ msgid "Choose your direction"
+#~ msgstr "Elige tu dirección"
 
-msgid "Choose your direction"
-msgstr "Elige tu dirección"
+#~ msgid "seeking or offering"
+#~ msgstr "buscando u ofreciendo"
 
-msgid "seeking or offering"
-msgstr "buscando u ofreciendo"
+#~ msgid "Fill in the details and set your reward"
+#~ msgstr "Completa los detalles y establece tu recompensa"
 
-msgid "Fill in the details and set your reward"
-msgstr "Completa los detalles y establece tu recompensa"
+#~ msgid "Submit — free bounties go live immediately"
+#~ msgstr "Enviar — las gratuitas se publican inmediatamente"
 
-msgid "Submit — free bounties go live immediately"
-msgstr "Enviar — las gratuitas se publican inmediatamente"
+#~ msgid "Paid bounties need payment before publishing"
+#~ msgstr "Las pagadas necesitan pago antes de publikar"
 
-msgid "Paid bounties need payment before publishing"
-msgstr "Las pagadas necesitan pago antes de publikar"
+#~ msgid "Direction Guide"
+#~ msgstr "Guía de dirección"
 
-msgid "Direction Guide"
-msgstr "Guía de dirección"
+#~ msgid "You're hiring, find me someone"
+#~ msgstr "Estás contratando, encuéntrame a alguien"
 
-msgid "You're hiring, find me someone"
-msgstr "Estás contratando, encuéntrame a alguien"
+#~ msgid "I have a candidate, pay me"
+#~ msgstr "Tengo un candidato, págame"
 
-msgid "I have a candidate, pay me"
-msgstr "Tengo un candidato, págame"
+#~ msgid "Healthcare seeking talent bounties are not yet supported"
+#~ msgstr "Las búsquedas de talento en salud aún no son compatibles"
 
-msgid "Healthcare seeking talent bounties are not yet supported"
-msgstr "Las búsquedas de talento en salud aún no son compatibles"
+#~ msgid "Submit free bounties go live immediately"
+#~ msgstr "Enviar — las gratuitas se publican inmediatamente"
 
-msgid "Cancel"
-msgstr "Cancelar"
+#~ msgid "Profile Completion"
+#~ msgstr "Perfil completado"
 
-msgid "Submit free bounties go live immediately"
-msgstr "Enviar — las gratuitas se publican inmediatamente"
+#~ msgid "Complete your profile to get more views!"
+#~ msgstr "¡Completa tu perfil para obtener más visitas!"
 
-msgid "Paid bounties need payment before publishing"
-msgstr "Las pagadas necesitan pago antes de publicar"
+#~ msgid "Almost done! Add more details."
+#~ msgstr "¡Casi listo! Agrega más detalles."
 
-msgid "Profile Completion"
-msgstr "Perfil completado"
+#~ msgid "Just a few more touches!"
+#~ msgstr "¡Solo unos toques más!"
 
-msgid "Complete your profile to get more views!"
-msgstr "¡Completa tu perfil para obtener más visitas!"
+#~ msgid "Tips:"
+#~ msgstr "Consejos:"
 
-msgid "Almost done! Add more details."
-msgstr "¡Casi listo! Agrega más detalles."
+#~ msgid "Level"
+#~ msgstr "Nivel"
 
-msgid "Just a few more touches!"
-msgstr "¡Solo unos toques más!"
+#~ msgid "points"
+#~ msgstr "puntos"
 
-msgid "Tips:"
-msgstr "Consejos:"
+#~ msgid "points to next level"
+#~ msgstr "puntos para el siguiente nivel"
 
-msgid "Level"
-msgstr "Nivel"
+#~ msgid "Privacy"
+#~ msgstr "Privacidad"
 
-msgid "points"
-msgstr "puntos"
+#~ msgid "Hide from search"
+#~ msgstr "Ocultar de búsqueda"
 
-msgid "points to next level"
-msgstr "puntos para el siguiente nivel"
+#~ msgid "When enabled, your profile wont appear in search results."
+#~ msgstr ""
+#~ "Cuando esté habilitado, tu perfil no "
+#~ "aparecerá en los resultados de búsqueda."
 
-msgid "Privacy"
-msgstr "Privacidad"
+#~ msgid "Add your name"
+#~ msgstr "Agrega tu nombre"
 
-msgid "Hide from search"
-msgstr "Ocultar de búsqueda"
+#~ msgid "Add a headline"
+#~ msgstr "Agrega un título"
 
-msgid "When enabled, your profile wont appear in search results."
-msgstr "Cuando esté habilitado, tu perfil no aparecerá en los resultados de búsqueda."
+#~ msgid "Write a bio"
+#~ msgstr "Escribe una biografía"
 
-msgid "Add your name"
-msgstr "Agrega tu nombre"
+#~ msgid "Add location"
+#~ msgstr "Agrega tu ubicación"
 
-msgid "Add a headline"
-msgstr "Agrega un título"
+#~ msgid "Upload a photo"
+#~ msgstr "Sube una foto"
 
-msgid "Write a bio"
-msgstr "Escribe una biografía"
+#~ msgid "Add skills"
+#~ msgstr "Agrega tus habilidades"
 
-msgid "Add location"
-msgstr "Agrega tu ubicación"
+#~ msgid "Add experience"
+#~ msgstr "Agrega tu experiencia"
 
-msgid "Upload a photo"
-msgstr "Sube una foto"
+#~ msgid "Add education"
+#~ msgstr "Agrega tu formación"
 
-msgid "Add skills"
-msgstr "Agrega tus habilidades"
+#~ msgid "Add portfolio"
+#~ msgstr "Agrega tu portafolio"
 
-msgid "Add experience"
-msgstr "Agrega tu experiencia"
+#~ msgid "Connect LinkedIn"
+#~ msgstr "Conecta LinkedIn"
 
-msgid "Add education"
-msgstr "Agrega tu formación"
+#~ msgid "Posted"
+#~ msgstr "Publicadas"
 
-msgid "Add portfolio"
-msgstr "Agrega tu portafolio"
+#~ msgid "Pitches Received"
+#~ msgstr "Pitches recibidos"
 
-msgid "Connect LinkedIn"
-msgstr "Conecta LinkedIn"
+#~ msgid "Activity"
+#~ msgstr "Actividad"
 
-msgid "My Bounties"
-msgstr "Mis recompensas"
-
-msgid "Posted"
-msgstr "Publicadas"
-
-msgid "Secured"
-msgstr "Aseguradas"
-
-msgid "Pitches Received"
-msgstr "Pitches recibidos"
-
-msgid "Activity"
-msgstr "Actividad"
