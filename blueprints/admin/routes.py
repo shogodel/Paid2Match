@@ -226,9 +226,6 @@ def bounties():
     if status:
         query = query.filter_by(status=status)
     
-    bounty_type = request.args.get('bounty_type')
-    if bounty_type:
-        query = query.filter_by(bounty_type=bounty_type)
     
     payment_filter = request.args.get('payment_status')
     if payment_filter:
@@ -243,7 +240,6 @@ def bounties():
                         pagination=pagination,
                         search=search,
                         status=status,
-                        bounty_type=bounty_type,
                         payment_filter=payment_filter)
 
 

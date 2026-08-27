@@ -97,13 +97,13 @@
                 {% if recent_bounties %}
                 <table class="table table-sm mb-0">
                     <thead><tr>
-                        <th>Title</th><th>Type</th><th>Status</th><th>Reward</th>
+                        <th>Title</th><th>Status</th><th>Reward</th>
                     </tr></thead>
                     <tbody>
                         {% for bounty in recent_bounties %}
                         <tr>
                             <td><small>{{ bounty.title[:40] }}...</small></td>
-                            <td><span class="badge bg-secondary">{{ bounty.bounty_type|title }}</span></td>
+                            <td><span class="badge bg-primary">Recruitment</span></td>
                             <td><span class="badge bg-{{ 'success' if bounty.status=='open' else 'warning' }}">{{ bounty.status }}</span></td>
                             <td><small>{% if bounty.reward_amount %}${{ "{:,.0f}".format(bounty.reward_amount) }}{% else %}Free{% endif %}</small></td>
                         </tr>
