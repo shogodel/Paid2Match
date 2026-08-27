@@ -42,7 +42,7 @@ def setup():
         profile = Profile(
             user_id=current_user.id,
             profile_type=form.profile_type.data,
-            display_name=form.display_name.data or current_user.username,
+            display_name=form.display_name.data or current_user.full_name,
             headline=form.headline.data,
             bio=form.bio.data,
             location=form.location.data,

@@ -241,7 +241,7 @@ def post():
         else:
             payer_username = request.form.get('payer_username', '').strip()
             if payer_username:
-                payer_user = User.query.filter_by(username=payer_username).first()
+                payer_user = User.query.filter_by(email=payer_username).first()
                 if not payer_user:
                     flash(f'User "{payer_username}" not found. Bounty created without invitation.', 'warning')
                     return redirect(url_for('bounties.detail', id=bounty.id))
@@ -1016,8 +1016,8 @@ def cancel_refund(id):
 
     # TODO(STRIPE): When payments are disabled (STRIPE_ENABLED=false) there is nothing to
     # refund via Stripe, so just close/refund the record locally. Remove this branch when
-    # Stripe is reconfigured (note: the live refund path also references bounty.amount which
-    # does not exist — see audit; should be bounty.reward_amount).
+    # Stripe is reconfigured (note: the live refund path also referenced bounty.amount which
+    # does not exist — fixed to bounty.reward_amount).
     if not current_app.config.get('STRIPE_ENABLED', True):
         if bounty.payment_status == 'secured':
             bounty.payment_status = 'refunded'
@@ -1026,7 +1026,7 @@ def cancel_refund(id):
         flash('Bounty cancelled. Payments are disabled — no Stripe refund issued.', 'info')
         return redirect(url_for('profile.view', user_id=current_user.id))
 
-    refund_amount = bounty.amount
+    refund_amount = bounty.reward_amount
 
     if bounty.payment_status == 'secured' and bounty.stripe_payment_intent:
         keys = _get_stripe_keys()

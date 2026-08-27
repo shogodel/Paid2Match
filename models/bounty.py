@@ -63,7 +63,7 @@ class Bounty(db.Model):
     @property
     def payer_name(self):
         if self.payer_type == 'third_party' and self.third_party_payer:
-            return self.third_party_payer.username
+            return self.third_party_payer.full_name
         return 'You'
 
     @property
