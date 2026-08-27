@@ -214,7 +214,7 @@ def post():
             poster_id=current_user.id,
             title=form.title.data,
             description=form.description.data,
-            bounty_type=form.bounty_type.data,
+            bounty_type='recruitment',
             bounty_direction=form.bounty_direction.data,
             reward_amount=reward or None,
             location=form.location.data or None,
