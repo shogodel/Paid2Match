@@ -142,43 +142,6 @@ class TestBountySpecialtyBoards:
         assert r.status_code == 200
         assert b'Recruitment' in r.data
 
-    def test_real_estate_board(self, client, app, sample_user):
-        from extensions import db
-        from models.bounty import Bounty
-        with app.app_context():
-            b = Bounty(
-                poster_id=sample_user.id,
-                title='Real Estate Investment Opportunity Referral',
-                description='Looking for investment opportunities in the tri-state area with good cash flow potential. I have connections and can facilitate deals.',
-                bounty_type='real_estate',
-                bounty_direction='seeking_opportunity',
-                status='open',
-                payment_status='released',
-            )
-            db.session.add(b)
-            db.session.commit()
-        r = client.get('/bounties/real-estate')
-        assert r.status_code == 200
-        assert b'Real Estate' in r.data
-
-    def test_healthcare_board(self, client, app, sample_user):
-        from extensions import db
-        from models.bounty import Bounty
-        with app.app_context():
-            b = Bounty(
-                poster_id=sample_user.id,
-                title='Seeking Specialist for Complex Case Referral',
-                description='Need a referral to a top neurologist for a complex case. Looking for someone with specific expertise in movement disorders.',
-                bounty_type='healthcare',
-                bounty_direction='seeking_opportunity',
-                status='open',
-                payment_status='released',
-            )
-            db.session.add(b)
-            db.session.commit()
-        r = client.get('/bounties/healthcare')
-        assert r.status_code == 200
-        assert b'Healthcare' in r.data
 
 
 class TestBountyApi:

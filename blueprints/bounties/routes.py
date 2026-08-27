@@ -491,61 +491,7 @@ def recruitment_board():
                           bounty_type='recruitment')
 
 
-@bounties_bp.route('/real-estate')
-def real_estate_board():
-    """GET /bounties/real-estate - Real estate bounties only."""
-    page = request.args.get('page', 1, type=int)
-    per_page = 12
-    now = datetime.now(timezone.utc)
-    query = Bounty.query.filter(
-        Bounty.bounty_type == 'real_estate',
-        Bounty.status == 'open',
-        db.or_(Bounty.deadline.is_(None), Bounty.deadline > now)
-    )
-    _apply_filters(query)
-    query = query.order_by(desc(Bounty.created_at))
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    return render_template('bounties/real_estate_board.html',
-                          bounties=pagination.items, pagination=pagination,
-                          bounty_type='real_estate')
 
-
-@bounties_bp.route('/healthcare')
-def healthcare_board():
-    """GET /bounties/healthcare - Healthcare bounties only."""
-    page = request.args.get('page', 1, type=int)
-    per_page = 12
-    now = datetime.now(timezone.utc)
-    query = Bounty.query.filter(
-        Bounty.bounty_type == 'healthcare',
-        Bounty.status == 'open',
-        db.or_(Bounty.deadline.is_(None), Bounty.deadline > now)
-    )
-    _apply_filters(query)
-    query = query.order_by(desc(Bounty.created_at))
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    return render_template('bounties/healthcare_board.html',
-                            bounties=pagination.items, pagination=pagination,
-                            bounty_type='healthcare')
-
-
-@bounties_bp.route('/legal')
-def legal_board():
-    """GET /bounties/legal - Legal bounties only."""
-    page = request.args.get('page', 1, type=int)
-    per_page = 12
-    now = datetime.now(timezone.utc)
-    query = Bounty.query.filter(
-        Bounty.bounty_type == 'legal',
-        Bounty.status == 'open',
-        db.or_(Bounty.deadline.is_(None), Bounty.deadline > now)
-    )
-    _apply_filters(query)
-    query = query.order_by(desc(Bounty.created_at))
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    return render_template('bounties/legal_board.html',
-                            bounties=pagination.items, pagination=pagination,
-                            bounty_type='legal')
 
 
 def _apply_filters(query):
