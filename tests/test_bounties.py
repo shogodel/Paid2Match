@@ -136,7 +136,7 @@ class TestBountyPitch:
         assert r.status_code == 302
 
 
-class TestBountySpecialtyBoards:
+class TestRecruitmentBoard:
     def test_recruitment_board(self, client, sample_bounty):
         r = client.get('/bounties/recruitment')
         assert r.status_code == 200

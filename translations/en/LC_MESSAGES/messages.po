@@ -320,12 +320,6 @@ msgstr ""
 #~ msgid "Recruitment"
 #~ msgstr "Recruitment"
 
-#~ msgid "Real Estate"
-#~ msgstr "Real Estate"
-
-#~ msgid "Healthcare"
-#~ msgstr "Healthcare"
-
 # Actions
 #~ msgid "Post a Bounty"
 #~ msgstr "Post a Bounty"
@@ -728,12 +722,6 @@ msgstr ""
 #~ msgid "Recruitment Referrals"
 #~ msgstr "Recruitment Referrals"
 
-#~ msgid "Real Estate Referrals"
-#~ msgstr "Real Estate Referrals"
-
-#~ msgid "Healthcare Referrals"
-#~ msgstr "Healthcare Referrals"
-
 #~ msgid "My Messages"
 #~ msgstr "My Messages"
 
@@ -794,12 +782,6 @@ msgstr ""
 #~ msgid "Recruitment-Specific Fields"
 #~ msgstr "Recruitment-Specific Fields"
 
-#~ msgid "Real Estate-Specific Fields"
-#~ msgstr "Real Estate-Specific Fields"
-
-#~ msgid "Healthcare-Specific Fields"
-#~ msgstr "Healthcare-Specific Fields"
-
 #~ msgid "Reward & Details"
 #~ msgstr "Reward & Details"
 
@@ -847,9 +829,6 @@ msgstr ""
 
 #~ msgid "Executive"
 #~ msgstr "Executive"
-
-#~ msgid "Candidate Specialty"
-#~ msgstr "Candidate Specialty"
 
 #~ msgid "Availability"
 #~ msgstr "Availability"
@@ -905,9 +884,6 @@ msgstr ""
 #~ msgid "Provider Type"
 #~ msgstr "Provider Type"
 
-#~ msgid "Specialty"
-#~ msgstr "Specialty"
-
 #~ msgid "Accepting New Patients?"
 #~ msgstr "Accepting New Patients?"
 
@@ -959,9 +935,6 @@ msgstr ""
 #~ msgid "Choose your bounty type"
 #~ msgstr "Choose your bounty type"
 
-#~ msgid "recruitment, real estate, healthcare, legal"
-#~ msgstr "recruitment, real estate, healthcare, legal"
-
 #~ msgid "Choose your direction"
 #~ msgstr "Choose your direction"
 
@@ -985,9 +958,6 @@ msgstr ""
 
 #~ msgid "I have a candidate, pay me"
 #~ msgstr "I have a candidate, pay me"
-
-#~ msgid "Healthcare seeking talent bounties are not yet supported"
-#~ msgstr "Healthcare seeking talent bounties are not yet supported"
 
 #~ msgid "Submit free bounties go live immediately"
 #~ msgstr "Submit — free bounties go live immediately"
@@ -1063,4 +1033,3 @@ msgstr ""
 
 #~ msgid "Activity"
 #~ msgstr "Activity"
-

@@ -321,12 +321,6 @@ msgstr ""
 #~ msgid "Recruitment"
 #~ msgstr "Reclutamiento"
 
-#~ msgid "Real Estate"
-#~ msgstr "Bienes raíces"
-
-#~ msgid "Healthcare"
-#~ msgstr "Salud"
-
 # Actions
 #~ msgid "Post a Bounty"
 #~ msgstr "Publicar una bounty"
@@ -729,12 +723,6 @@ msgstr ""
 #~ msgid "Recruitment Referrals"
 #~ msgstr "Reclutamiento recomendado"
 
-#~ msgid "Real Estate Referrals"
-#~ msgstr "Bienes raíces recomendado"
-
-#~ msgid "Healthcare Referrals"
-#~ msgstr "Salud recomendada"
-
 #~ msgid "My Messages"
 #~ msgstr "Mis mensajes"
 
@@ -795,12 +783,6 @@ msgstr ""
 #~ msgid "Recruitment-Specific Fields"
 #~ msgstr "Campos específicos de reclutamiento"
 
-#~ msgid "Real Estate-Specific Fields"
-#~ msgstr "Campos específicos de bienes raíces"
-
-#~ msgid "Healthcare-Specific Fields"
-#~ msgstr "Campos específicos de salud"
-
 #~ msgid "Reward & Details"
 #~ msgstr "Recompensa y detalles"
 
@@ -848,9 +830,6 @@ msgstr ""
 
 #~ msgid "Executive"
 #~ msgstr "Ejecutivo"
-
-#~ msgid "Candidate Specialty"
-#~ msgstr "Especialidad del candidato"
 
 #~ msgid "Availability"
 #~ msgstr "Disponibilidad"
@@ -906,9 +885,6 @@ msgstr ""
 #~ msgid "Provider Type"
 #~ msgstr "Tipo de proveedor"
 
-#~ msgid "Specialty"
-#~ msgstr "Especialidad"
-
 #~ msgid "Accepting New Patients?"
 #~ msgstr "¿Acepta nuevos pacientes?"
 
@@ -960,9 +936,6 @@ msgstr ""
 #~ msgid "Choose your bounty type"
 #~ msgstr "Elige tu tipo de recompensa"
 
-#~ msgid "recruitment, real estate, healthcare, legal"
-#~ msgstr "reclutamiento, bienes raíces, salud, legal"
-
 #~ msgid "Choose your direction"
 #~ msgstr "Elige tu dirección"
 
@@ -986,9 +959,6 @@ msgstr ""
 
 #~ msgid "I have a candidate, pay me"
 #~ msgstr "Tengo un candidato, págame"
-
-#~ msgid "Healthcare seeking talent bounties are not yet supported"
-#~ msgstr "Las búsquedas de talento en salud aún no son compatibles"
 
 #~ msgid "Submit free bounties go live immediately"
 #~ msgstr "Enviar — las gratuitas se publican inmediatamente"
@@ -1066,4 +1036,3 @@ msgstr ""
 
 #~ msgid "Activity"
 #~ msgstr "Actividad"
-

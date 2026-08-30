@@ -305,8 +305,6 @@ Location: /root/paid2match/.env.example (use as template)
 - POST /bounties/<id>/cancel-refund - Cancel/refund
 - POST /bounties/stripe-webhook - Stripe webhook handler (CSRF exempt)
 - GET /bounties/recruitment - Filter by recruitment
-- GET /bounties/real-estate - Filter by real estate
-- GET /bounties/healthcare - Filter by healthcare
 - GET /bounties/api - JSON API for featured bounties
 - GET /bounties/<id>/expired - Expired bounty page
 - GET /bounties/<id>/payment-link - Payment link

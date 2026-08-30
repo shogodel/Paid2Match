@@ -321,12 +321,6 @@ msgstr ""
 #~ msgid "Recruitment"
 #~ msgstr "Recrutement"
 
-#~ msgid "Real Estate"
-#~ msgstr "Immobilier"
-
-#~ msgid "Healthcare"
-#~ msgstr "Santé"
-
 # Actions
 #~ msgid "Post a Bounty"
 #~ msgstr "Publier une bounty"
@@ -729,12 +723,6 @@ msgstr ""
 #~ msgid "Recruitment Referrals"
 #~ msgstr "Embauches recommandées"
 
-#~ msgid "Real Estate Referrals"
-#~ msgstr "Immobilier recommandé"
-
-#~ msgid "Healthcare Referrals"
-#~ msgstr "Santé recommandée"
-
 #~ msgid "My Messages"
 #~ msgstr "Mes messages"
 
@@ -798,12 +786,6 @@ msgstr ""
 #~ msgid "Recruitment-Specific Fields"
 #~ msgstr "Champs spécifiques au recrutement"
 
-#~ msgid "Real Estate-Specific Fields"
-#~ msgstr "Champs spécifiques à l'immobilier"
-
-#~ msgid "Healthcare-Specific Fields"
-#~ msgstr "Champs spécifiques à la santé"
-
 #~ msgid "Reward & Details"
 #~ msgstr "Récompense et détails"
 
@@ -851,9 +833,6 @@ msgstr ""
 
 #~ msgid "Executive"
 #~ msgstr "Dirigeant"
-
-#~ msgid "Candidate Specialty"
-#~ msgstr "Spécialité du candidat"
 
 #~ msgid "Availability"
 #~ msgstr "Disponibilité"
@@ -909,9 +888,6 @@ msgstr ""
 #~ msgid "Provider Type"
 #~ msgstr "Type de fournisseur"
 
-#~ msgid "Specialty"
-#~ msgstr "Spécialité"
-
 #~ msgid "Accepting New Patients?"
 #~ msgstr "Accepte nouveaux patients?"
 
@@ -963,9 +939,6 @@ msgstr ""
 #~ msgid "Choose your bounty type"
 #~ msgstr "Choisissez votre type de prime"
 
-#~ msgid "recruitment, real estate, healthcare, legal"
-#~ msgstr "recrutement, immobilier, santé, juridique"
-
 #~ msgid "Choose your direction"
 #~ msgstr "Choisissez votre direction"
 
@@ -989,12 +962,6 @@ msgstr ""
 
 #~ msgid "I have a candidate, pay me"
 #~ msgstr "J'ai un candidat, payez-moi"
-
-#~ msgid "Healthcare seeking talent bounties are not yet supported"
-#~ msgstr ""
-#~ "Les primes de santé recherchant des "
-#~ "talents ne sont pas encore prises "
-#~ "en charge"
 
 #~ msgid "Submit free bounties go live immediately"
 #~ msgstr "Soumettre — les primes gratuites sont publiées immédiatement"
@@ -1072,4 +1039,3 @@ msgstr ""
 
 #~ msgid "Activity"
 #~ msgstr "Activité"
-

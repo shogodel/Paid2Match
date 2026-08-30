@@ -1,13 +1,10 @@
 # Paid2Match
 
-Multi-vertical referral marketplace connecting people who need referrals with people who can provide them.
+A recruitment-only talent marketplace connecting employers with recruiters and candidates. Employers post opportunities, recruiters source and verify real people, and payment is released on verified placement.
 
-## Verticals
+## What it does
 
-- 💼 **Recruitment** - Job referrals and talent connections
-- 🏠 **Real Estate** - Property buyer/seller introductions  
-- 🏥 **Healthcare** - Doctor and specialist referrals
-- ⚖️ **Legal** - Lawyer and legal service connections
+- 💼 **Recruitment** - Employers post opportunities, recruiters source and vet candidates, and payment is released on verified placement.
 
 ## Features
 
