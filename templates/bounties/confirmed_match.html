@@ -24,17 +24,17 @@
                             <td><strong>Reward:</strong></td>
                             <td>
                                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                                    ${{ "{:,.2f}".format(bounty.reward_amount) }}
+                                    ${{ "{:,.2f}".format(bounty.reward_amount) }} CAD
                                 {% else %}
-                                    Free Bounty
+                                    Free Need
                                 {% endif %}
                             </td>
                         </tr>
                         <tr>
-                            <td><strong>Platform Fee (10%):</strong></td>
+                            <td><strong>Platform Fee{% if match.payout_amount and match.platform_fee %} ({{ "{:.0f}".format(match.platform_fee / match.payout_amount * 100) }}%){% endif %}:</strong></td>
                             <td>
                                 {% if match.platform_fee %}
-                                    ${{ "{:,.2f}".format(match.platform_fee) }}
+                                    ${{ "{:,.2f}".format(match.platform_fee) }} CAD
                                 {% else %}
                                     $0.00
                                 {% endif %}
@@ -44,7 +44,7 @@
                             <td><strong>Net Payout:</strong></td>
                             <td>
                                 {% if match.payout_amount and match.platform_fee %}
-                                    ${{ "{:,.2f}".format(match.payout_amount - match.platform_fee) }}
+                                    ${{ "{:,.2f}".format(match.payout_amount - match.platform_fee) }} CAD
                                 {% else %}
                                     $0.00
                                 {% endif %}
@@ -55,11 +55,16 @@
                             <td>{{ match.confirmed_at.strftime('%B %d, %Y at %I:%M %p') if match.confirmed_at else 'N/A' }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Status:</strong></td>
+                            <td><strong>Payout Status:</strong></td>
                             <td>
-                                <span class="badge bg-{{ 'info' if match.payout_status == 'pending_release' else 'secondary' }}">
+                                <span class="badge bg-{{ {'pending': 'warning', 'processing': 'info', 'completed': 'success', 'failed': 'danger'}.get(match.payout_status, 'secondary') }}">
                                     {{ match.payout_status|title }}
                                 </span>
+                                {% if match.payout_status == 'pending' %}
+                                <span class="small text-muted">— waiting on the referrer's payout setup</span>
+                                {% elif match.payout_status == 'failed' %}
+                                <span class="small text-muted">— an admin will resolve this</span>
+                                {% endif %}
                             </td>
                         </tr>
                     </table>
@@ -67,13 +72,61 @@
                     <p class="small text-muted">
                         Both parties' reputation scores have been updated.
                     </p>
+
+                    {# M2: rate the other party (double-blind) or file a dispute. #}
+                    <div class="d-flex gap-2 flex-wrap mb-3">
+                        {% if not my_review %}
+                        <a href="{{ url_for('bounties.rate_match', match_id=match.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-star"></i> Rate this match
+                        </a>
+                        {% else %}
+                        <span class="btn btn-outline-secondary btn-sm disabled">
+                            <i class="fas fa-star"></i> You rated this match
+                        </span>
+                        {% endif %}
+                        {% if not open_dispute %}
+                        <a href="{{ url_for('bounties.file_dispute', match_id=match.id) }}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-flag"></i> File a dispute
+                        </a>
+                        {% else %}
+                        <span class="btn btn-outline-secondary btn-sm disabled">
+                            <i class="fas fa-flag"></i> Dispute open — under admin review
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if revealed_reviews %}
+                    <hr>
+                    <h6>Reviews</h6>
+                    {% for review in revealed_reviews %}
+                    <div class="border rounded p-3 mb-2">
+                        <div class="small text-muted">
+                            {{ review.reviewer.full_name or review.reviewer.email }}
+                            reviewed {{ review.reviewee.full_name or review.reviewee.email }}
+                        </div>
+                        <div>
+                            {% set labels = review.dimension_labels %}
+                            <span class="badge bg-light text-dark">{{ labels[0] }}: {{ review.rating_primary }}/5</span>
+                            <span class="badge bg-light text-dark">{{ labels[1] }}: {{ review.rating_secondary }}/5</span>
+                        </div>
+                        {% if review.comment %}
+                        <p class="mb-0 mt-1">{{ review.comment }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% elif my_review %}
+                    <hr>
+                    <p class="small text-muted mb-0">
+                        Your review is hidden until the other side rates too (or after 14 days).
+                    </p>
+                    {% endif %}
                 </div>
                 <div class="card-footer">
                     <a href="{{ url_for('messages.inbox') }}" class="btn btn-success">
                         <i class="fas fa-envelope"></i> Message Counterpart
                     </a>
                     <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-secondary">
-                        Browse More Bounties
+                        Browse More Needs
                     </a>
                 </div>
             </div>

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Payouts - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Payouts</h1>
+    <p class="text-muted">
+        Stripe payouts move automatically once the referrer finishes
+        Connect onboarding. Use the manual form to record an Interac
+        payout you already made — it marks the payout completed and
+        notifies the referrer.
+    </p>
+    <div class="btn-group mb-3" role="group">
+        <a href="{{ url_for('admin.payouts') }}" class="btn btn-sm btn-outline-primary {% if not status %}active{% endif %}">All</a>
+        {% for s in ['pending', 'processing', 'completed', 'failed'] %}
+        <a href="{{ url_for('admin.payouts', status=s) }}" class="btn btn-sm btn-outline-primary {% if status == s %}active{% endif %}">{{ s|title }}</a>
+        {% endfor %}
+    </div>
+
+    {% if payouts %}
+    <div class="card mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Referrer</th>
+                            <th>Kind</th>
+                            <th>Need</th>
+                            <th>Reward</th>
+                            <th>Fee</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Manual payout</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payout in payouts %}
+                        <tr>
+                            <td>{{ payout.referrer.email if payout.referrer else payout.referrer_id }}</td>
+                            <td>
+                                {% if payout.kind == 'chain_share' %}
+                                <span class="badge bg-info text-dark" title="The sharer's cut of a two-level chain">Chain share</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Referral</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('bounties.confirmed_match', match_id=payout.match_id) }}">
+                                    {{ payout.match.bounty.title if payout.match and payout.match.bounty else '—' }}
+                                </a>
+                            </td>
+                            <td>${{ "{:,.2f}".format(payout.gross_amount) }}</td>
+                            <td>${{ "{:,.2f}".format(payout.platform_fee) }}</td>
+                            <td><strong>${{ "{:,.2f}".format(payout.amount) }} CAD</strong></td>
+                            <td>{{ payout.method|title }}</td>
+                            <td>
+                                <span class="badge bg-{{ {'pending': 'warning', 'processing': 'info', 'completed': 'success', 'failed': 'danger'}.get(payout.status, 'secondary') }}">
+                                    {{ payout.status|title }}
+                                </span>
+                                {% if payout.failure_reason %}
+                                <div class="small text-muted">{{ payout.failure_reason }}</div>
+                                {% endif %}
+                                {% if payout.manual_reference %}
+                                <div class="small text-muted">Ref: {{ payout.manual_reference }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ payout.created_at.strftime('%Y-%m-%d') if payout.created_at else '—' }}</td>
+                            <td>
+                                {% if payout.status in ('pending', 'failed') %}
+                                <form method="POST" action="{{ url_for('admin.record_manual_payout_route', match_id=payout.match_id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="payout_kind" value="{{ payout.kind }}">
+                                    <div class="input-group input-group-sm mb-1">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" name="amount" class="form-control" step="0.01" min="0.01"
+                                               value="{{ payout.amount }}" required>
+                                    </div>
+                                    <input type="text" name="reference" class="form-control form-control-sm mb-1"
+                                           placeholder="Reference (e.g. Interac e-Transfer)">
+                                    <button class="btn btn-sm btn-success w-100">Record manual payout</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No payouts{{ ' with status ' + status if status }}.</p>
+    {% endif %}
+
+    {% if completed_matches %}
+    <h3>Confirmed matches without a payout</h3>
+    <p class="text-muted small">Matches confirmed before payouts were tracked — record a manual payout for them here.</p>
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Need</th>
+                            <th>Referrer</th>
+                            <th>Net due</th>
+                            <th>Confirmed</th>
+                            <th>Manual payout</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in completed_matches %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('bounties.confirmed_match', match_id=match.id) }}">
+                                    {{ match.bounty.title if match.bounty else '—' }}
+                                </a>
+                            </td>
+                            <td>{{ match.hunter.email if match.hunter else match.hunter_id }}</td>
+                            <td>
+                                {% if match.payout_amount and match.platform_fee is not none %}
+                                ${{ "{:,.2f}".format(match.payout_amount - match.platform_fee) }} CAD
+                                {% else %}
+                                —
+                                {% endif %}
+                            </td>
+                            <td>{{ match.confirmed_at.strftime('%Y-%m-%d') if match.confirmed_at else '—' }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin.record_manual_payout_route', match_id=match.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <div class="input-group input-group-sm mb-1">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" name="amount" class="form-control" step="0.01" min="0.01"
+                                               value="{{ (match.payout_amount - match.platform_fee) if match.payout_amount and match.platform_fee is not none else '' }}" required>
+                                    </div>
+                                    <input type="text" name="reference" class="form-control form-control-sm mb-1"
+                                           placeholder="Reference (e.g. Interac e-Transfer)">
+                                    <button class="btn btn-sm btn-success w-100">Record manual payout</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

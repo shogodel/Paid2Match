@@ -8,7 +8,7 @@
         <div class="col-lg-8 mx-auto">
             <div class="card border-warning">
                 <div class="card-header bg-warning text-dark">
-                    <h4 class="mb-0"><i class="fas fa-clock"></i> Bounty Expired</h4>
+                    <h4 class="mb-0"><i class="fas fa-clock"></i> Referral Need Expired</h4>
                 </div>
                 <div class="card-body">
                     <h5>{{ bounty.title }}</h5>
@@ -31,7 +31,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="mb-1"><i class="fas fa-redo text-primary"></i> Repost with New Deadline</h6>
-                                    <p class="mb-1 small text-muted">Keep the same bounty active with a new deadline. Payment stays secured.</p>
+                                    <p class="mb-1 small text-muted">Keep the same need active with a new deadline. Payment stays secured.</p>
                                 </div>
                                 <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#repost-form">
                                     Choose
@@ -44,7 +44,7 @@
                                         <input type="datetime-local" name="deadline" class="form-control" required 
                                                min="{{ now_date }}">
                                     </div>
-                                    <button type="submit" class="btn btn-primary">Repost Bounty</button>
+                                    <button type="submit" class="btn btn-primary">Repost Need</button>
                                 </form>
                             </div>
                         </div>
@@ -53,7 +53,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <h6 class="mb-1"><i class="fas fa-trash text-danger"></i> Cancel & Refund</h6>
-                                    <p class="mb-1 small text-muted">Close this bounty and refund your payment. Bounty will be marked as closed.</p>
+                                    <p class="mb-1 small text-muted">Close this need and refund your payment. It will be marked as closed.</p>
                                 </div>
                                 {% if bounty.payment_status == 'secured' %}
                                 <form method="POST" action="{{ url_for('bounties.cancel_refund', id=bounty.id) }}">
@@ -65,7 +65,7 @@
                                 {% else %}
                                 <form method="POST" action="{{ url_for('bounties.cancel_refund', id=bounty.id) }}">
                                     <button type="submit" class="btn btn-outline-danger btn-sm">
-                                        Close Bounty
+                                        Close Need
                                     </button>
                                 </form>
                                 {% endif %}
@@ -75,7 +75,7 @@
                 </div>
                 <div class="card-footer">
                     <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Bounty
+                        <i class="fas fa-arrow-left"></i> Back to Need
                     </a>
                 </div>
             </div>

@@ -1,4 +1,6 @@
 """Match model."""
+from sqlalchemy.orm import validates
+
 from extensions import db
 from models import generate_uuid, utc_now
 
@@ -8,6 +10,19 @@ class Match(db.Model):
     __tablename__ = 'matches'
 
     VALID_PAYOUT_STATUSES = ['pending', 'processing', 'completed', 'failed']
+
+    # Allowed payout transitions. 'failed' can go back to 'pending' or
+    # 'processing' for a retry, or to 'completed' when an admin resolves
+    # it with a manual payout; 'completed' is terminal. The old
+    # 'pending_release' value was never in VALID_PAYOUT_STATUSES and
+    # dead-ended payouts — the @validates guard below makes it
+    # impossible to set an invalid status again.
+    PAYOUT_TRANSITIONS = {
+        'pending': {'processing', 'completed', 'failed'},
+        'processing': {'completed', 'failed'},
+        'completed': set(),
+        'failed': {'pending', 'processing', 'completed'},
+    }
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     bounty_id = db.Column(db.String(36), db.ForeignKey('bounties.id'), nullable=False, index=True)
@@ -27,6 +42,26 @@ class Match(db.Model):
 
     def __repr__(self):
         return f'<Match {self.id}>'
+
+    @validates('payout_status')
+    def _validate_payout_status(self, key, value):
+        if value is not None and value not in self.VALID_PAYOUT_STATUSES:
+            raise ValueError(
+                f"payout_status must be one of {self.VALID_PAYOUT_STATUSES}, got {value!r}"
+            )
+        return value
+
+    def set_payout_status(self, new_status):
+        """Move to new_status, enforcing the transition map. Raises
+        ValueError on an illegal transition (a bug, not user input)."""
+        if new_status not in self.VALID_PAYOUT_STATUSES:
+            raise ValueError(f"unknown payout status {new_status!r}")
+        allowed = self.PAYOUT_TRANSITIONS.get(self.payout_status or 'pending', set())
+        if new_status != self.payout_status and new_status not in allowed:
+            raise ValueError(
+                f"illegal payout transition {self.payout_status!r} -> {new_status!r}"
+            )
+        self.payout_status = new_status
 
     def to_dict(self):
         return {

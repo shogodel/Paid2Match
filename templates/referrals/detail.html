@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Referral - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    <h2>Referral</h2>
+                    <p><strong>{{ referral.referrer.full_name }}</strong> referred <strong>{{ referral.referred_name }}</strong> ({{ referral.referred_email }}) for <a href="{{ url_for('bounties.detail', id=referral.bounty.id) }}">{{ referral.bounty.title }}</a>.</p>
+                    <p><em>"{{ referral.message }}"</em></p>
+                    <p>Status: <span class="badge bg-{{ 'success' if referral.status == 'completed' else 'primary' if referral.status == 'consented' else 'secondary' }}">{{ referral.status|title }}</span></p>
+                    <p class="text-muted small">Invited {{ referral.invited_at.strftime('%b %d, %Y %I:%M %p') }}
+                    {% if referral.consented_at %} &middot; Confirmed {{ referral.consented_at.strftime('%b %d, %Y') }}{% endif %}
+                    {% if referral.completed_at %} &middot; Completed {{ referral.completed_at.strftime('%b %d, %Y') }}{% endif %}</p>
+                    {% if referral.status == 'invited' and current_user.id == referral.referrer_id %}
+                    <div class="alert alert-info">
+                        <strong>Invite link</strong> — share it with {{ referral.referred_name }} directly if the email didn't reach them:
+                        <div class="mt-1"><code>{{ invite_url }}</code></div>
+                    </div>
+                    {% endif %}
+                    {% if referral.pitch %}
+                    <p>Referral status: <span class="badge bg-secondary">{{ referral.pitch.status|title }}</span></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

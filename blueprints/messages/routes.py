@@ -6,6 +6,7 @@ from sqlalchemy import or_, desc
 from extensions import db, get_or_404
 from models.message import Message
 from models.user import User
+from utils.notifications import notify
 
 messages_bp = Blueprint('messages', __name__)
 
@@ -52,7 +53,17 @@ def compose():
         )
         db.session.add(message)
         db.session.commit()
-        
+
+        # M1: notify the recipient (in-app + email — a key event).
+        notify(
+            recipient.id, 'message_new',
+            f'New message from {current_user.full_name}',
+            (content or '')[:200],
+            actor_id=current_user.id,
+            link_url=url_for('messages.read', message_id=message.id),
+        )
+        db.session.commit()
+
         flash('Message sent!', 'success')
         return redirect(url_for('messages.sent'))
     
@@ -95,7 +106,17 @@ def reply(message_id):
     )
     db.session.add(reply_msg)
     db.session.commit()
-    
+
+    # M1: notify the original sender (in-app + email).
+    notify(
+        original.sender_id, 'message_new',
+        f'{current_user.full_name} replied to your message',
+        (content or '')[:200],
+        actor_id=current_user.id,
+        link_url=url_for('messages.read', message_id=reply_msg.id),
+    )
+    db.session.commit()
+
     flash('Reply sent!', 'success')
     return redirect(url_for('messages.inbox'))
 

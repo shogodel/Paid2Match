@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Paid2Match Pro - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Paid2Match Pro — $9/month</h2>
+    <p class="text-muted">Advanced analytics for people who live on their referrals. The basics stay free for everyone — Pro adds the depth.</p>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <ul>
+                <li><strong>Members reached</strong> — unique viewers per post, not just raw views</li>
+                <li><strong>Engagement rate</strong> — engagements ÷ reached, with the 1–3–5% benchmarks</li>
+                <li><strong>Profile views, 90 days</strong> — with viewer names (only viewers who opted in)</li>
+                <li><strong>Search appearances</strong> — how often you appeared in people search, and for what</li>
+                <li><strong>Audience demographics</strong> — follower breakdown by location and role type</li>
+                <li><strong>Referral funnel</strong> — need views → referrals → confirms → paid</li>
+                <li><strong>Bump performance</strong> — what each bump and boost actually earned</li>
+                <li><strong>Best time to post</strong> — when your audience engages most</li>
+                <li><strong>CSV export</strong> — download it all</li>
+            </ul>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if founding_free %}
+                    <h5>Pro is free for you</h5>
+                    <p class="text-muted small">Founding referrers get Pro free for 12 months.</p>
+                    <a href="{{ url_for('social.analytics') }}" class="btn btn-primary">See my Pro analytics</a>
+                    {% elif is_pro %}
+                    <h5>You have Pro</h5>
+                    {% if subscription and subscription.cancel_at_period_end %}
+                    <p class="text-muted small">Set to cancel at the end of the current period{% if subscription.current_period_end %} ({{ subscription.current_period_end.strftime('%b %d, %Y') }}){% endif %}.</p>
+                    {% else %}
+                    <p class="text-muted small">Active{% if subscription and subscription.current_period_end %} — renews {{ subscription.current_period_end.strftime('%b %d, %Y') }}{% endif %}.</p>
+                    <form method="POST" action="{{ url_for('payments.cancel_pro') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Cancel at period end</button>
+                    </form>
+                    {% endif %}
+                    <a href="{{ url_for('social.analytics') }}" class="btn btn-primary mt-2">See my Pro analytics</a>
+                    {% else %}
+                    <h5>$9/month</h5>
+                    <p class="text-muted small">Cancel anytime — access runs to the end of the paid month.</p>
+                    <form method="POST" action="{{ url_for('payments.subscribe_pro') }}">
+                        <button type="submit" class="btn btn-primary" {{ 'disabled' if not payments_enabled }}>Subscribe to Pro</button>
+                    </form>
+                    {% if not payments_enabled %}
+                    <p class="text-muted small mt-2">Payments are currently unavailable.</p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

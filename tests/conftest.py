@@ -59,7 +59,8 @@ def sample_user(app):
             full_name='Test User',
             password_hash=generate_password_hash('TestPass123!'),
             role='user',
-            is_active=True
+            is_active=True,
+            email_verified=True
         )
         db.session.add(user)
         db.session.flush()
@@ -85,7 +86,8 @@ def sample_admin(app):
             full_name='Admin User',
             password_hash=generate_password_hash('AdminPass123!'),
             role='admin',
-            is_active=True
+            is_active=True,
+            email_verified=True
         )
         db.session.add(user)
         db.session.commit()
@@ -146,7 +148,8 @@ def sample_hunter(app):
             full_name='Hunter User',
             password_hash=generate_password_hash('HunterPass123!'),
             role='user',
-            is_active=True
+            is_active=True,
+            email_verified=True
         )
         db.session.add(user)
         db.session.flush()
@@ -221,3 +224,112 @@ def logged_in_admin(client, sample_admin):
         'password': 'AdminPass123!'
     })
     return client
+
+
+# ---------------------------------------------------------------- M1 fixtures
+
+
+@pytest.fixture
+def login_as():
+    """Return a helper to log a client in as any user. Logs out first so
+    it works when switching between users mid-test."""
+    def _login(client, email, password):
+        client.get('/auth/logout')
+        return client.post('/auth/login', data={
+            'email': email,
+            'password': password,
+        })
+    return _login
+
+
+@pytest.fixture
+def second_user(app):
+    """A second user (Montreal) with a profile, for follow/feed tests."""
+    from werkzeug.security import generate_password_hash
+    with app.app_context():
+        user = User(
+            email='second@example.com',
+            full_name='Second User',
+            password_hash=generate_password_hash('SecondPass123!'),
+            role='user',
+            is_active=True,
+            email_verified=True
+        )
+        db.session.add(user)
+        db.session.flush()
+        profile = Profile(
+            user_id=user.id,
+            profile_type='independent',
+            display_name='Second User',
+            location='Montreal, QC',
+            skills='Python, Sales',
+            reputation_score=0
+        )
+        db.session.add(profile)
+        db.session.commit()
+        db.session.refresh(user)
+        return user
+
+
+@pytest.fixture
+def third_user(app):
+    """A third user (Laval) with a profile, for referral/moderation tests."""
+    from werkzeug.security import generate_password_hash
+    with app.app_context():
+        user = User(
+            email='third@example.com',
+            full_name='Third User',
+            password_hash=generate_password_hash('ThirdPass123!'),
+            role='user',
+            is_active=True,
+            email_verified=True
+        )
+        db.session.add(user)
+        db.session.flush()
+        profile = Profile(
+            user_id=user.id,
+            profile_type='worker',
+            display_name='Third User',
+            location='Laval, QC',
+            skills='Recruiting',
+            reputation_score=0
+        )
+        db.session.add(profile)
+        db.session.commit()
+        db.session.refresh(user)
+        return user
+
+
+@pytest.fixture
+def sample_post(app, sample_user):
+    """A plain update post by the sample user."""
+    from models.post import Post
+    with app.app_context():
+        post = Post(
+            author_id=sample_user.id,
+            post_type='update',
+            body='Hello network — first post here.',
+        )
+        db.session.add(post)
+        db.session.commit()
+        db.session.refresh(post)
+        return post
+
+
+@pytest.fixture
+def sample_moderator(app):
+    """A moderator user (role exists but was unchecked before M1)."""
+    from werkzeug.security import generate_password_hash
+    with app.app_context():
+        user = User(
+            email='mod@example.com',
+            full_name='Mod User',
+            password_hash=generate_password_hash('ModPass123!'),
+            role='moderator',
+            is_active=True,
+            email_verified=True
+        )
+        db.session.add(user)
+        db.session.commit()
+        db.session.refresh(user)
+        return user

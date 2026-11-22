@@ -10,8 +10,36 @@ class Bounty(db.Model):
     """Job/recruitment bounty model."""
     __tablename__ = 'bounties'
 
-    # Recruitment-only platform: only 'recruitment' is a valid type.
-    VALID_BOUNTY_TYPES = ['recruitment']
+    # M4: two verticals are live — recruitment (v1) and services
+    # referrals (M4). Other types stay locked until a later milestone.
+    VALID_BOUNTY_TYPES = ['recruitment', 'services']
+    BOUNTY_TYPE_LABELS = {
+        'recruitment': 'Recruitment',
+        'services': 'Services',
+    }
+    # Category system (M4): each vertical has its own categories. A
+    # need's category must belong to its vertical (enforced in the
+    # post/edit routes, not by the model — the model does not know
+    # which vertical a category belongs to at validation time).
+    CATEGORIES = {
+        'recruitment': {
+            'trades': 'Skilled trades',
+            'hospitality': 'Hospitality & food',
+            'healthcare': 'Healthcare',
+            'office_admin': 'Office & admin',
+            'sales': 'Sales',
+            'tech': 'Tech',
+            'other': 'Other',
+        },
+        'services': {
+            'home_services': 'Home services',
+            'creative_design': 'Creative & design',
+            'professional': 'Professional services',
+            'wellness': 'Health & wellness',
+            'tech_services': 'Tech services',
+            'other': 'Other',
+        },
+    }
     VALID_STATUSES = ['pending', 'open', 'funded', 'closed', 'completed', 'expired']
     VALID_PAYMENT_STATUSES = ['unsecured', 'secured', 'released', 'refunded']
     VALID_PAYER_TYPES = ['poster', 'third_party']
@@ -35,6 +63,12 @@ class Bounty(db.Model):
     description = db.Column(db.Text, nullable=False)
     bounty_type = db.Column(db.String(30), nullable=False)
     bounty_direction = db.Column(db.String(30), nullable=False, default='seeking_opportunity')
+    # M4: category within the vertical (see CATEGORIES above).
+    category = db.Column(db.String(30), nullable=True)
+    # M4: skills the poster is looking for (comma-separated free text).
+    # The post form collected this field from day one but it was never
+    # saved — Bounty had no column for it (audit §3.10).
+    skills = db.Column(db.Text, nullable=True)
     reward_amount = db.Column(db.Numeric(12, 2), nullable=True)
     transaction_fee = db.Column(db.Numeric(12, 2), nullable=True)
     status = db.Column(db.String(20), nullable=False, default='open')
@@ -61,6 +95,27 @@ class Bounty(db.Model):
         return f'<Bounty {self.title}>'
 
     @property
+    def type_label(self):
+        """Human label for the vertical ('Recruitment', 'Services')."""
+        return self.BOUNTY_TYPE_LABELS.get(self.bounty_type, self.bounty_type)
+
+    @property
+    def category_label(self):
+        """Human label for the category, or None when uncategorized."""
+        if not self.category:
+            return None
+        return self.CATEGORIES.get(self.bounty_type, {}).get(
+            self.category, self.category
+        )
+
+    @property
+    def skill_list(self):
+        """The skills field as a list of stripped, non-empty names."""
+        if not self.skills:
+            return []
+        return [s.strip() for s in self.skills.split(',') if s.strip()]
+
+    @property
     def display_name(self):
         dir_label = self.VALID_DIRECTIONS_DISPLAY.get(self.bounty_direction, self.bounty_direction)
         amount_str = f"${float(self.reward_amount):,.0f}" if self.reward_amount and self.reward_amount > 0 else "Free"
@@ -69,6 +124,30 @@ class Bounty(db.Model):
     @property
     def is_free_bounty(self):
         return not self.reward_amount or self.reward_amount == 0
+
+    @property
+    def is_publicly_visible(self):
+        """True if this bounty may appear on the public board.
+
+        A paid bounty is only visible once its payment is secured; free
+        ($0 / no-reward) bounties are always visible.
+        """
+        return (
+            self.payment_status == 'secured'
+            or self.is_free
+            or self.is_free_bounty
+        )
+
+    @classmethod
+    def publicly_visible_filter(cls):
+        """SQLAlchemy criterion matching is_publicly_visible, for board queries."""
+        from sqlalchemy import or_
+        return or_(
+            cls.payment_status == 'secured',
+            cls.is_free == True,  # noqa: E712 (SQLAlchemy boolean comparison)
+            cls.reward_amount.is_(None),
+            cls.reward_amount <= 0,
+        )
 
     @property
     def payer_name(self):
@@ -188,6 +267,8 @@ class Bounty(db.Model):
             'description': self.description,
             'bounty_type': self.bounty_type,
             'bounty_direction': self.bounty_direction,
+            'category': self.category,
+            'skills': self.skills,
             'reward_amount': float(self.reward_amount) if self.reward_amount else None,
             'is_free': self.is_free_bounty,
             'status': self.status,

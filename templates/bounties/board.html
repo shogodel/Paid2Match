@@ -27,11 +27,33 @@
             <form method="GET" class="row g-3">
                 <input type="hidden" name="urgent" value="{{ request.args.get('urgent', '') }}">
                 <div class="col-md-3">
-                    <label class="form-label">{{ _('Bounty Type') }}</label>
+                    <label class="form-label">{{ _('Search') }}</label>
+                    <input type="text" name="q" class="form-control" value="{{ search_q or '' }}" placeholder="Keyword…">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ _('Type') }}</label>
                     <select name="bounty_type" class="form-select">
                         <option value="">{{ _('All Opportunities') }}</option>
                         <option value="recruitment" {% if bounty_type == 'recruitment' %}selected{% endif %}>{{ _('Recruitment') }}</option>
+                        <option value="services" {% if bounty_type == 'services' %}selected{% endif %}>{{ _('Services') }}</option>
                     </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ _('Category') }}</label>
+                    <select name="category" class="form-select">
+                        <option value="">{{ _('All categories') }}</option>
+                        {% for vertical, cats in categories.items() %}
+                        <optgroup label="{{ vertical|title }}">
+                            {% for key, label in cats.items() %}
+                            <option value="{{ key }}" {% if category == key %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ _('Skill') }}</label>
+                    <input type="text" name="skill" class="form-control" value="{{ skill or '' }}" placeholder="e.g. Python">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ _('Location') }}</label>
@@ -61,8 +83,11 @@
                     <div class="card-body">
                         <div class="d-flex gap-1 mb-2 flex-wrap">
                             <span class="badge bg-primary">
-                                {{ bounty.bounty_type }}
+                                {{ bounty.type_label }}
                             </span>
+                            {% if bounty.category_label %}
+                            <span class="badge bg-secondary">{{ bounty.category_label }}</span>
+                            {% endif %}
                             {% for badge_info in bounty.upgrade_badges %}
                             <span class="badge {{ badge_info.badge_class }}">{{ badge_info.badge }}</span>
                             {% endfor %}
@@ -110,7 +135,7 @@
     
     {% else %}
         <div class="text-center py-5">
-            <h3>No bounties found</h3>
+            <h3>No referral needs found</h3>
             <p>Try adjusting your filters or check back later.</p>
         </div>
     {% endif %}

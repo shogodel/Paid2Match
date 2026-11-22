@@ -11,7 +11,9 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'fa6ff45fcb16'
-down_revision = None
+# M2: the chain now starts at the baseline migration, which creates the
+# tables this migration used to assume already existed.
+down_revision = 'baseline_create_all'
 branch_labels = None
 depends_on = None
 

@@ -104,6 +104,29 @@
     </div>
     {% endif %}
 
+    {% if top_helpers %}
+    <div class="row mt-5">
+        <div class="col">
+            <h3 class="mb-3">{{ _('Top Helpers') }}</h3>
+            <p class="text-muted small">{{ _('People who completed the most referrals — the heart of the network.') }}</p>
+            <div class="row g-4">
+                {% for profile in top_helpers %}
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title"><a href="{{ url_for('profile.public_profile', user_id=profile.user_id) }}" class="text-decoration-none">{{ profile.display_name or profile.user.full_name }}</a></h5>
+                            <p class="text-muted small mb-1">{{ profile.headline or '' }}</p>
+                            <span class="badge bg-success">{{ profile.karma or 0 }} karma</span>
+                            <span class="badge bg-info">Helped {{ profile.helped_count or 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row mt-5">
         <div class="col-lg-8 mx-auto">
             <div class="card bg-light">
@@ -112,13 +135,13 @@
                     <div class="row g-4 mt-2 text-start">
                         <div class="col-md-4">
                             <div class="fs-3 mb-2">1</div>
-                            <strong>{{ _('Post a Bounty') }}</strong>
+                            <strong>{{ _('Post a Referral Need') }}</strong>
                             <p class="small text-muted mb-0">{{ _('Describe what you need and set your reward') }}</p>
                         </div>
                         <div class="col-md-4">
                             <div class="fs-3 mb-2">2</div>
-                            <strong>{{ _('Receive Pitches') }}</strong>
-                            <p class="small text-muted mb-0">{{ _('Hunters submit pitches with teasers') }}</p>
+                            <strong>{{ _('Receive Referrals') }}</strong>
+                            <p class="small text-muted mb-0">{{ _('Referrers submit referrals with teasers') }}</p>
                         </div>
                         <div class="col-md-4">
                             <div class="fs-3 mb-2">3</div>

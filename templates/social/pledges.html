@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Human-reviewed hiring pledge - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Human-reviewed hiring pledge</h2>
+    <p class="text-muted">{{ pledge_text }}</p>
+    <p>Every employer on this register promises two things: <strong>no AI screening</strong> of candidates, and a <strong>human response to every referral within 5 business days</strong>. If a pledger stops answering, their pledge shows as suspended — and the platform publishes its own compliance rate, so the promise is checkable.</p>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>Platform-wide no-ghosting compliance (last 30 days)</h5>
+            {% if platform_rate is not none %}
+            <div class="fs-3">{{ (platform_rate * 100)|round(0) }}%</div>
+            <p class="text-muted small mb-0">{{ platform_on_time }} of {{ platform_due }} referrals answered within 5 business days.</p>
+            {% else %}
+            <p class="text-muted mb-0">No referrals were due an answer in the last 30 days yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if current_user.is_authenticated and not my_pledge %}
+    <a href="{{ url_for('social.new_pledge') }}" class="btn btn-primary mb-4">Pledge for my company</a>
+    {% endif %}
+
+    <h4>Pledged employers ({{ entries|length }})</h4>
+    {% if entries %}
+    <table class="table">
+        <thead><tr><th>Company</th><th>Pledged</th><th>Status</th><th>No-ghosting (30 days)</th></tr></thead>
+        <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>
+                {% if entry.pledge.website %}<a href="{{ entry.pledge.website }}" target="_blank" rel="noopener">{{ entry.pledge.company_name }}</a>{% else %}{{ entry.pledge.company_name }}{% endif %}
+                <div class="text-muted small">{{ entry.pledge.user.full_name }}</div>
+            </td>
+            <td>{{ entry.pledge.created_at.strftime('%b %d, %Y') if entry.pledge.created_at }}</td>
+            <td>
+                {% if entry.status == 'active' %}<span class="badge bg-success">Active</span>
+                {% elif entry.status == 'suspended' %}<span class="badge bg-warning text-dark">Suspended — response overdue</span>
+                {% else %}<span class="badge bg-secondary">{{ entry.status|title }}</span>{% endif %}
+            </td>
+            <td>
+                {% if entry.compliance_rate is not none %}
+                {{ (entry.compliance_rate * 100)|round(0) }}% ({{ entry.compliance_due }} due)
+                {% else %}
+                <span class="text-muted">No referrals due yet</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No employers have pledged yet — be the first.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Review queue - Admin{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Review queue</h2>
+    <p class="text-muted">User reports, newest first. Acting on a report hides the content and costs its author 10 trust points. Reports open longer than 24 hours are overdue (review SLA) and sort first.</p>
+    {% if overdue_count %}
+    <div class="alert alert-danger">{{ overdue_count }} report{{ 's' if overdue_count > 1 }} overdue — older than 24h, still unreviewed.</div>
+    {% endif %}
+    <div class="mb-3">
+        <a href="{{ url_for('admin.reports', status='open') }}" class="btn btn-sm {{ 'btn-primary' if status == 'open' else 'btn-outline-primary' }}">Open ({{ open_count }})</a>
+        <a href="{{ url_for('admin.reports', status='dismissed') }}" class="btn btn-sm {{ 'btn-primary' if status == 'dismissed' else 'btn-outline-primary' }}">Dismissed</a>
+        <a href="{{ url_for('admin.reports', status='actioned') }}" class="btn btn-sm {{ 'btn-primary' if status == 'actioned' else 'btn-outline-primary' }}">Actioned</a>
+    </div>
+    {% if reports %}
+        {% for report in reports %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <span class="badge bg-warning text-dark">{{ report.reason|title }}</span>
+                        <span class="badge bg-secondary">{{ report.target_type|title }}</span>
+                        {% if report.weight > 1 %}<span class="badge bg-info">Weight x{{ report.weight }}</span>{% endif %}
+                        <span class="badge bg-{{ 'primary' if report.status == 'open' else 'secondary' }}">{{ report.status|title }}</span>
+                        {% if report.is_overdue %}<span class="badge bg-danger">Overdue</span>{% endif %}
+                    </div>
+                    <small class="text-muted">{{ report.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                </div>
+                <p class="mb-1 mt-2">Reported by {{ report.reporter.full_name }} — target: {{ report.target_id }}</p>
+                {% if report.details %}<p class="mb-1"><em>"{{ report.details }}"</em></p>{% endif %}
+                {% if report.target_type == 'post' %}
+                <a href="{{ url_for('social.post_detail', post_id=report.target_id) }}" class="btn btn-sm btn-link p-0">View post</a>
+                {% elif report.target_type == 'profile' %}
+                <a href="{{ url_for('profile.public_profile', user_id=report.target_id) }}" class="btn btn-sm btn-link p-0">View profile</a>
+                {% endif %}
+                {% if report.status == 'open' and can_act %}
+                <div class="d-flex gap-2 mt-2">
+                    <form method="POST" action="{{ url_for('admin.resolve_report', id=report.id) }}">
+                        <input type="hidden" name="action" value="dismiss">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Dismiss</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.resolve_report', id=report.id) }}">
+                        <input type="hidden" name="action" value="hide">
+                        <button type="submit" class="btn btn-sm btn-warning">Hide content + uphold</button>
+                    </form>
+                </div>
+                {% endif %}
+                {% if report.status != 'open' and report.reviewed_by %}
+                <small class="text-muted">Reviewed by {{ report.reviewed_by.full_name }} on {{ report.reviewed_at.strftime('%b %d, %Y') if report.reviewed_at }}</small>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No {{ status }} reports.</p>
+    {% endif %}
+</div>
+{% endblock %}

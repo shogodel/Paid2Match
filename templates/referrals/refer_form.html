@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Refer someone - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <h2>Refer someone for "{{ bounty.title }}"</h2>
+            <p class="text-muted">
+                {% if bounty.reward_amount and bounty.reward_amount > 0 %}
+                Bounty: ${{ "{:,.0f}".format(bounty.reward_amount) }} if your referral is the one who gets hired.
+                {% else %}
+                Community referral — no bounty. You earn karma, trust, and a "helped" credit instead.
+                {% endif %}
+                The person you refer will be asked to confirm before the poster sees anything — nobody is referred without knowing.
+            </p>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                {% if share_id %}
+                <input type="hidden" name="share_id" value="{{ share_id }}">
+                {% endif %}
+                <div class="mb-3">
+                    {{ form.connection_id.label(class="form-label") }}
+                    {{ form.connection_id(class="form-select") }}
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.referred_name.label(class="form-label") }}
+                        {{ form.referred_name(class="form-control") }}
+                        {% for e in form.referred_name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.referred_email.label(class="form-label") }}
+                        {{ form.referred_email(class="form-control") }}
+                        {% for e in form.referred_email.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form.message.label(class="form-label") }}
+                    {{ form.message(class="form-control", rows=4) }}
+                    {% for e in form.message.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    <div class="form-text">50–1000 characters. This is what the poster reads once the person confirms.</div>
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-link">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

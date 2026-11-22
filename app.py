@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template, redirect, url_for, session, request
 from flask_login import current_user
 
-from extensions import db, login_manager, migrate, bcrypt, babel, csrf, get_or_404
+from extensions import db, login_manager, migrate, bcrypt, babel, mail, csrf, get_or_404
 from models import Profile
 
 
@@ -30,6 +30,7 @@ def create_app(config_name: str = None) -> Flask:
     login_manager.init_app(app)
     migrate.init_app(app, db)
     bcrypt.init_app(app)
+    mail.init_app(app)
     csrf.init_app(app)
     
     # Exempt Stripe webhook from CSRF protection (uses signature verification)
@@ -85,12 +86,36 @@ def create_app(config_name: str = None) -> Flask:
     from blueprints.bounties import bounties_bp
     from blueprints.messages import messages_bp
     from blueprints.admin import admin_bp
+    from blueprints.social import social_bp
+    from blueprints.referrals import referrals_bp
+    from blueprints.payments import payments_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(bounties_bp, url_prefix='/bounties')
     app.register_blueprint(messages_bp, url_prefix='/messages')
     app.register_blueprint(profile_bp, url_prefix='/profile')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(social_bp, url_prefix='/social')
+    app.register_blueprint(referrals_bp, url_prefix='/referrals')
+    app.register_blueprint(payments_bp)
+
+    # M1: unread notification count for the navbar badge.
+    @app.context_processor
+    def inject_notifications():
+        from utils.notifications import unread_count
+        count = unread_count(current_user.id) if current_user.is_authenticated else 0
+        return {'unread_notifications': count}
+
+    # M3: recurring-bump runner — apply due $5/month auto-bumps. Run
+    # on a schedule on the server (e.g. daily cron: flask
+    # run-recurring-bumps). The admin panel has a manual button too.
+    @app.cli.command('run-recurring-bumps')
+    def run_recurring_bumps_command():
+        from utils.bumps import run_recurring_bumps
+        results = run_recurring_bumps()
+        db.session.commit()
+        applied = sum(1 for _id, ok, _msg in results if ok)
+        print(f'{applied} recurring bumps applied, {len(results) - applied} deferred.')
 
     # Language switcher route
     @app.route('/set-language/<lang>')
@@ -135,8 +160,19 @@ def create_app(config_name: str = None) -> Flask:
             }
         
         stats = app.config[cache_key]
-        featured = db.session.query(Bounty).filter_by(status='open').order_by(
+        featured = db.session.query(Bounty).filter(
+            Bounty.status == 'open',
+            Bounty.publicly_visible_filter()
+        ).order_by(
             Bounty.created_at.desc()
+        ).limit(3).all()
+
+        # M1: Top Helpers — the 3 highest-karma profiles with at least one
+        # completed referral (helped_count > 0).
+        top_helpers = db.session.query(Profile).filter(
+            Profile.helped_count > 0
+        ).order_by(
+            Profile.karma.desc()
         ).limit(3).all()
 
         return render_template('index.html',
@@ -144,7 +180,8 @@ def create_app(config_name: str = None) -> Flask:
                           total_bounties=stats['total_bounties'],
                           total_rewards=stats['total_rewards'],
                           successful_matches=stats['successful_matches'],
-                          featured=featured)
+                          featured=featured,
+                          top_helpers=top_helpers)
 
     # Error handlers
     @app.errorhandler(404)

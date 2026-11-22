@@ -26,13 +26,42 @@
                 {% endif %}
             </div>
             <div class="profile-info">
-                <h1 class="profile-name">{{ profile.display_name or 'User' }}</h1>
+                <h1 class="profile-name">{{ profile.display_name or 'User' }}{% if profile.verified %} <i class="fas fa-badge-check text-primary" title="Verified"></i>{% endif %}</h1>
                 <p class="profile-headline">{{ profile.headline or 'No headline added yet' }}</p>
                 {% if profile.location %}
                     <p class="profile-location"><i class="fas fa-map-marker-alt me-2"></i>{{ profile.location }}</p>
                 {% endif %}
                 {% if profile.company_name %}
                     <p class="profile-location"><i class="fas fa-building me-2"></i>{{ profile.company_name }}</p>
+                {% endif %}
+                <p class="profile-location">
+                    <span class="badge bg-primary">Trust: {{ trust_level }} ({{ trust_score }}/100)</span>
+                    <span class="badge bg-success">{{ profile.karma or 0 }} karma</span>
+                    <span class="badge bg-info">Helped {{ profile.helped_count or 0 }}</span>
+                    {% if verified_elsewhere %}<span class="badge bg-dark" title="Two or more linked accounts verified elsewhere">Verified elsewhere</span>{% endif %}
+                    {% if pledge_status == 'active' %}<span class="badge bg-success" title="Pledged human-reviewed hiring — no AI screening, human response within 5 business days"><a href="{{ url_for('social.pledges') }}" class="text-white text-decoration-none">Human-reviewed hiring pledge</a></span>{% elif pledge_status == 'suspended' %}<span class="badge bg-warning text-dark" title="Pledge suspended — a referral response is overdue">Pledge suspended</span>{% endif %}
+                </p>
+                <p class="profile-location">
+                    <a href="{{ url_for('social.followers', user_id=user.id) }}">{{ followers_count }} followers</a>
+                    &middot;
+                    <a href="{{ url_for('social.following', user_id=user.id) }}">{{ following_count }} following</a>
+                </p>
+                {% if current_user.is_authenticated and current_user.id != user.id %}
+                <div class="d-flex gap-2 mt-2">
+                    {% if is_following %}
+                    <form method="POST" action="{{ url_for('social.unfollow', user_id=user.id) }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Unfollow</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('social.follow', user_id=user.id) }}">
+                        <button type="submit" class="btn btn-sm btn-primary">Follow</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('social.block_user', user_id=user.id) }}">
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Block</button>
+                    </form>
+                    <a href="{{ url_for('social.report', target_type='profile', target_id=user.id) }}" class="btn btn-sm btn-outline-danger">Report</a>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -50,7 +79,7 @@
                     <div class="stat-item">
                         <i class="fas fa-paper-plane fa-2x mb-2 text-primary"></i>
                         <span class="stat-number">{{ pitches_count }}</span>
-                        <span class="stat-label">Pitches</span>
+                        <span class="stat-label">Referrals</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-handshake fa-2x mb-2 text-success"></i>
@@ -63,6 +92,68 @@
                         <span class="stat-label">Reputation</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Reviews Card (M2): only revealed reviews are shown. -->
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-star me-2"></i>Reviews</h5>
+                {% if ratings_count %}
+                <p>
+                    <strong>{{ ratings_avg }}/5</strong>
+                    <span class="text-muted">from {{ ratings_count }} review{{ 's' if ratings_count > 1 }}</span>
+                </p>
+                {% for review in reviews %}
+                <div class="border rounded p-2 mb-2">
+                    <div class="small text-muted">
+                        {{ review.reviewer.full_name or review.reviewer.email }}
+                        {% if review.created_at %}· {{ review.created_at.strftime('%Y-%m-%d') }}{% endif %}
+                    </div>
+                    <div>
+                        {% set labels = review.dimension_labels %}
+                        <span class="badge bg-light text-dark">{{ labels[0] }}: {{ review.rating_primary }}/5</span>
+                        <span class="badge bg-light text-dark">{{ labels[1] }}: {{ review.rating_secondary }}/5</span>
+                    </div>
+                    {% if review.comment %}
+                    <p class="small mb-0 mt-1">{{ review.comment }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted small mb-0">No reviews yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Endorsements Card (M3): endorsements from Trusted+ members weigh more. -->
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-thumbs-up me-2"></i>Endorsements</h5>
+                {% if endorsements %}
+                {% for endorsement in endorsements %}
+                <div class="border rounded p-2 mb-2">
+                    <div class="small text-muted">
+                        <a href="{{ url_for('profile.public_profile', user_id=endorsement.endorser.id) }}">{{ endorsement.endorser.full_name }}</a>
+                        {% if endorsement.endorser_trust_level %}· {{ endorsement.endorser_trust_level }}{% endif %}
+                        {% if endorsement.created_at %}· {{ endorsement.created_at.strftime('%Y-%m-%d') }}{% endif %}
+                    </div>
+                    <div><strong>{{ endorsement.skill }}</strong></div>
+                    {% if endorsement.comment %}<p class="small mb-0">{{ endorsement.comment }}</p>{% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted small mb-2">No endorsements yet.</p>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.id != user.id and endorse_form %}
+                <form method="POST" action="{{ url_for('profile.endorse_user', user_id=user.id) }}">
+                    {{ endorse_form.hidden_tag() }}
+                    <div class="mb-2">
+                        {{ endorse_form.skill(class="form-control form-control-sm", placeholder="Skill (e.g. JavaScript)") }}
+                    </div>
+                    <div class="mb-2">
+                        {{ endorse_form.comment(class="form-control form-control-sm", placeholder="A sentence about working with them (optional)") }}
+                    </div>
+                    {{ endorse_form.submit(class="btn btn-sm btn-outline-primary") }}
+                    <p class="text-muted small mt-1 mb-0">Endorsing needs 250 karma. Trusted+ endorsements weigh more.</p>
+                </form>
+                {% endif %}
             </div>
 
             <!-- Skills Card -->
@@ -125,6 +216,15 @@
             <!-- Links Card -->
             <div class="profile-card">
                 <h5 class="profile-card-title"><i class="fas fa-link me-2"></i>Links</h5>
+                {% if linked_accounts %}
+                    {% for account in linked_accounts %}
+                    <div class="mb-2">
+                        <i class="fas fa-badge-check me-2 text-success" title="Verified linked account"></i>
+                        <a href="{{ account.url }}" target="_blank" rel="noopener">{{ account.platform|title }}{% if account.handle %} — {{ account.handle }}{% endif %}</a>
+                        <span class="badge bg-success">Verified</span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
                 {% if profile.website %}
                     <div class="mb-2">
                         <i class="fas fa-globe me-2 text-primary"></i>
@@ -143,7 +243,31 @@
                         <a href="{{ profile.github_url }}" target="_blank">GitHub Profile</a>
                     </div>
                 {% endif %}
-                {% if not profile.website and not profile.linkedin_url and not profile.github_url %}
+                {% if profile.instagram_url %}
+                    <div class="mb-2">
+                        <i class="fab fa-instagram me-2 text-primary"></i>
+                        <a href="{{ profile.instagram_url }}" target="_blank">Instagram</a>
+                    </div>
+                {% endif %}
+                {% if profile.facebook_url %}
+                    <div class="mb-2">
+                        <i class="fab fa-facebook me-2 text-primary"></i>
+                        <a href="{{ profile.facebook_url }}" target="_blank">Facebook</a>
+                    </div>
+                {% endif %}
+                {% if profile.tiktok_url %}
+                    <div class="mb-2">
+                        <i class="fab fa-tiktok me-2 text-primary"></i>
+                        <a href="{{ profile.tiktok_url }}" target="_blank">TikTok</a>
+                    </div>
+                {% endif %}
+                {% if profile.youtube_url %}
+                    <div class="mb-2">
+                        <i class="fab fa-youtube me-2 text-primary"></i>
+                        <a href="{{ profile.youtube_url }}" target="_blank">YouTube</a>
+                    </div>
+                {% endif %}
+                {% if not profile.website and not profile.linkedin_url and not profile.github_url and not profile.instagram_url and not profile.facebook_url and not profile.tiktok_url and not profile.youtube_url and not linked_accounts %}
                     <p class="text-muted mb-0">No links added.</p>
                 {% endif %}
             </div>

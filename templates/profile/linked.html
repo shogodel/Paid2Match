@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Linked accounts - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Linked accounts</h2>
+    <p class="text-muted">Verify your accounts elsewhere — they prove you're a real person and add to your trust score. Two verified links earn +5 trust points and a "Verified elsewhere" marker on your profile. Verification expires after 90 days; come back to re-verify. Follower counts are never used.</p>
+
+    {% for card in cards %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <h5 class="mb-1">{{ card.platform|title }}</h5>
+                {% if card.account %}
+                    {% if card.status == 'verified' %}
+                    <span class="badge bg-success">Verified{% if card.expires_at %} until {{ card.expires_at.strftime('%b %d, %Y') }}{% endif %}</span>
+                    {% elif card.status == 'expired' %}
+                    <span class="badge bg-warning text-dark">Expired — re-verify</span>
+                    {% elif card.status == 'pending' %}
+                    <span class="badge bg-secondary">Pending verification</span>
+                    {% elif card.status == 'rejected' %}
+                    <span class="badge bg-danger">Rejected</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% if card.account %}
+            <p class="mb-2">
+                <a href="{{ card.account.url }}" target="_blank" rel="noopener">{{ card.account.handle or card.account.url }}</a>
+                {% if card.account.admin_note %}<br><span class="text-muted small">Note from admin: {{ card.account.admin_note }}</span>{% endif %}
+            </p>
+            {% if card.account.status == 'pending' %}
+            <p class="text-muted small">Method: {{ card.account.verification_method }}.
+                {% if card.account.verification_method == 'bio_link' %}Add a link to your Paid2Match profile ({{ profile_url }}) on your {{ card.platform }} page, then check it.{% endif %}
+                {% if card.account.verification_method == 'code' %}Post this code on your {{ card.platform }} page: <code>{{ card.account.verification_code }}</code>{% endif %}
+            </p>
+            <div class="d-flex gap-2 flex-wrap">
+                <form method="POST" action="{{ url_for('profile.check_linked_account', account_id=card.account.id) }}">
+                    <button type="submit" class="btn btn-sm btn-primary">Check now</button>
+                </form>
+                {% if not card.account.manual_review %}
+                <form method="POST" action="{{ url_for('profile.request_manual_review', account_id=card.account.id) }}">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Ask for a manual review</button>
+                </form>
+                {% else %}
+                <span class="text-muted small align-self-center">Manual review requested — an admin will check it.</span>
+                {% endif %}
+            </div>
+            {% endif %}
+            <div class="d-flex gap-2 flex-wrap mt-2">
+                <form method="POST" action="{{ url_for('profile.set_link_visibility', account_id=card.account.id) }}">
+                    <div class="input-group input-group-sm">
+                        <select name="visibility" class="form-select">
+                            {% for v in ['public', 'followers', 'hidden'] %}
+                            <option value="{{ v }}" {{ 'selected' if card.account.visibility == v }}>{{ v|title }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-outline-secondary">Set visibility</button>
+                    </div>
+                </form>
+                <form method="POST" action="{{ url_for('profile.unlink_account', account_id=card.account.id) }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Unlink this account? It will no longer count toward your trust score.')">Unlink</button>
+                </form>
+            </div>
+            {% else %}
+            {% if card.oauth_available %}
+            <a href="{{ url_for('profile.linked_oauth_start', platform=card.platform) }}" class="btn btn-sm btn-primary mb-2">Connect with {{ card.platform|title }}</a>
+            {% endif %}
+            <form method="POST" action="{{ url_for('profile.add_linked_account', platform=card.platform) }}">
+                {{ card.form.hidden_tag() }}
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        {{ card.form.url.label(class="form-label small") }}
+                        {{ card.form.url(class="form-control form-control-sm", placeholder="https://...") }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ card.form.handle.label(class="form-label small") }}
+                        {{ card.form.handle(class="form-control form-control-sm", placeholder="@handle") }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ card.form.method.label(class="form-label small") }}
+                        {{ card.form.method(class="form-select form-select-sm") }}
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Add &amp; verify</button>
+                    </div>
+                </div>
+                <p class="text-muted small mt-1 mb-0">Bio link: add a link back to your Paid2Match profile on the other platform. Unique code: post the code we give you. Either way, we check it publicly — no login needed on their side.</p>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

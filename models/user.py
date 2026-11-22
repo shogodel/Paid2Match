@@ -17,6 +17,14 @@ class User(db.Model, UserMixin):
     is_active = db.Column(db.Boolean, default=True)
     is_deleted = db.Column(db.Boolean, default=False)
     deleted_at = db.Column(db.DateTime, nullable=True)
+    # Email verification (M0): accounts created after this lands must confirm
+    # their email before they can log in. Pre-existing accounts were
+    # grandfathered as verified by the M0 migration.
+    email_verified = db.Column(db.Boolean, default=False)
+    email_verified_at = db.Column(db.DateTime, nullable=True)
+    # Founding referrer (M2): admin-set flag. Founding referrers pay a
+    # 15% platform fee instead of the standard 20% for 12 months.
+    founding_referrer = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=utc_now)
     last_login = db.Column(db.DateTime, nullable=True)
 
@@ -27,6 +35,16 @@ class User(db.Model, UserMixin):
     matches_as_employer = db.relationship('Match', backref='employer', lazy='dynamic', foreign_keys='Match.employer_id')
     messages_sent = db.relationship('Message', backref='sender', lazy='dynamic', foreign_keys='Message.sender_id')
     messages_received = db.relationship('Message', backref='recipient', lazy='dynamic', foreign_keys='Message.recipient_id')
+    # M1 social core.
+    posts = db.relationship('Post', backref='author', lazy='dynamic', foreign_keys='Post.author_id')
+    following = db.relationship('Follow', backref='follower', lazy='dynamic',
+                                foreign_keys='Follow.follower_id', cascade='all, delete-orphan')
+    followers = db.relationship('Follow', backref='followed', lazy='dynamic',
+                                foreign_keys='Follow.followed_id', cascade='all, delete-orphan')
+    notifications = db.relationship('Notification', backref='recipient', lazy='dynamic',
+                                    foreign_keys='Notification.recipient_id', cascade='all, delete-orphan')
+    referrals_made = db.relationship('Referral', backref='referrer', lazy='dynamic',
+                                     foreign_keys='Referral.referrer_id')
 
     def __repr__(self):
         return f'<User {self.email}>'
@@ -54,6 +72,7 @@ class User(db.Model, UserMixin):
             'full_name': self.full_name,
             'role': self.role,
             'is_active': self.is_active,
+            'email_verified': self.email_verified,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_login': self.last_login.isoformat() if self.last_login else None
         }

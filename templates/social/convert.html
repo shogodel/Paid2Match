@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Turn into a referral need - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <h2>Turn this post into a referral need</h2>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p class="mb-0">{{ post.body }}</p>
+                </div>
+            </div>
+            <p class="text-muted">Your post's text becomes the need's description. A paid need asks you to escrow the bounty after this step; a free need is a community referral with no bounty.</p>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.need_kind.label(class="form-label") }}
+                    {{ form.need_kind(class="form-select") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.title.label(class="form-label") }}
+                    {{ form.title(class="form-control") }}
+                    {% for e in form.title.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.reward_amount.label(class="form-label") }}
+                        {{ form.reward_amount(class="form-control") }}
+                        {% for e in form.reward_amount.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.location.label(class="form-label") }}
+                        {{ form.location(class="form-control") }}
+                    </div>
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('social.post_detail', post_id=post.id) }}" class="btn btn-link">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
