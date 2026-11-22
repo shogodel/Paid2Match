@@ -1,0 +1,5 @@
+{# Maple leaf mark. Geometry is the leaf from the National Flag of Canada
+   (public domain), normalized to a 0 0 100 100 viewBox.
+   Usage: {% from 'partials/maple_leaf.html' import leaf %}
+   then {{ leaf(20) }} or {{ leaf(20, '#ffffff') }}. #}
+{% macro leaf(size=20, color='#D80621') %}<svg class="maple-leaf" width="{{ size }}" height="{{ size }}" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path fill="{{ color }}" d="M52.14 98.00 L51.07 77.44 A2.26 2.26 0 0 1 53.72 75.11 L74.18 78.70 L71.42 71.08 A1.55 1.55 0 0 1 71.89 69.34 L94.31 51.19 L89.26 48.83 A1.55 1.55 0 0 1 88.45 46.95 L92.88 33.33 L79.97 36.06 A1.55 1.55 0 0 1 78.23 35.16 L75.73 29.28 L65.65 40.09 A1.55 1.55 0 0 1 63.01 38.73 L67.87 13.67 L60.08 18.17 A1.55 1.55 0 0 1 57.91 17.53 L50.00 2.00 L42.09 17.53 A1.55 1.55 0 0 1 39.92 18.17 L32.13 13.67 L36.99 38.73 A1.55 1.55 0 0 1 34.35 40.09 L24.27 29.28 L21.77 35.16 A1.55 1.55 0 0 1 20.03 36.06 L7.12 33.33 L11.55 46.95 A1.55 1.55 0 0 1 10.74 48.83 L5.69 51.19 L28.11 69.34 A1.55 1.55 0 0 1 28.58 71.08 L25.82 78.70 L46.28 75.11 A2.26 2.26 0 0 1 48.93 77.44 L47.86 98.00 Z"/></svg>{% endmacro %}

@@ -1,9 +1,18 @@
-/* Main styles - consolidated */
+/* Main styles - consolidated.
+   Canadian brand system: Canada red is the primary accent / CTA colour,
+   the logo's teal is the structural dark colour, white is the base.
+   The platform is global; the brand is proudly Canadian. */
 :root {
-    --primary-color: #2A9D8F;
-    --primary-dark: #264653;
-    --secondary-color: #E76F51;
-    --dark-color: #264653;
+    --canada-red: #D80621;
+    --canada-red-dark: #A80418;
+    --logo-teal: #155A69;
+    --teal-dark: #0E3F4A;
+    --teal-darker: #0A2E36;
+    --gold: #D0A92C;
+    --primary-color: #D80621;
+    --primary-dark: #A80418;
+    --secondary-color: #155A69;
+    --dark-color: #0E3F4A;
     --light-color: #f8f9fa;
     --text-dark: #1D3557;
     --text-muted: #6C757D;
@@ -12,6 +21,13 @@
     --success: #10B981;
     --danger: #EF4444;
     --warning: #F59E0B;
+    /* Bootstrap 5.3 brand overrides — retire the default blue. */
+    --bs-primary: #D80621;
+    --bs-primary-rgb: 216, 6, 33;
+    --bs-link-color: #155A69;
+    --bs-link-color-rgb: 21, 90, 105;
+    --bs-link-hover-color: #0E3F4A;
+    --bs-link-hover-color-rgb: 14, 63, 74;
 }
 
 * {
@@ -69,7 +85,7 @@ select:focus,
 .form-control:focus {
     border-color: var(--primary-color) !important;
     outline: none !important;
-    box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.15) !important;
+    box-shadow: 0 0 0 3px rgba(216, 6, 33, 0.15) !important;
 }
 
 /* PASSWORD FIELDS - VISIBLE TEXT */
@@ -107,11 +123,25 @@ body.dark-mode input[type="password"],
 
 .invalid-feedback { color: var(--danger); font-size: 0.875rem; }
 
-/* Navbar */
+/* Navbar — dark teal to match the logo's background, so the square
+   logo tile sits seamlessly in the bar. */
 .navbar {
     background-color: #FFFFFF;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     padding: 0.75rem 0;
+}
+
+.navbar-ca {
+    background-color: var(--teal-dark);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+.brand-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
+    object-fit: cover;
 }
 
 .navbar-brand {
@@ -124,6 +154,8 @@ body.dark-mode input[type="password"],
     text-decoration: none !important;
 }
 
+.navbar-ca .navbar-brand { color: #FFFFFF !important; }
+.navbar-ca .navbar-brand:hover { color: rgba(255,255,255,0.85) !important; }
 .navbar-brand:hover { color: var(--primary-dark) !important; }
 
 .nav-link {
@@ -134,9 +166,36 @@ body.dark-mode input[type="password"],
     transition: all 0.2s;
 }
 
+.navbar-ca .nav-link { color: rgba(255,255,255,0.88) !important; }
+
 .nav-link:hover {
     background-color: var(--bg-light);
     color: var(--primary-color) !important;
+}
+
+.navbar-ca .nav-link:hover {
+    background-color: rgba(255,255,255,0.12);
+    color: #FFFFFF !important;
+}
+
+.navbar-ca .dropdown-menu { border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+
+/* Maple leaf mark — sits on the text baseline. */
+.maple-leaf { vertical-align: -2px; flex: none; }
+
+.text-canada-red { color: var(--canada-red) !important; }
+.text-teal { color: var(--logo-teal) !important; }
+
+.btn-outline-teal {
+    color: var(--logo-teal);
+    border: 2px solid var(--logo-teal);
+    background-color: transparent;
+    font-weight: 600;
+}
+.btn-outline-teal:hover {
+    color: #FFFFFF;
+    background-color: var(--logo-teal);
+    border-color: var(--logo-teal);
 }
 
 .btn-primary {
@@ -147,6 +206,36 @@ body.dark-mode input[type="password"],
 .btn-primary:hover {
     background-color: var(--primary-dark);
     border-color: var(--primary-dark);
+}
+
+/* Bootstrap 5.3 compiles button-variant colours as static hex, so the
+   --bs-primary override above does not reach them — override explicitly. */
+.btn-outline-primary {
+    color: var(--canada-red);
+    border-color: var(--canada-red);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+    color: #FFFFFF;
+    background-color: var(--canada-red);
+    border-color: var(--canada-red);
+}
+
+/* Other Bootstrap components with hardcoded #0d6efd in 5.3. */
+.form-check-input:checked {
+    background-color: var(--canada-red);
+    border-color: var(--canada-red);
+}
+.form-check-input:focus {
+    border-color: var(--canada-red);
+    box-shadow: 0 0 0 0.25rem rgba(216, 6, 33, 0.25);
+}
+.nav-pills { --bs-nav-pills-link-active-bg: var(--canada-red); }
+.list-group-item.active {
+    background-color: var(--canada-red);
+    border-color: var(--canada-red);
 }
 
 .card {
@@ -174,7 +263,7 @@ body.dark-mode input[type="password"],
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    background: linear-gradient(135deg, var(--logo-teal), var(--teal-dark));
     color: white;
     font-weight: 600;
 }
@@ -189,7 +278,7 @@ body.dark-mode input[type="password"],
 
 /* Profile Page Styles - Better than LinkedIn */
 .profile-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(135deg, var(--logo-teal) 0%, var(--teal-dark) 100%);
     color: white;
     padding: 3rem 0 2rem;
     margin-bottom: -3rem;
@@ -327,14 +416,14 @@ body.dark-mode input[type="password"],
 }
 
 .progress-bar {
-    background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+    background: linear-gradient(90deg, var(--logo-teal), var(--teal-dark));
     transition: width 0.6s ease;
 }
 
 .skill-badge {
     display: inline-block;
     padding: 0.375rem 0.75rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    background: linear-gradient(135deg, var(--logo-teal), var(--teal-dark));
     color: white;
     border-radius: 20px;
     font-size: 0.875rem;
@@ -345,7 +434,7 @@ body.dark-mode input[type="password"],
 
 .skill-badge:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(42, 157, 143, 0.3);
+    box-shadow: 0 4px 8px rgba(21, 90, 105, 0.3);
 }
 
 .gamification-badge {
@@ -392,7 +481,7 @@ body.dark-mode input[type="password"],
 
 /* Public Profile */
 .public-profile-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(135deg, var(--logo-teal) 0%, var(--teal-dark) 100%);
     color: white;
     padding: 3rem 0;
     margin-bottom: 2rem;
@@ -418,13 +507,24 @@ body.dark-mode input[type="password"],
 .alert-warning { background-color: #FEF3C7; border-color: var(--warning); color: #92400E; }
 .alert-info { background-color: #DBEAFE; border-color: #3B82F6; color: #1E40AF; }
 
-/* Footer */
+/* Footer — dark teal, same family as the navbar. */
 .footer {
-    background-color: var(--text-dark);
+    background-color: var(--teal-dark);
     color: #FFFFFF;
     padding: 3rem 0 1.5rem;
     margin-top: auto;
 }
+
+.footer-logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    vertical-align: -7px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
+    object-fit: cover;
+}
+
+.footer-canada { font-weight: 600; color: #FFFFFF; }
 
 .footer a { color: rgba(255,255,255,0.8); text-decoration: none; }
 .footer a:hover { color: #FFFFFF; }
@@ -443,22 +543,22 @@ body.dark-mode input[type="password"],
 /* Responsive */
 @media (max-width: 991px) {
     .navbar-collapse {
-        background-color: #FFFFFF;
+        background-color: var(--teal-darker);
         padding: 1rem;
         border-radius: 0 0 8px 8px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         margin-top: 0.5rem;
     }
-    
+
     .navbar-nav .nav-link {
         padding: 0.75rem 0.5rem !important;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
     }
-    
+
     .navbar-nav .nav-item:last-child .nav-link {
         border-bottom: none;
     }
-    
+
     .dropdown-menu {
         border: none;
         background-color: #f8f9fa;
@@ -469,7 +569,7 @@ body.dark-mode input[type="password"],
 /* Mobile Responsive from base.html */
 @media (max-width: 991px) {
     .navbar-collapse {
-        background-color: #ffffff;
+        background-color: var(--teal-darker);
         padding: 1rem;
         border-radius: 0 0 8px 8px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -477,7 +577,7 @@ body.dark-mode input[type="password"],
     }
     .navbar-nav .nav-link {
         padding: 0.75rem 0.5rem !important;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
     }
     .navbar-nav .nav-item:last-child .nav-link {
         border-bottom: none;
@@ -488,11 +588,137 @@ body.dark-mode input[type="password"],
         padding-left: 1rem;
     }
 }
-/* Ensure navbar toggler is visible */
+/* Ensure navbar toggler is visible on the dark bar */
 .navbar-toggler {
-    border: 2px solid var(--primary-color);
+    border: 2px solid rgba(255,255,255,0.6);
     padding: 0.25rem 0.5rem;
 }
 .navbar-toggler:focus {
-    box-shadow: 0 0 0 0.2rem rgba(42, 157, 143, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+}
+
+/* ================= Homepage — Canadian social front page ================= */
+
+/* Hero: white, logo-led, red eyebrow + teal secondary actions. */
+.hero-ca {
+    background: #FFFFFF;
+    border-bottom: 3px solid var(--canada-red);
+}
+
+.hero-logo {
+    width: 150px;
+    height: 150px;
+    border-radius: 22px;
+    box-shadow: 0 8px 24px rgba(14, 63, 74, 0.25);
+    object-fit: cover;
+}
+
+.hero-eyebrow {
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    color: var(--canada-red);
+    margin-bottom: 0.75rem;
+}
+
+.hero-title {
+    font-weight: 800;
+    font-size: 2.5rem;
+    line-height: 1.15;
+    color: var(--teal-dark);
+}
+
+.hero-fr {
+    font-style: italic;
+    color: var(--logo-teal);
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+}
+
+.hero-sub { max-width: 640px; color: var(--text-muted); }
+
+.hero-made {
+    font-weight: 600;
+    color: var(--teal-dark);
+}
+
+/* Section furniture. */
+.section-alt { background: #FFFFFF; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+
+.section-title {
+    font-weight: 700;
+    color: var(--teal-dark);
+    padding-bottom: 0.5rem;
+    border-bottom: 3px solid var(--canada-red);
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card { border-top: 3px solid var(--canada-red); }
+.row > div:nth-child(even) .stat-card { border-top-color: var(--logo-teal); }
+
+/* Post preview cards. */
+.post-preview-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.post-preview-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(14, 63, 74, 0.12);
+}
+
+/* Empty states — every homepage section stays intentional with no data. */
+.empty-state {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    background: #FFFFFF;
+}
+
+.empty-state-icon {
+    font-size: 2rem;
+    color: var(--logo-teal);
+    margin-bottom: 0.75rem;
+}
+
+/* Top helpers — rank medallion. */
+.helper-rank {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: #FFFFFF;
+    background: var(--logo-teal);
+}
+.helper-card .rank-1 { background: var(--gold); color: #3a2f00; }
+.helper-card .rank-2 { background: #9AA5B1; }
+.helper-card .rank-3 { background: #B08D57; }
+
+/* Pledge band — dark teal, white leaf. */
+.pledge-band { background: linear-gradient(135deg, var(--logo-teal) 0%, var(--teal-dark) 100%); }
+.pledge-band-text { max-width: 640px; color: rgba(255,255,255,0.88); font-size: 1.1rem; }
+
+/* How it works — red numbered circles. */
+.how-step { margin-bottom: 0.5rem; }
+.how-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--canada-red);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 1.25rem;
+}
+
+@media (max-width: 576px) {
+    .hero-title { font-size: 1.9rem; }
+    .hero-logo { width: 120px; height: 120px; }
+    .hero-ca .btn-lg { width: 100%; }
 }

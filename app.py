@@ -175,13 +175,24 @@ def create_app(config_name: str = None) -> Flask:
             Profile.karma.desc()
         ).limit(3).all()
 
+        # Homepage social preview: the 4 most recent public posts, using
+        # the same visibility rule as Discover (hidden posts never show;
+        # a signed-in viewer's blocked authors are excluded).
+        from models.post import Post
+        from utils.feed import _visible_posts_query
+        viewer_id = current_user.id if current_user.is_authenticated else None
+        recent_posts = _visible_posts_query(viewer_id).order_by(
+            Post.created_at.desc()
+        ).limit(4).all()
+
         return render_template('index.html',
                           total_users=stats['total_users'],
                           total_bounties=stats['total_bounties'],
                           total_rewards=stats['total_rewards'],
                           successful_matches=stats['successful_matches'],
                           featured=featured,
-                          top_helpers=top_helpers)
+                          top_helpers=top_helpers,
+                          recent_posts=recent_posts)
 
     # Error handlers
     @app.errorhandler(404)

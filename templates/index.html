@@ -1,41 +1,48 @@
 {% extends "base.html" %}
+{% from 'partials/maple_leaf.html' import leaf %}
 
 {% block title %}{{ _('Home') }} - Paid2Match{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row mb-5">
-        <div class="col-lg-8 mx-auto text-center">
-            <h1 class="mb-3">{{ _('Welcome to Paid2Match') }}</h1>
-            <p class="lead">{{ _('Connect with talent and opportunities') }}</p>
-            <div class="d-flex gap-3 justify-content-center">
-                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ _('Register') }}</a>
-                <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-primary btn-lg">{{ _('All Opportunities') }}</a>
-            </div>
+<!-- HERO -->
+<section class="hero-ca">
+    <div class="container py-5 text-center">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Paid2Match" class="hero-logo mb-3">
+        <p class="hero-eyebrow">{{ leaf(16) }} {{ _('Proudly Canadian') }}</p>
+        <h1 class="hero-title">{{ _('Hiring is human. Keep it that way.') }}</h1>
+        <p class="hero-fr">&laquo; {{ _('Des humains qui recommandent des humains.') }} &raquo;</p>
+        <p class="lead hero-sub mx-auto">{{ _('Real people vouching for real people — no algorithms deciding your future. The referral network where humans hire humans, from Canada to the world.') }}</p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ _('Join the network') }}</a>
+            <a href="{{ url_for('social.feed') }}" class="btn btn-outline-teal btn-lg">{{ _('Explore the Feed') }}</a>
         </div>
+        <p class="hero-made mt-4 mb-0">{{ leaf(14) }} {{ _('Proudly Canadian, open to the world') }}</p>
     </div>
+</section>
 
-    <div class="row g-4 mb-5 text-center">
+<!-- STATS -->
+<section class="container py-4">
+    <div class="row g-3 text-center">
         <div class="col-6 col-md-3">
-            <div class="card bg-light h-100">
+            <div class="card stat-card h-100">
                 <div class="card-body">
-                    <div class="fs-2 fw-bold text-primary">{{ total_users }}</div>
+                    <div class="fs-2 fw-bold text-canada-red">{{ total_users }}</div>
                     <small class="text-muted">{{ _('Total Users') }}</small>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card bg-light h-100">
+            <div class="card stat-card h-100">
                 <div class="card-body">
-                    <div class="fs-2 fw-bold text-success">{{ total_bounties }}</div>
+                    <div class="fs-2 fw-bold text-teal">{{ total_bounties }}</div>
                     <small class="text-muted">{{ _('Total Opportunities') }}</small>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card bg-light h-100">
+            <div class="card stat-card h-100">
                 <div class="card-body">
-                    <div class="fs-2 fw-bold text-warning">
+                    <div class="fs-2 fw-bold text-canada-red">
                         {% if total_rewards > 0 %}
                             ${{ "{:,.0f}".format(total_rewards) }}
                         {% else %}
@@ -47,111 +54,189 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card bg-light h-100">
+            <div class="card stat-card h-100">
                 <div class="card-body">
-                    <div class="fs-2 fw-bold text-info">{{ successful_matches }}</div>
+                    <div class="fs-2 fw-bold text-teal">{{ successful_matches }}</div>
                     <small class="text-muted">{{ _('Successful Matches') }}</small>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    {% if featured %}
-    <div class="row">
-        <div class="col">
-            <h3 class="mb-3">{{ _('Featured Opportunities') }}</h3>
-            <div class="row g-4">
-                {% for bounty in featured %}
-                <div class="col-md-4">
-                    <div class="card h-100 {{ 'bounty-highlighted border-warning border-2' if bounty.is_highlighted else '' }}">
-                        <div class="card-body">
-                            <div class="d-flex gap-2 mb-2 flex-wrap">
-                                <span class="badge bg-secondary">{{ bounty.bounty_type|title }}</span>
-                                <span class="badge bg-secondary">{{ bounty.bounty_direction.replace('_', ' ')|title }}</span>
-                                {% if bounty.is_free_bounty %}
-                                    <span class="badge bg-success">{{ _('Free') }}</span>
-                                {% endif %}
-                                {% for badge_info in bounty.upgrade_badges %}
-                                <span class="badge {{ badge_info.badge_class }}">{{ badge_info.badge }}</span>
-                                {% endfor %}
-                            </div>
-                            <h5 class="card-title">{{ bounty.title }}</h5>
-                            <p class="card-text text-muted small">{{ bounty.description[:100] }}...</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold {% if bounty.reward_amount and bounty.reward_amount > 0 %}text-success{% else %}text-muted{% endif %}">
-                                    {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                                        ${{ "{:,.0f}".format(bounty.reward_amount) }}
-{% else %}
-                                         {{ _('Free') }}
-                                    {% endif %}
-                                </span>
-                                {% if bounty.location %}
-                                    <small class="text-muted">{{ bounty.location }}</small>
-                                {% endif %}
-                            </div>
+<!-- FRESH FROM THE NETWORK -->
+<section class="section-alt">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-1">
+            <h2 class="section-title mb-0">{{ _('Fresh from the network') }}</h2>
+            <a href="{{ url_for('social.feed') }}" class="btn btn-outline-primary btn-sm">{{ _('Open the Feed') }}</a>
+        </div>
+        <p class="text-muted">{{ _('What people are posting right now.') }}</p>
+        {% if recent_posts %}
+        <div class="row g-4">
+            {% for post in recent_posts %}
+            <div class="col-md-6">
+                <div class="card h-100 post-preview-card">
+                    <div class="card-body">
+                        <div class="d-flex gap-2 align-items-center flex-wrap mb-2">
+                            <a href="{{ url_for('profile.public_profile', user_id=post.author_id) }}" class="fw-bold text-decoration-none">{{ post.author.full_name }}</a>
+                            <span class="badge bg-secondary">{{ post.type_label }}</span>
+                            {% if post.is_bumped %}
+                            <span class="badge bg-warning text-dark">{{ _('Bumped') }}</span>
+                            {% endif %}
+                            {% if post.is_boosted %}
+                            <span class="badge bg-danger">{{ _('Boosted') }}</span>
+                            {% endif %}
+                            <small class="text-muted ms-auto">{{ post.created_at.strftime('%b %d, %Y') if post.created_at }}</small>
                         </div>
-                        <div class="card-footer bg-transparent">
-                            <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-primary btn-sm w-100">{{ _('View') }}</a>
+                        {% if post.bounty %}
+                        <h5 class="mt-1 mb-1">
+                            <a href="{{ url_for('bounties.detail', id=post.bounty.id) }}" class="text-decoration-none">{{ post.bounty.title }}</a>
+                        </h5>
+                        {% endif %}
+                        <p class="card-text">{{ post.body[:180] }}{% if post.body|length > 180 %}&hellip;{% endif %}</p>
+                        <div class="d-flex gap-3 align-items-center">
+                            <span class="text-muted small"><i class="fas fa-heart"></i> {{ post.like_count }}</span>
+                            <span class="text-muted small"><i class="fas fa-comment"></i> {{ post.comment_count }}</span>
+                            <span class="text-muted small"><i class="fas fa-eye"></i> {{ post.view_count or 0 }}</span>
+                            <a href="{{ url_for('social.post_detail', post_id=post.id) }}" class="btn btn-sm btn-link p-0 ms-auto">{{ _('View post') }}</a>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-            <div class="text-center mt-4">
-                <a href="{{ url_for('bounties.board') }}" class="btn btn-primary">{{ _('View All') }}</a>
-            </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-comments"></i></div>
+            <h5>{{ _('The network is just waking up') }}</h5>
+            <p class="text-muted mb-3">{{ _('No posts yet — be the first to say hello, share a win, or ask the network for help.') }}</p>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary">{{ _('Be the first to post') }}</a>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
+</section>
 
+<!-- TOP HELPERS -->
+<section class="container py-5">
+    <h2 class="section-title">{{ _('Top Helpers') }}</h2>
+    <p class="text-muted">{{ _('People who completed the most referrals — the heart of the network.') }}</p>
     {% if top_helpers %}
-    <div class="row mt-5">
-        <div class="col">
-            <h3 class="mb-3">{{ _('Top Helpers') }}</h3>
-            <p class="text-muted small">{{ _('People who completed the most referrals — the heart of the network.') }}</p>
-            <div class="row g-4">
-                {% for profile in top_helpers %}
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <h5 class="card-title"><a href="{{ url_for('profile.public_profile', user_id=profile.user_id) }}" class="text-decoration-none">{{ profile.display_name or profile.user.full_name }}</a></h5>
-                            <p class="text-muted small mb-1">{{ profile.headline or '' }}</p>
-                            <span class="badge bg-success">{{ profile.karma or 0 }} karma</span>
-                            <span class="badge bg-info">Helped {{ profile.helped_count or 0 }}</span>
-                        </div>
-                    </div>
+    <div class="row g-4">
+        {% for profile in top_helpers %}
+        <div class="col-md-4">
+            <div class="card h-100 helper-card">
+                <div class="card-body text-center">
+                    <div class="helper-rank rank-{{ loop.index }}">{{ loop.index }}</div>
+                    <h5 class="card-title"><a href="{{ url_for('profile.public_profile', user_id=profile.user_id) }}" class="text-decoration-none">{{ profile.display_name or profile.user.full_name }}</a></h5>
+                    <p class="text-muted small mb-2">{{ profile.headline or '' }}</p>
+                    <span class="badge bg-success">{{ profile.karma or 0 }} karma</span>
+                    <span class="badge bg-info">{{ _('Helped') }} {{ profile.helped_count or 0 }}</span>
                 </div>
-                {% endfor %}
             </div>
         </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon"><i class="fas fa-hands-helping"></i></div>
+        <h5>{{ _('No helpers yet') }}</h5>
+        <p class="text-muted mb-3">{{ _('Nobody has completed a referral so far — complete the first one and take the top spot.') }}</p>
+        <a href="{{ url_for('bounties.board') }}" class="btn btn-primary">{{ _('Browse referral needs') }}</a>
     </div>
     {% endif %}
+</section>
 
-    <div class="row mt-5">
-        <div class="col-lg-8 mx-auto">
-            <div class="card bg-light">
-                <div class="card-body text-center">
-                    <h4>{{ _('How It Works') }}</h4>
-                    <div class="row g-4 mt-2 text-start">
-                        <div class="col-md-4">
-                            <div class="fs-3 mb-2">1</div>
-                            <strong>{{ _('Post a Referral Need') }}</strong>
-                            <p class="small text-muted mb-0">{{ _('Describe what you need and set your reward') }}</p>
+<!-- FEATURED REFERRAL NEEDS -->
+<section class="section-alt">
+    <div class="container py-5">
+        <h2 class="section-title">{{ _('Featured Referral Needs') }}</h2>
+        <p class="text-muted">{{ _('Open needs from the community — refer someone you know and earn the reward.') }}</p>
+        {% if featured %}
+        <div class="row g-4">
+            {% for bounty in featured %}
+            <div class="col-md-4">
+                <div class="card h-100 {{ 'bounty-highlighted border-warning border-2' if bounty.is_highlighted else '' }}">
+                    <div class="card-body">
+                        <div class="d-flex gap-2 mb-2 flex-wrap">
+                            <span class="badge bg-secondary">{{ bounty.bounty_type|title }}</span>
+                            <span class="badge bg-secondary">{{ bounty.bounty_direction.replace('_', ' ')|title }}</span>
+                            {% if bounty.is_free_bounty %}
+                                <span class="badge bg-success">{{ _('Free') }}</span>
+                            {% endif %}
+                            {% for badge_info in bounty.upgrade_badges %}
+                            <span class="badge {{ badge_info.badge_class }}">{{ badge_info.badge }}</span>
+                            {% endfor %}
                         </div>
-                        <div class="col-md-4">
-                            <div class="fs-3 mb-2">2</div>
-                            <strong>{{ _('Receive Referrals') }}</strong>
-                            <p class="small text-muted mb-0">{{ _('Referrers submit referrals with teasers') }}</p>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="fs-3 mb-2">3</div>
-                            <strong>{{ _('Confirm and Earn') }}</strong>
-                            <p class="small text-muted mb-0">{{ _('Both parties confirm successful placement') }}</p>
+                        <h5 class="card-title">{{ bounty.title }}</h5>
+                        <p class="card-text text-muted small">{{ bounty.description[:100] }}...</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold {% if bounty.reward_amount and bounty.reward_amount > 0 %}text-success{% else %}text-muted{% endif %}">
+                                {% if bounty.reward_amount and bounty.reward_amount > 0 %}
+                                    ${{ "{:,.0f}".format(bounty.reward_amount) }}
+                                {% else %}
+                                     {{ _('Free') }}
+                                {% endif %}
+                            </span>
+                            {% if bounty.location %}
+                                <small class="text-muted">{{ bounty.location }}</small>
+                            {% endif %}
                         </div>
                     </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-primary btn-sm w-100">{{ _('View') }}</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('bounties.board') }}" class="btn btn-primary">{{ _('View All') }}</a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-briefcase"></i></div>
+            <h5>{{ _('No referral needs yet') }}</h5>
+            <p class="text-muted mb-3">{{ _('Nobody is looking for a referral right now — post the first need and let the network find your person.') }}</p>
+            <a href="{{ url_for('bounties.post') }}" class="btn btn-primary">{{ _('Post the first need') }}</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- HUMAN-REVIEWED HIRING PLEDGE -->
+<section class="pledge-band">
+    <div class="container py-5 text-center">
+        <div class="mb-3">{{ leaf(44, '#ffffff') }}</div>
+        <h2 class="text-white">{{ _('The human-reviewed hiring pledge') }}</h2>
+        <p class="pledge-band-text mx-auto">{{ _('Every employer on this register promises two things: no AI screening of candidates, and a human response to every referral within 5 business days. If a pledger stops answering, their pledge shows as suspended.') }}</p>
+        <a href="{{ url_for('social.pledges') }}" class="btn btn-outline-light btn-lg">{{ _('See who pledged') }}</a>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto text-center">
+            <h2 class="section-title">{{ _('How It Works') }}</h2>
+            <div class="row g-4 mt-2 text-start">
+                <div class="col-md-4">
+                    <div class="how-step"><span class="how-num">1</span></div>
+                    <strong>{{ _('Post a Referral Need') }}</strong>
+                    <p class="small text-muted mb-0">{{ _('Describe what you need and set your reward') }}</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="how-step"><span class="how-num">2</span></div>
+                    <strong>{{ _('Receive Referrals') }}</strong>
+                    <p class="small text-muted mb-0">{{ _('Referrers submit referrals with teasers') }}</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="how-step"><span class="how-num">3</span></div>
+                    <strong>{{ _('Confirm and Earn') }}</strong>
+                    <p class="small text-muted mb-0">{{ _('Both parties confirm successful placement') }}</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 {% endblock %}

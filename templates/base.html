@@ -1,10 +1,12 @@
+{% from 'partials/maple_leaf.html' import leaf %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Paid2Match - The referral network for hiring. Real people, real referrals.">
+    <meta name="description" content="Paid2Match - The referral network for hiring. Real people, real referrals, proudly Canadian.">
     <title>{% block title %}Paid2Match{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
     
     <!-- Bootstrap CSS first -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
@@ -33,10 +35,11 @@
     {% endwith %}
     
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-ca">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-globe-americas"></i> Paid2Match
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Paid2Match" class="brand-logo">
+                Paid2Match {{ leaf(16) }}
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -136,7 +139,7 @@
                         </li>
                      {% else %}
                          <li class="nav-item">
-                             <a class="btn btn-outline-primary ms-2" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
+                             <a class="btn btn-outline-light ms-2" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
                          </li>
                          <li class="nav-item">
                              <a class="btn btn-primary ms-2" href="{{ url_for('auth.register') }}">{{ _('Register') }}</a>
@@ -168,32 +171,40 @@
             <div class="row">
                 <div class="col-lg-4 mb-4 mb-lg-0">
                     <div class="footer-title">
-                        <i class="fas fa-globe-americas me-2"></i>Paid2Match
+                        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Paid2Match" class="footer-logo"> Paid2Match {{ leaf(16) }}
                     </div>
-                    <p class="text-white-50">Connecting talent with opportunity across the globe.</p>
+                    <p class="text-white-50">{{ _('Connecting talent with opportunity across the globe.') }}</p>
+                    <p class="footer-canada mb-0">{{ leaf(16) }} {{ _('Proudly made in Canada') }}</p>
+                    <p class="text-white-50 small mb-0">{{ _('From coast to coast to coast — and beyond.') }}</p>
                 </div>
-                
+
                 <div class="col-lg-4 mb-4 mb-lg-0">
-                    <div class="footer-title">Our Opportunities</div>
+                    <div class="footer-title">{{ _('Our Opportunities') }}</div>
                     <ul class="footer-links">
                         <li><a href="{{ url_for('bounties.board') }}?bounty_type=recruitment">
-                            <i class="fas fa-users me-2"></i>Recruitment
+                            <i class="fas fa-users me-2"></i>{{ _('Recruitment') }}
+                        </a></li>
+                        <li><a href="{{ url_for('bounties.board') }}?bounty_type=services">
+                            <i class="fas fa-concierge-bell me-2"></i>{{ _('Services') }}
+                        </a></li>
+                        <li><a href="{{ url_for('social.pledges') }}">
+                            <i class="fas fa-handshake me-2"></i>{{ _('Human-reviewed hiring pledge') }}
                         </a></li>
                     </ul>
                 </div>
-                
+
                 <div class="col-lg-4">
-                    <div class="footer-title">Legal</div>
+                    <div class="footer-title">{{ _('Legal') }}</div>
                     <ul class="footer-links">
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms of Service</a></li>
-                        <li><a href="#">Cookie Policy</a></li>
+                        <li><a href="#">{{ _('Privacy Policy') }}</a></li>
+                        <li><a href="#">{{ _('Terms of Service') }}</a></li>
+                        <li><a href="#">{{ _('Cookie Policy') }}</a></li>
                     </ul>
                 </div>
             </div>
-            
+
             <div class="footer-bottom">
-                <p>&copy; 2026 Paid2Match. All rights reserved.</p>
+                <p>&copy; 2026 Paid2Match. {{ _('All rights reserved.') }}</p>
             </div>
         </div>
     </footer>
