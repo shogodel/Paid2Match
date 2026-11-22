@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Post Bounty') }} - Paid2Match{% endblock %}
+{% block title %}{{ _('Post a Referral Need') }} - Paid2Match{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <h1 class="mb-3">{{ _('Post a New Bounty') }}</h1>
+    <h1 class="mb-3">{{ _('Post a New Referral Need') }}</h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -21,10 +21,24 @@
             <div class="col-lg-8">
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-list"></i>{{ _("Bounty Type & Direction") }}</h5>
+                        <h5 class="mb-0"><i class="fas fa-list"></i>{{ _("Need Type & Direction") }}</h5>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.bounty_type.label }}</label>
+                                {{ form.bounty_type(class="form-select") }}
+                                {% for error in form.bounty_type.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.category.label }}</label>
+                                {{ form.category(class="form-select") }}
+                                {% for error in form.category.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.bounty_direction.label }}</label>
                                 {{ form.bounty_direction(class="form-select") }}
@@ -95,10 +109,6 @@
                                             <option value="executive">Executive</option>
                                         </select>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Required Skills</label>
-                                        <input type="text" name="skills" class="form-control" placeholder="Python, SQL, Leadership">
-                                    </div>
                                 </div>
                             </div>
                             <div id="rec-offering_opportunity" class="direction-group d-none">
@@ -163,7 +173,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.reward_amount.label }} ($)</label>
-                                {{ form.reward_amount(class="form-control", placeholder="0 for free bounty") }}
+                                {{ form.reward_amount(class="form-control", placeholder="0 for a free need") }}
                                 {% for error in form.reward_amount.errors %}
                                 <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
@@ -177,17 +187,21 @@
                                 {{ form.deadline(class="form-control", type="date") }}
                             </div>
                             <div class="col-12">
+                                <label class="form-label">{{ form.skills.label }}</label>
+                                {{ form.skills(class="form-control", placeholder="Python, SQL, Leadership") }}
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label">{{ form.success_criteria.label }}</label>
-                                {{ form.success_criteria(class="form-control", rows="3", placeholder="What makes this bounty complete?") }}
+                                {{ form.success_criteria(class="form-control", rows="3", placeholder="What makes this need complete?") }}
                             </div>
                         </div>
                         <div class="form-check mt-3">
                             <input type="checkbox" name="is_free" id="is_free" class="form-check-input" value="1">
-                            <label for="is_free" class="form-check-label">This is a free bounty (no reward payment required)</label>
+                            <label for="is_free" class="form-check-label">This is a free need (no reward payment required)</label>
                         </div>
                         
                         <div id="payerSection" class="mt-4">
-                            <h6>Who will pay the bounty reward?</h6>
+                            <h6>Who will pay the referral reward?</h6>
                             <div class="form-check mb-2 p-3 border rounded">
                                 <input type="radio" class="form-check-input" name="payer_type" value="poster" id="payerPoster" checked>
                                 <label class="form-check-label" for="payerPoster">
@@ -223,11 +237,11 @@
                     <div class="card-body">
                         <h6 class="text-muted">{{ _('How it works') }}</h6>
                         <ol class="small mb-0">
-                            <li>{{ _('This is a recruitment opportunity') }} &mdash; {{ _('choose your direction and fill in the details below') }}</li>
+                            <li>{{ _('Pick a vertical') }} &mdash; {{ _('recruitment (hire someone) or services (refer a service provider)') }}</li>
                             <li>{{ _('Choose your direction') }} ({{ _('seeking or offering') }})</li>
                             <li>{{ _('Fill in the details and set your reward') }}</li>
-                            <li>{{ _('Submit free bounties go live immediately') }}</li>
-                            <li>{{ _('Paid bounties need payment before publishing') }}</li>
+                            <li>{{ _('Free needs go live immediately') }}</li>
+                            <li>{{ _('Paid needs need payment before publishing') }}</li>
                         </ol>
                         <hr>
                         <h6 class="text-muted">{{ _('Direction Guide') }}</h6>

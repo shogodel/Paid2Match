@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Verifications - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Verification requests</h1>
+    <p class="text-muted">
+        Approving a request marks all of the user's profiles verified —
+        it adds +5 trust points and unlocks the Trusted level.
+    </p>
+    <div class="btn-group mb-3" role="group">
+        <a href="{{ url_for('admin.verifications', status='pending') }}" class="btn btn-sm btn-outline-primary {% if status == 'pending' %}active{% endif %}">Pending</a>
+        <a href="{{ url_for('admin.verifications', status='approved') }}" class="btn btn-sm btn-outline-primary {% if status == 'approved' %}active{% endif %}">Approved</a>
+        <a href="{{ url_for('admin.verifications', status='rejected') }}" class="btn btn-sm btn-outline-primary {% if status == 'rejected' %}active{% endif %}">Rejected</a>
+    </div>
+    {% for req in requests %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <p>
+                    <strong>{{ req.user.email if req.user else req.user_id }}</strong>
+                    — {{ req.status }}
+                    <span class="text-muted">({{ req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '—' }})</span>
+                </p>
+                {% if req.note %}
+                <p>{{ req.note }}</p>
+                {% else %}
+                <p class="text-muted">No note provided.</p>
+                {% endif %}
+                {% if req.admin_note %}
+                <p class="text-muted"><strong>Admin note:</strong> {{ req.admin_note }}</p>
+                {% endif %}
+                <a href="{{ url_for('profile.public_profile', user_id=req.user_id) }}" class="btn btn-sm btn-outline-secondary">View profile</a>
+                {% if req.status == 'pending' %}
+                <form method="POST" action="{{ url_for('admin.approve_verification', id=req.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-success">Approve</button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.reject_verification', id=req.id) }}" class="mt-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="input-group">
+                        <input type="text" name="admin_note" class="form-control" placeholder="Reason for rejection (shown to the user)">
+                        <button class="btn btn-sm btn-danger">Reject</button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <p class="text-muted">No {{ status }} verification requests.</p>
+    {% endfor %}
+</div>
+{% endblock %}

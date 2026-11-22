@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Paid2Match - Global Referral Network connecting talent with opportunity">
+    <meta name="description" content="Paid2Match - The referral network for hiring. Real people, real referrals.">
     <title>{% block title %}Paid2Match{% endblock %}</title>
     
     <!-- Bootstrap CSS first -->
@@ -52,15 +52,43 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ url_for('bounties.board') }}">{{ _('All Opportunities') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('bounties.recruitment_board') }}">{{ _('Recruitment') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('bounties.services_board') }}">{{ _('Services') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('social.pledges') }}">{{ _('Human-reviewed hiring pledge') }}</a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('bounties.post') }}">
-                            <i class="fas fa-plus-circle"></i> {{ _('Post a Bounty') }}
+                            <i class="fas fa-plus-circle"></i> {{ _('Post a Referral Need') }}
                         </a>
                     </li>
                     
                     {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('social.feed') }}">
+                                <i class="fas fa-stream"></i> {{ _('Feed') }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('social.people') }}">
+                                <i class="fas fa-users"></i> {{ _('People') }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('referrals.mine') }}">
+                                <i class="fas fa-user-plus"></i> {{ _('My Referrals') }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('social.notifications') }}">
+                                <i class="fas fa-bell"></i> {{ _('Notifications') }}
+                                {% if unread_notifications %}<span class="badge bg-danger">{{ unread_notifications }}</span>{% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('payments.payout_dashboard') }}">
+                                <i class="fas fa-wallet"></i> {{ _('Payouts') }}
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('messages.inbox') }}">
                                 <i class="fas fa-envelope"></i> {{ _('Messages') }}
@@ -76,11 +104,26 @@
                                 <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">{{ _('Users') }}</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('admin.bounties') }}">{{ _('Opportunities') }}</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('admin.disputes') }}">{{ _('Disputes') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.reports') }}">{{ _('Reports') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.verifications') }}">{{ _('Verifications') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.linked_accounts') }}">{{ _('Linked Accounts') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.pledges') }}">{{ _('Pledges') }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.payouts') }}">{{ _('Payouts') }}</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">{{ _('Settings') }}</a></li>
                             </ul>
                         </li>
                         {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('social.analytics') }}">
+                                <i class="fas fa-chart-line"></i> {{ _('Analytics') }}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('payments.pro_page') }}">
+                                <i class="fas fa-star"></i> {{ _('Pro') }}
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('profile.view') }}">
                                 <i class="fas fa-user"></i> {{ _('Profile') }}

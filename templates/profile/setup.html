@@ -74,7 +74,25 @@
                             {{ form.twitter_handle(class="form-control", placeholder="johndoe") }}
                         </div>
                     </div>
-                    
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            {{ form.instagram_url.label(class="form-label") }}
+                            {{ form.instagram_url(class="form-control", placeholder="Instagram URL") }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            {{ form.facebook_url.label(class="form-label") }}
+                            {{ form.facebook_url(class="form-control", placeholder="Facebook URL") }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            {{ form.tiktok_url.label(class="form-label") }}
+                            {{ form.tiktok_url(class="form-control", placeholder="TikTok URL") }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            {{ form.youtube_url.label(class="form-label") }}
+                            {{ form.youtube_url(class="form-control", placeholder="YouTube URL") }}
+                        </div>
+                    </div>
+
                     <h5 class="profile-card-title mt-4"><i class="fas fa-camera me-2"></i>Profile Picture</h5>
                     <div class="mb-3">
                         {{ form.avatar.label(class="form-label") }}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Rate this match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-star"></i> Rate this match</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        How was working with the other side on
+                        <strong>{{ match.bounty.title }}</strong>?
+                    </p>
+                    <div class="alert alert-info small">
+                        <i class="fas fa-eye-slash"></i>
+                        Reviews are double-blind: neither side sees the other's review
+                        until both have rated — or after 14 days.
+                    </div>
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label" for="rating_primary">{{ labels[0] }}</label>
+                            <select class="form-select" id="rating_primary" name="rating_primary" required>
+                                <option value="">Choose…</option>
+                                {% for n in [5, 4, 3, 2, 1] %}
+                                <option value="{{ n }}">{{ n }} star{{ 's' if n > 1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="rating_secondary">{{ labels[1] }}</label>
+                            <select class="form-select" id="rating_secondary" name="rating_secondary" required>
+                                <option value="">Choose…</option>
+                                {% for n in [5, 4, 3, 2, 1] %}
+                                <option value="{{ n }}">{{ n }} star{{ 's' if n > 1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="comment">Comment (optional)</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3"
+                                      placeholder="Anything the other side should know?"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit review</button>
+                        <a href="{{ url_for('bounties.confirmed_match', match_id=match.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

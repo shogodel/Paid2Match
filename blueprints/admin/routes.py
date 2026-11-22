@@ -5,7 +5,7 @@ from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, abort
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, TextAreaField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, SelectField, TextAreaField, BooleanField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, ValidationError
 from sqlalchemy import desc, func, or_
 
@@ -15,8 +15,25 @@ from models.bounty import Bounty
 from models.match import Match
 from models.dispute import Dispute
 from models.admin_settings import AdminSettings
+from models.endorsement import Pledge
+from models.linked_account import LinkedAccount
+from models.payout import Payout
 from models.profile import Profile
 from models.audit_log import AuditLog
+from models.verification import VerificationRequest
+from models import utc_now
+from utils.bumps import run_recurring_bumps
+from utils.linked_accounts import mark_verified
+from utils.moderation import (
+    DEFAULT_POST_LIMIT_MEMBER,
+    DEFAULT_POST_LIMIT_NEWCOMER,
+    POST_LIMIT_MEMBER_KEY,
+    POST_LIMIT_NEWCOMER_KEY,
+    get_auto_hide_threshold,
+    maybe_restore_after_dismiss,
+)
+from utils.notifications import notify
+from utils.payments import get_platform_fee_percent, record_manual_payout
 from werkzeug.security import generate_password_hash
 
 admin_bp = Blueprint('admin', __name__)
@@ -29,6 +46,24 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if current_user.role != 'admin':
             flash('Admin access required', 'danger')
+            return redirect(url_for('bounties.board'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def moderator_required(f):
+    """M1: decorator for the moderation review queue.
+
+    View access: admin, moderator, or any user with 5000+ karma (§3.4).
+    Acting on reports (dismiss/hide) is restricted to admin + moderator
+    inside the route itself — 5000-karma users can view but not act.
+    """
+    @login_required
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        from utils.trust import can_view_moderation_queue
+        if not can_view_moderation_queue(current_user):
+            flash('Moderation access required', 'danger')
             return redirect(url_for('bounties.board'))
         return f(*args, **kwargs)
     return decorated_function
@@ -47,6 +82,14 @@ class SettingsForm(FlaskForm):
     facebook_page_token = PasswordField('Facebook Page Token')
     sendgrid_api_key = PasswordField('SendGrid API Key')
     linkedin_api_token = PasswordField('LinkedIn API Token')
+    # M2: platform fee percentage (0–50, default 20). Validated in the
+    # settings route so a bad value flashes a clear error.
+    platform_fee_percent = IntegerField('Platform Fee (%)')
+    # M3 moderation v1: auto-hide threshold (default 3 reports) and
+    # daily post limits by trust level (Newcomer 3, Member+ 10).
+    auto_hide_threshold = IntegerField('Auto-hide report threshold')
+    post_limit_newcomer = IntegerField('Daily post limit — Newcomer')
+    post_limit_member = IntegerField('Daily post limit — Member+')
     submit = SubmitField('Save Settings')
 
 
@@ -63,15 +106,16 @@ SETTINGS_MAP = {
     'facebook_page_token': 'FACEBOOK_PAGE_TOKEN',
     'sendgrid_api_key': 'SENDGRID_API_KEY',
     'linkedin_api_token': 'LINKEDIN_API_TOKEN',
+    'platform_fee_percent': 'PLATFORM_FEE_PERCENT',
+    'auto_hide_threshold': 'AUTO_HIDE_REPORT_THRESHOLD',
+    'post_limit_newcomer': 'POST_LIMIT_NEWCOMER',
+    'post_limit_member': 'POST_LIMIT_MEMBER',
 }
 
-# Stripe keys are skipped entirely when payments are disabled (STRIPE_ENABLED=false).
-# TODO(STRIPE): Remove this set / the skipping logic once Stripe is reconfigured.
-STRIPE_SETTING_KEYS = {
-    'STRIPE_PUBLISHABLE_KEY',
-    'STRIPE_SECRET_KEY',
-    'STRIPE_WEBHOOK_SECRET',
-}
+# M2: the old STRIPE_SETTING_KEYS skipping logic is gone — M2 IS the
+# Stripe reconfiguration it referred to. Admins must be able to set
+# Stripe keys while payments are disabled (that is how payments get
+# re-enabled), so the settings routes no longer hide or skip them.
 
 
 @admin_bp.route('/')
@@ -193,6 +237,23 @@ def deactivate_user(id):
     return redirect(url_for('admin.users'))
 
 
+@admin_bp.route('/users/<id>/verify-email', methods=['POST'])
+@admin_required
+def verify_user_email(id):
+    """POST /admin/users/<id>/verify-email - Manually mark a user's email verified.
+
+    Escape hatch for when the confirmation email cannot reach the user
+    (mail misconfigured, typo'd address the user cannot fix, etc.).
+    """
+    from datetime import datetime, timezone
+    user = get_or_404(User, id)
+    user.email_verified = True
+    user.email_verified_at = datetime.now(timezone.utc)
+    db.session.commit()
+    flash(f'Email verified for {user.email}', 'success')
+    return redirect(url_for('admin.users'))
+
+
 @admin_bp.route('/users/<id>/role', methods=['POST'])
 @admin_required
 def change_role(id):
@@ -203,6 +264,21 @@ def change_role(id):
         user.role = new_role
         db.session.commit()
         flash(f'Role changed to {new_role}', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin_bp.route('/users/<id>/founding-referrer', methods=['POST'])
+@admin_required
+def toggle_founding_referrer(id):
+    """POST /admin/users/<id>/founding-referrer - Toggle the founding
+    referrer flag (15% platform fee instead of the configured rate).
+    The 12-month founding window is enforced by the admin removing
+    the flag, not by code."""
+    user = get_or_404(User, id)
+    user.founding_referrer = not user.founding_referrer
+    db.session.commit()
+    state = 'a founding referrer (15% fee)' if user.founding_referrer else 'a standard referrer'
+    flash(f'{user.email} is now {state}.', 'success')
     return redirect(url_for('admin.users'))
 
 
@@ -250,7 +326,7 @@ def approve_bounty(id):
     bounty = get_or_404(Bounty, id)
     bounty.status = 'open'
     db.session.commit()
-    flash('Bounty approved and published', 'success')
+    flash('Referral need approved and published', 'success')
     return redirect(url_for('admin.bounties'))
 
 
@@ -261,7 +337,7 @@ def reject_bounty(id):
     bounty = get_or_404(Bounty, id)
     bounty.status = 'closed'
     db.session.commit()
-    flash('Bounty rejected', 'success')
+    flash('Referral need rejected', 'success')
     return redirect(url_for('admin.bounties'))
 
 
@@ -272,7 +348,7 @@ def close_bounty(id):
     bounty = get_or_404(Bounty, id)
     bounty.status = 'closed'
     db.session.commit()
-    flash('Bounty closed', 'success')
+    flash('Referral need closed', 'success')
     return redirect(url_for('admin.bounties'))
 
 
@@ -296,19 +372,293 @@ def disputes():
 @admin_bp.route('/disputes/<id>/resolve', methods=['POST'])
 @admin_required
 def resolve_dispute(id):
-    """POST /admin/disputes/<id>/resolve - Resolve dispute."""
+    """POST /admin/disputes/<id>/resolve - Resolve dispute.
+
+    M2: the admin records an outcome (upheld = the respondent lost,
+    dismissed = the raiser lost). The outcome drives the trust-score
+    dispute penalty (-15 to the loser).
+    M3: both parties are notified of the resolution."""
     dispute = get_or_404(Dispute, id)
     resolution = request.form.get('resolution')
-    
+    outcome = request.form.get('outcome')
+    if outcome not in Dispute.VALID_OUTCOMES:
+        flash('Choose an outcome: upheld or dismissed.', 'danger')
+        return redirect(url_for('admin.disputes'))
+
     dispute.status = 'resolved'
     dispute.resolution = resolution
+    dispute.outcome = outcome
     dispute.resolved_by_id = current_user.id
-    from datetime import datetime, timezone
-    dispute.resolved_at = datetime.now(timezone.utc)
-    
+    dispute.resolved_at = utc_now()
+
+    match = db.session.get(Match, dispute.match_id)
+    if match is not None:
+        bounty_title = match.bounty.title if match.bounty else 'your referral'
+        link = url_for('bounties.detail', id=match.bounty_id) if match.bounty_id else None
+        # The outcome reads differently per side: 'upheld' means the
+        # raiser was right (the other party lost).
+        raiser_text = (
+            'upheld in your favour' if outcome == 'upheld'
+            else 'dismissed'
+        )
+        other_text = (
+            'upheld against you' if outcome == 'upheld'
+            else 'dismissed in your favour'
+        )
+        resolution_suffix = f' Resolution: {resolution}' if resolution else ''
+        notify(
+            dispute.raised_by_id, 'dispute_resolved',
+            'Your dispute was resolved',
+            f'Your dispute about "{bounty_title}" was {raiser_text}.'
+            + resolution_suffix,
+            link_url=link,
+        )
+        other_id = (
+            match.employer_id
+            if dispute.raised_by_id == match.hunter_id
+            else match.hunter_id
+        )
+        notify(
+            other_id, 'dispute_resolved',
+            'A dispute was resolved',
+            f'The dispute about "{bounty_title}" was {other_text}.'
+            + resolution_suffix,
+            link_url=link,
+        )
+
     db.session.commit()
     flash('Dispute resolved', 'success')
     return redirect(url_for('admin.disputes'))
+
+
+@admin_bp.route('/verifications')
+@admin_required
+def verifications():
+    """GET /admin/verifications - Verification request queue (M2)."""
+    status = request.args.get('status', 'pending')
+
+    query = VerificationRequest.query
+    if status:
+        query = query.filter_by(status=status)
+
+    requests = query.order_by(desc(VerificationRequest.created_at)).all()
+
+    return render_template('admin/verifications.html',
+                        requests=requests,
+                        status=status)
+
+
+@admin_bp.route('/verifications/<id>/approve', methods=['POST'])
+@admin_required
+def approve_verification(id):
+    """POST /admin/verifications/<id>/approve - Approve a verification
+    request: marks all the user's profiles verified."""
+    req = get_or_404(VerificationRequest, id)
+    if req.status != 'pending':
+        flash('This request was already reviewed.', 'info')
+        return redirect(url_for('admin.verifications'))
+    req.status = 'approved'
+    req.reviewed_by_id = current_user.id
+    req.reviewed_at = utc_now()
+    for profile in Profile.query.filter_by(user_id=req.user_id).all():
+        profile.verified = True
+    notify(
+        req.user_id, 'verification_approved',
+        'Your profile is verified!',
+        'An admin approved your verification request. Your profile now '
+        'shows the verified badge.',
+        link_url=url_for('profile.view', user_id=req.user_id),
+    )
+    db.session.commit()
+    flash('Verification approved.', 'success')
+    return redirect(url_for('admin.verifications'))
+
+
+@admin_bp.route('/verifications/<id>/reject', methods=['POST'])
+@admin_required
+def reject_verification(id):
+    """POST /admin/verifications/<id>/reject - Reject a verification
+    request with an admin note."""
+    req = get_or_404(VerificationRequest, id)
+    if req.status != 'pending':
+        flash('This request was already reviewed.', 'info')
+        return redirect(url_for('admin.verifications'))
+    req.status = 'rejected'
+    req.admin_note = request.form.get('admin_note') or None
+    req.reviewed_by_id = current_user.id
+    req.reviewed_at = utc_now()
+    notify(
+        req.user_id, 'verification_rejected',
+        'Your verification request was not approved',
+        req.admin_note or 'An admin reviewed your request and did not '
+        'approve it. You can request verification again.',
+        link_url=url_for('profile.view', user_id=req.user_id),
+    )
+    db.session.commit()
+    flash('Verification rejected.', 'success')
+    return redirect(url_for('admin.verifications'))
+
+
+@admin_bp.route('/payouts')
+@admin_required
+def payouts():
+    """GET /admin/payouts - All payouts (M2), with a manual-payout form
+    for pending/failed rows and for dual-confirmed matches that have
+    no payout row yet (e.g. confirmed before M2)."""
+    status = request.args.get('status')
+
+    query = Payout.query
+    if status:
+        query = query.filter_by(status=status)
+
+    payouts_list = query.order_by(desc(Payout.created_at)).all()
+
+    completed_matches = (
+        Match.query
+        .filter(Match.hunter_confirmed.is_(True),
+                Match.employer_confirmed.is_(True))
+        .outerjoin(Payout, Payout.match_id == Match.id)
+        .filter(Payout.id.is_(None))
+        .order_by(desc(Match.confirmed_at))
+        .all()
+    )
+
+    return render_template('admin/payouts.html',
+                        payouts=payouts_list,
+                        status=status,
+                        completed_matches=completed_matches)
+
+
+@admin_bp.route('/payouts/<match_id>/record-manual', methods=['POST'])
+@admin_required
+def record_manual_payout_route(match_id):
+    """POST /admin/payouts/<match_id>/record-manual - Record an Interac
+    payout the admin already made to the referrer (M2 interim path
+    before Connect is approved)."""
+    match = get_or_404(Match, match_id)
+    if not (match.hunter_confirmed and match.employer_confirmed):
+        flash('Only a dual-confirmed match can be paid out.', 'danger')
+        return redirect(url_for('admin.payouts'))
+    # M4: a chain match has two payouts (referrer + sharer); the form
+    # says which one this record is for.
+    payout_kind = request.form.get('payout_kind') or 'referral'
+    if payout_kind not in ('referral', 'chain_share'):
+        flash('Unknown payout kind.', 'danger')
+        return redirect(url_for('admin.payouts'))
+    existing = Payout.query.filter_by(
+        match_id=match.id, kind=payout_kind
+    ).first()
+    if existing and existing.status in ('completed', 'processing'):
+        flash('This payout is already completed or in progress.', 'info')
+        return redirect(url_for('admin.payouts'))
+    amount_raw = (request.form.get('amount') or '').strip()
+    try:
+        amount = float(amount_raw)
+    except ValueError:
+        amount = None
+    if amount is None or amount <= 0:
+        flash('Enter a valid payout amount greater than 0.', 'danger')
+        return redirect(url_for('admin.payouts'))
+    reference = (request.form.get('reference') or '').strip()
+    try:
+        _payout, capture_note = record_manual_payout(
+            match, amount, reference, current_user, payout_kind=payout_kind
+        )
+    except ValueError as exc:
+        flash(str(exc), 'danger')
+        return redirect(url_for('admin.payouts'))
+    db.session.commit()
+    msg = f'Manual payout of ${amount:,.2f} CAD recorded.'
+    if capture_note:
+        msg += ' ' + capture_note
+    flash(msg, 'success')
+    return redirect(url_for('admin.payouts'))
+
+
+@admin_bp.route('/reports')
+@moderator_required
+def reports():
+    """GET /admin/reports — M1 moderation review queue.
+
+    View: admin, moderator, or 5000+ karma. Actions (below): admin/moderator
+    only. Acting on a report hides the content; the trust penalty (−10 per
+    upheld report) applies automatically through compute_trust_score.
+    """
+    from models.moderation import Report
+    status = request.args.get('status', 'open')
+    query = Report.query
+    if status:
+        query = query.filter_by(status=status)
+    reports_list = query.order_by(desc(Report.created_at)).all()
+    # M3: overdue reports (open > 24h, the review SLA) sort first
+    # (stable sort keeps newest-first within each group).
+    if status == 'open':
+        reports_list.sort(key=lambda r: r.is_overdue, reverse=True)
+    open_count = Report.query.filter_by(status='open').count()
+    overdue_count = sum(
+        1 for r in Report.query.filter_by(status='open').all() if r.is_overdue
+    )
+    can_act = current_user.role in ('admin', 'moderator')
+    return render_template('admin/reports.html',
+                           reports=reports_list,
+                           status=status,
+                           open_count=open_count,
+                           overdue_count=overdue_count,
+                           can_act=can_act)
+
+
+@admin_bp.route('/reports/<id>/resolve', methods=['POST'])
+@moderator_required
+def resolve_report(id):
+    """POST /admin/reports/<id>/resolve — dismiss or uphold a report."""
+    from datetime import datetime, timezone
+    from models.moderation import Report
+    from models.post import Comment, Post
+    if current_user.role not in ('admin', 'moderator'):
+        flash('Only moderators can act on reports', 'danger')
+        return redirect(url_for('admin.reports'))
+    report = get_or_404(Report, id)
+    if report.status != 'open':
+        flash('This report was already resolved', 'info')
+        return redirect(url_for('admin.reports'))
+    action = request.form.get('action')
+    if action == 'dismiss':
+        report.status = 'dismissed'
+        # M3: if this was the last open report on auto-hidden content,
+        # the content comes back.
+        restored = maybe_restore_after_dismiss(report.target_type, report.target_id)
+        flash(
+            'Report dismissed' + (' — content restored.' if restored else ''),
+            'success',
+        )
+    elif action == 'hide':
+        if report.target_type == 'post':
+            target = db.session.get(Post, report.target_id)
+            if target:
+                target.is_hidden = True
+                # An admin hide is manual, not auto — clear the
+                # auto-hide marker so a later dismiss can't restore it.
+                target.auto_hidden_at = None
+        elif report.target_type == 'comment':
+            target = db.session.get(Comment, report.target_id)
+            if target:
+                target.is_hidden = True
+                target.auto_hidden_at = None
+        elif report.target_type == 'profile':
+            # Hiding a profile hides its posts from feeds (moderator judgment;
+            # user keeps access — a ban is a separate admin action).
+            for post in Post.query.filter_by(author_id=report.target_id, is_hidden=False).all():
+                post.is_hidden = True
+                post.auto_hidden_at = None
+        report.status = 'actioned'
+        flash('Content hidden, report upheld', 'success')
+    else:
+        flash('Unknown action', 'danger')
+        return redirect(url_for('admin.reports'))
+    report.reviewed_by_id = current_user.id
+    report.reviewed_at = datetime.now(timezone.utc)
+    db.session.commit()
+    return redirect(url_for('admin.reports'))
 
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
@@ -318,20 +668,52 @@ def settings():
     form = SettingsForm()
 
     if request.method == 'POST' and form.validate_on_submit():
-        # TODO(STRIPE): Skip saving Stripe keys while payments are disabled.
-        stripe_enabled = current_app.config.get('STRIPE_ENABLED', True)
+        # M2: the platform fee is a plain integer setting — validate it
+        # before saving anything.
+        fee_raw = (request.form.get('platform_fee_percent') or '').strip()
+        if fee_raw:
+            try:
+                fee_value = int(fee_raw)
+            except ValueError:
+                fee_value = None
+            if fee_value is None or not 0 <= fee_value <= 50:
+                flash('Platform fee must be a whole number between 0 and 50.', 'danger')
+                return redirect(url_for('admin.settings'))
+        # M3: moderation settings — whole numbers, at least 1.
+        for field_name, label in [
+            ('auto_hide_threshold', 'Auto-hide threshold'),
+            ('post_limit_newcomer', 'Newcomer post limit'),
+            ('post_limit_member', 'Member post limit'),
+        ]:
+            raw = (request.form.get(field_name) or '').strip()
+            if raw:
+                try:
+                    value = int(raw)
+                except ValueError:
+                    value = None
+                if value is None or value < 1:
+                    flash(f'{label} must be a whole number of at least 1.', 'danger')
+                    return redirect(url_for('admin.settings'))
         for field_name, key in SETTINGS_MAP.items():
-            if not stripe_enabled and key in STRIPE_SETTING_KEYS:
-                continue
             raw = request.form.get(field_name)
             if raw and not raw.startswith('***') and raw.strip():
                 AdminSettings.set(key, raw.strip())
         flash('Settings saved successfully', 'success')
         return redirect(url_for('admin.settings'))
 
-    # TODO(STRIPE): Tell the template to hide the Stripe card when payments are disabled.
-    return render_template('admin/settings.html', form=form,
-                          stripe_enabled=current_app.config.get('STRIPE_ENABLED', True))
+    # M2: prefill the platform fee with its current value (it is not a
+    # secret, so it shows directly — unlike the API keys, which load
+    # via AJAX reveal).
+    form.platform_fee_percent.data = get_platform_fee_percent()
+    # M3: prefill the moderation settings the same way.
+    form.auto_hide_threshold.data = get_auto_hide_threshold()
+    form.post_limit_newcomer.data = AdminSettings.get(
+        POST_LIMIT_NEWCOMER_KEY, str(DEFAULT_POST_LIMIT_NEWCOMER)
+    )
+    form.post_limit_member.data = AdminSettings.get(
+        POST_LIMIT_MEMBER_KEY, str(DEFAULT_POST_LIMIT_MEMBER)
+    )
+    return render_template('admin/settings.html', form=form)
 
 
 @admin_bp.route('/settings/reveal', methods=['POST'])
@@ -341,9 +723,6 @@ def reveal_setting():
     key = request.form.get('key')
     if key not in SETTINGS_MAP.values():
         return jsonify({'error': 'Invalid key'}), 403
-    # TODO(STRIPE): Don't reveal Stripe keys while payments are disabled.
-    if key in STRIPE_SETTING_KEYS and not current_app.config.get('STRIPE_ENABLED', True):
-        return jsonify({'error': 'Stripe disabled'}), 403
     if current_user.role != 'admin':
         return jsonify({'error': 'Admin only'}), 403
     value = AdminSettings.get(key)
@@ -355,11 +734,7 @@ def reveal_setting():
 def all_settings():
     """GET /admin/settings/all - List all keys with masked values."""
     keys_and_values = {}
-    # TODO(STRIPE): Exclude Stripe keys from the listing while payments are disabled.
-    stripe_enabled = current_app.config.get('STRIPE_ENABLED', True)
     for key in SETTINGS_MAP.values():
-        if not stripe_enabled and key in STRIPE_SETTING_KEYS:
-            continue
         val = AdminSettings.get(key)
         if val and len(val) > 4:
             keys_and_values[key] = val[:2] + '***' + val[-2:]
@@ -417,3 +792,141 @@ def create_admin():
 
     flash(f'Admin created: {email}', 'success')
     return redirect(url_for('bounties.board'))
+
+# ---------------------------------------------------------------------------
+# Linked accounts review queue + pledges + recurring bumps (M3)
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/linked-accounts')
+@admin_required
+def linked_accounts():
+    """GET /admin/linked-accounts — manual review queue for linked
+    accounts (M3, §2.2): pending links where the user asked for a
+    manual check, plus all pending links. Manual review for the first
+    100 users is a feature — the founder personally knows them."""
+    manual_only = request.args.get('manual', '1') == '1'
+    query = LinkedAccount.query.filter_by(status='pending')
+    if manual_only:
+        query = query.filter_by(manual_review=True)
+    accounts = query.order_by(desc(LinkedAccount.created_at)).all()
+    pending_count = LinkedAccount.query.filter_by(status='pending').count()
+    manual_count = LinkedAccount.query.filter_by(
+        status='pending', manual_review=True
+    ).count()
+    return render_template(
+        'admin/linked_accounts.html',
+        accounts=accounts,
+        manual_only=manual_only,
+        pending_count=pending_count,
+        manual_count=manual_count,
+    )
+
+
+@admin_bp.route('/linked-accounts/<id>/approve', methods=['POST'])
+@admin_required
+def approve_linked_account(id):
+    """POST /admin/linked-accounts/<id>/approve — the founder checked
+    the link by hand; mark it verified (90-day expiry)."""
+    account = get_or_404(LinkedAccount, id)
+    if account.status == 'verified' and account.is_currently_verified:
+        flash('This link is already verified.', 'info')
+        return redirect(url_for('admin.linked_accounts'))
+    mark_verified(account)
+    notify(
+        account.user_id, 'linked_verified',
+        f'Your {account.platform} account is verified!',
+        'An admin checked your link manually. It counts toward your '
+        'trust score for 90 days.',
+        link_url=url_for('profile.linked_accounts'),
+    )
+    db.session.commit()
+    flash('Link verified.', 'success')
+    return redirect(url_for('admin.linked_accounts'))
+
+
+@admin_bp.route('/linked-accounts/<id>/reject', methods=['POST'])
+@admin_required
+def reject_linked_account(id):
+    """POST /admin/linked-accounts/<id>/reject — reject a link with an
+    admin note."""
+    account = get_or_404(LinkedAccount, id)
+    if account.status != 'pending':
+        flash('This link was already reviewed.', 'info')
+        return redirect(url_for('admin.linked_accounts'))
+    account.status = 'rejected'
+    account.admin_note = request.form.get('admin_note') or None
+    account.manual_review = False
+    notify(
+        account.user_id, 'linked_rejected',
+        f'Your {account.platform} link was not verified',
+        account.admin_note or (
+            'An admin reviewed your link and could not verify it. '
+            'Check the link and try again.'
+        ),
+        link_url=url_for('profile.linked_accounts'),
+    )
+    db.session.commit()
+    flash('Link rejected.', 'success')
+    return redirect(url_for('admin.linked_accounts'))
+
+
+@admin_bp.route('/pledges')
+@admin_required
+def pledges():
+    """GET /admin/pledges — all pledges, with their effective status
+    (a pledger with an open SLA breach shows suspended)."""
+    from utils.pledges import effective_pledge_status, ghosting_compliance
+    pledges_list = Pledge.query.order_by(desc(Pledge.created_at)).all()
+    entries = []
+    for pledge in pledges_list:
+        rate, due, _on_time = ghosting_compliance(pledge.user_id)
+        entries.append({
+            'pledge': pledge,
+            'status': effective_pledge_status(pledge),
+            'compliance_rate': rate,
+            'compliance_due': due,
+        })
+    return render_template('admin/pledges.html', entries=entries)
+
+
+@admin_bp.route('/pledges/<id>/revoke', methods=['POST'])
+@admin_required
+def revoke_pledge(id):
+    """POST /admin/pledges/<id>/revoke — revoke a pledge (the employer
+    broke the promise — e.g. AI screening, repeated ghosting)."""
+    pledge = get_or_404(Pledge, id)
+    if pledge.status == 'revoked':
+        flash('This pledge is already revoked.', 'info')
+        return redirect(url_for('admin.pledges'))
+    pledge.status = 'revoked'
+    pledge.revoked_at = utc_now()
+    pledge.revoke_reason = (request.form.get('reason') or '').strip() or None
+    notify(
+        pledge.user_id, 'pledge_revoked',
+        'Your human-reviewed hiring pledge was revoked',
+        pledge.revoke_reason or (
+            'An admin revoked your pledge. Your company is no longer '
+            'on the register.'
+        ),
+        link_url=url_for('social.pledges'),
+    )
+    db.session.commit()
+    flash('Pledge revoked.', 'success')
+    return redirect(url_for('admin.pledges'))
+
+
+@admin_bp.route('/recurring-bumps/run', methods=['POST'])
+@admin_required
+def run_recurring_bumps_route():
+    """POST /admin/recurring-bumps/run — apply due recurring bumps
+    now (the same runner the `flask run-recurring-bumps` CLI command
+    runs on a schedule)."""
+    results = run_recurring_bumps()
+    db.session.commit()
+    applied = sum(1 for _id, ok, _msg in results if ok)
+    flash(
+        f'Recurring bumps run: {applied} applied, '
+        f'{len(results) - applied} deferred.',
+        'success',
+    )
+    return redirect(url_for('admin.dashboard'))

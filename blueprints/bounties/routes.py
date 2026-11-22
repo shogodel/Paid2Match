@@ -9,44 +9,41 @@ import stripe
 from extensions import db, get_or_404
 from blueprints.bounties.forms import BountyForm, PitchForm
 from models.bounty import Bounty
+from models.dispute import Dispute
 from models.pitch import Pitch
 from models.message import Message
 from models.match import Match
+from models.post import Post
 from models.profile import Profile
 from models.admin_settings import AdminSettings
 from models.bounty_upgrade import BountyUpgrade
-
-
-def _get_stripe_keys():
-    """Get Stripe keys from AdminSettings."""
-    return {
-        'publishable': AdminSettings.get('STRIPE_PUBLISHABLE_KEY'),
-        'secret': AdminSettings.get('STRIPE_SECRET_KEY'),
-    }
-
-
-def _stripe_checkout_url(success_url, cancel_url, amount_cents, description, metadata=None):
-    """Create a Stripe Checkout session and return the URL."""
-    keys = _get_stripe_keys()
-    if not keys['secret']:
-        return None
-    stripe.api_key = keys['secret']
-    session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price_data': {
-                'currency': 'usd',
-                'product_data': {'name': description},
-                'unit_amount': amount_cents,
-            },
-            'quantity': 1,
-        }],
-        mode='payment',
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata=metadata or {},
-    )
-    return session.url
+from models.review import Review, maybe_reveal_reviews
+from models.user import User
+from utils.bumps import (
+    create_recurring_bump,
+    fulfill_boost,
+    fulfill_bump_pack,
+    fulfill_single_bump,
+)
+from utils.chains import validate_share_for_referral
+from utils.feed import create_need_post
+from utils.notifications import notify
+from utils.pro import fulfill_pro_checkout, handle_subscription_event
+from utils.payments import (
+    cancel_authorization,
+    compute_payout_amounts,
+    create_checkout_session,
+    create_refund,
+    fee_rate_for,
+    handle_account_updated,
+    handle_payout_event,
+    handle_transfer_event,
+    payment_intent_status,
+    release_escrow,
+    stripe_enabled,
+    to_cents,
+)
+from utils.referrals import complete_referral_for_match
 
 
 bounties_bp = Blueprint('bounties', __name__)
@@ -66,7 +63,9 @@ def board():
         db.or_(
             Bounty.deadline.is_(None),
             Bounty.deadline > now
-        )
+        ),
+        # Paid bounties stay hidden until payment is secured; free ones show.
+        Bounty.publicly_visible_filter()
     )
     
     if show_urgent:
@@ -92,17 +91,29 @@ def board():
     max_reward = request.args.get('max_reward', type=float)
     if max_reward:
         query = query.filter(Bounty.reward_amount <= max_reward)
-    
-    max_reward = request.args.get('max_reward', type=float)
-    if max_reward:
-        query = query.filter(Bounty.reward_amount <= max_reward)
-    
-    show_urgent = request.args.get('urgent') == '1'
-    
+
     bounty_type = request.args.get('bounty_type')
     if bounty_type:
         query = query.filter_by(bounty_type=bounty_type)
-    
+
+    # M4: keyword search over titles/descriptions, skills filter
+    # (the skills field is saved now — it was discarded before M4),
+    # and category filter.
+    search_q = (request.args.get('q') or '').strip()
+    if search_q:
+        query = query.filter(or_(
+            Bounty.title.ilike(f'%{search_q}%'),
+            Bounty.description.ilike(f'%{search_q}%'),
+        ))
+
+    skill = (request.args.get('skill') or '').strip()
+    if skill:
+        query = query.filter(Bounty.skills.ilike(f'%{skill}%'))
+
+    category = request.args.get('category')
+    if category:
+        query = query.filter_by(category=category)
+
     bounties = query.all()
     
     def get_sort_key(b):
@@ -134,14 +145,27 @@ def board():
                         bounty_type=bounty_type,
                         location=location,
                         min_reward=min_reward,
-                        max_reward=max_reward)
+                        max_reward=max_reward,
+                        search_q=search_q,
+                        skill=skill,
+                        category=category,
+                        categories=Bounty.CATEGORIES)
 
 
 @bounties_bp.route('/<id>')
 def detail(id):
     """GET /bounties/<id> - Bounty detail page."""
     bounty = get_or_404(Bounty, id)
-    
+
+    # Unsecured paid bounties are not public yet — only the poster may view
+    # them (they need the page to secure payment). Everyone else goes back
+    # to the board.
+    if not bounty.is_publicly_visible and (
+        not current_user.is_authenticated or current_user.id != bounty.poster_id
+    ):
+        flash('This referral need is not public yet.', 'warning')
+        return redirect(url_for('bounties.board'))
+
     if bounty.is_expired and bounty.status == 'open':
         return redirect(url_for('bounties.expired', id=id))
     
@@ -162,7 +186,10 @@ def detail(id):
                         bounty=bounty,
                         pitches=pitches,
                         pitch_form=pitch_form,
-                        user_pitched=user_pitched)
+                        user_pitched=user_pitched,
+                        # M4: the share this visit came through (from a
+                        # share card) — the pitch form carries it on.
+                        share_id=request.args.get('share_id') or None)
 
 
 @bounties_bp.route('/<id>/edit', methods=['GET', 'POST'])
@@ -180,17 +207,33 @@ def edit(id):
     form = BountyForm(obj=bounty)
     
     if request.method == 'POST' and form.validate_on_submit():
+        bounty_type = form.bounty_type.data
+        category = (form.category.data or '').strip() or None
+        if category and category not in Bounty.CATEGORIES.get(bounty_type, {}):
+            flash('That category does not belong to the chosen vertical.', 'danger')
+            return render_template('bounties/edit.html', form=form, bounty=bounty)
         bounty.title = form.title.data
         bounty.description = form.description.data
-        bounty.bounty_type = 'recruitment'
+        bounty.bounty_type = bounty_type
+        bounty.category = category
+        bounty.skills = (form.skills.data or '').strip() or None
         bounty.bounty_direction = form.bounty_direction.data
         bounty.reward_amount = form.reward_amount.data or None
         bounty.location = form.location.data or None
         bounty.deadline = form.deadline.data
         bounty.success_criteria = form.success_criteria.data or None
-        
+
         db.session.commit()
-        flash('Bounty updated successfully!', 'success')
+        # M1: keep the linked feed post in sync with the need.
+        post = Post.query.filter_by(bounty_id=bounty.id).first()
+        if post:
+            post.body = bounty.description or ''
+            if bounty.is_free_bounty:
+                post.post_type = 'need_free'
+            else:
+                post.post_type = 'need_paid'
+            db.session.commit()
+        flash('Referral need updated successfully!', 'success')
         return redirect(url_for('bounties.detail', id=id))
     
     return render_template('bounties/edit.html', form=form, bounty=bounty)
@@ -208,13 +251,20 @@ def post():
     form = BountyForm()
 
     if request.method == 'POST' and form.validate_on_submit():
+        bounty_type = form.bounty_type.data
+        category = (form.category.data or '').strip() or None
+        if category and category not in Bounty.CATEGORIES.get(bounty_type, {}):
+            flash('That category does not belong to the chosen vertical.', 'danger')
+            return render_template('bounties/post.html', form=form)
         reward = form.reward_amount.data or 0
 
         bounty = Bounty(
             poster_id=current_user.id,
             title=form.title.data,
             description=form.description.data,
-            bounty_type='recruitment',
+            bounty_type=bounty_type,
+            category=category,
+            skills=(form.skills.data or '').strip() or None,
             bounty_direction=form.bounty_direction.data,
             reward_amount=reward or None,
             location=form.location.data or None,
@@ -222,32 +272,37 @@ def post():
             success_criteria=form.success_criteria.data or None,
             status='open',
             payment_status='unsecured',
+            is_free=bool(request.form.get('is_free') or not reward),
             payer_type=request.form.get('payer_type', 'poster')
         )
 
         db.session.add(bounty)
         db.session.commit()
 
+        # M1: every need also appears as a post in the feed.
+        create_need_post(bounty)
+        db.session.commit()
+
         if request.form.get('is_free') or not reward:
             bounty.is_free = True
             bounty.payment_status = 'unsecured'
             db.session.commit()
-            flash('Bounty created!', 'success')
+            flash('Referral need created!', 'success')
             return redirect(url_for('bounties.detail', id=bounty.id))
 
         if bounty.payer_type == 'poster':
-            flash('Bounty created! Secure payment to publish it.', 'success')
-            return redirect(url_for('bounties.upgrade', id=bounty.id))
+            flash('Referral need created! Secure payment to publish it.', 'success')
+            return redirect(url_for('bounties.secure_payment', id=bounty.id))
         else:
             payer_username = request.form.get('payer_username', '').strip()
             if payer_username:
                 payer_user = User.query.filter_by(email=payer_username).first()
                 if not payer_user:
-                    flash(f'User "{payer_username}" not found. Bounty created without invitation.', 'warning')
+                    flash(f'User "{payer_username}" not found. Referral need created without invitation.', 'warning')
                     return redirect(url_for('bounties.detail', id=bounty.id))
                 
                 if payer_user.id == current_user.id:
-                    flash('You cannot invite yourself. Bounty created.', 'warning')
+                    flash('You cannot invite yourself. Referral need created.', 'warning')
                     return redirect(url_for('bounties.detail', id=bounty.id))
                 
                 agreement = BountyPaymentAgreement(
@@ -261,7 +316,7 @@ def post():
                 
                 flash(f'Invitation sent to {payer_username}! They must accept before paying.', 'success')
             else:
-                flash('Bounty created! Invite someone to pay to proceed.', 'success')
+                flash('Referral need created! Invite someone to pay to proceed.', 'success')
             
             return redirect(url_for('bounties.detail', id=bounty.id))
 
@@ -279,7 +334,7 @@ def payment_link(id):
         return redirect(url_for('bounties.detail', id=id))
 
     if bounty.payer_type != 'third_party':
-        flash('This bounty does not use third-party payment', 'warning')
+        flash('This need does not use third-party payment', 'warning')
         return redirect(url_for('bounties.detail', id=id))
 
     if bounty.payment_status == 'secured':
@@ -297,35 +352,55 @@ def pitch(id):
     """POST /bounties/<id>/pitch - Submit a pitch."""
     bounty = get_or_404(Bounty, id)
     form = PitchForm()
-    
-    # Can't pitch your own bounty
+
+    # No referring on a paid bounty whose payment is not secured yet.
+    if not bounty.is_publicly_visible:
+        flash('This referral need is not open for referrals yet — payment has not been secured.', 'warning')
+        return redirect(url_for('bounties.board'))
+
+    # Can't refer on your own bounty
     if bounty.poster_id == current_user.id:
-        flash('You cannot pitch on your own bounty', 'danger')
+        flash('You cannot refer someone for your own referral need', 'danger')
         return redirect(url_for('bounties.detail', id=id))
     
-    # Already pitched?
+    # Already referred?
     existing = Pitch.query.filter_by(
         bounty_id=id,
         hunter_id=current_user.id
     ).first()
     if existing:
-        flash('You have already pitched on this bounty', 'warning')
+        flash('You have already referred someone for this need', 'warning')
         return redirect(url_for('bounties.detail', id=id))
     
     if form.validate_on_submit():
+        # M4: the share this referral came through (from the detail
+        # page's hidden field, or the query string). An invalid share
+        # is ignored, never an error.
+        share_id = (
+            request.form.get('share_id') or request.args.get('share_id') or None
+        )
+        share = validate_share_for_referral(share_id, bounty, current_user.id)
         pitch = Pitch(
             bounty_id=id,
             hunter_id=current_user.id,
             candidate_teaser=form.candidate_teaser.data,
-            status='pending'
+            status='pending',
+            via_share_id=share.id if share else None,
         )
         db.session.add(pitch)
         db.session.commit()
-        
-        flash('Pitch submitted! The bounty poster will be notified.', 'success')
-        
-        # TODO: Send notification to bounty poster
-    
+
+        # M1: notify the poster (in-app + email — a key event).
+        notify(
+            bounty.poster_id, 'referral_new',
+            f'New referral for "{bounty.title}"',
+            f'{current_user.full_name} referred someone.',
+            actor_id=current_user.id,
+            link_url=url_for('bounties.detail', id=bounty.id),
+        )
+        db.session.commit()
+        flash('Referral submitted! The poster will be notified.', 'success')
+
     return redirect(url_for('bounties.detail', id=id))
 
 
@@ -349,6 +424,8 @@ def respond_to_pitch(pitch_id):
     pitch.status = 'interested' if response == 'interested' else 'rejected'
     pitch.employer_response = request.form.get('employer_response') or None
     pitch.updated_at = datetime.now(timezone.utc)
+    # M2: first-response time for the no-ghosting SLA (5 business days).
+    pitch.responded_at = datetime.now(timezone.utc)
     db.session.commit()
 
     if response == 'interested':
@@ -360,15 +437,33 @@ def respond_to_pitch(pitch_id):
             recipient_id=hunter.id,
             bounty_id=bounty.id,
             pitch_id=pitch.id,
-            content=f'Your pitch for "{bounty.title}" has been accepted! I am interested in connecting. Let\'s discuss further.'
+            content=f'Your referral for "{bounty.title}" has been accepted! I am interested in connecting. Let\'s discuss further.'
         )
         db.session.add(auto_message)
+        # M1: notify the referrer (in-app + email). No separate message_new
+        # for the auto-message — referral_accepted covers it.
+        notify(
+            hunter.id, 'referral_accepted',
+            f'Your referral for "{bounty.title}" was accepted',
+            'Details are now revealed — discuss next steps.',
+            actor_id=employer.id,
+            link_url=url_for('bounties.detail', id=bounty.id),
+        )
         db.session.commit()
 
-        flash('Pitch accepted! A message has been sent to the hunter. Details are now revealed.', 'success')
+        flash('Referral accepted! A message has been sent to the referrer. Details are now revealed.', 'success')
         return redirect(url_for('messages.inbox'))
 
-    flash('Pitch passed.', 'info')
+    # M1: notify the referrer the referral was passed on (in-app + email).
+    notify(
+        pitch.hunter_id, 'referral_rejected',
+        f'Your referral for "{bounty.title}" was passed',
+        'The poster chose another referral for this need.',
+        actor_id=current_user.id,
+        link_url=url_for('bounties.detail', id=bounty.id),
+    )
+    db.session.commit()
+    flash('Referral passed.', 'info')
     return redirect(url_for('bounties.detail', id=bounty.id))
 
 
@@ -384,14 +479,22 @@ def confirm_match(pitch_id):
         return redirect(url_for('bounties.detail', id=bounty.id))
 
     if pitch.status != 'interested':
-        flash('This pitch has not been accepted yet.', 'warning')
+        flash('This referral has not been accepted yet.', 'warning')
         return redirect(url_for('bounties.detail', id=bounty.id))
 
     match = Match.query.filter_by(pitch_id=pitch_id).first()
     if not match:
         reward = float(bounty.reward_amount) if bounty.reward_amount else 0
         transaction_fee_collected = float(bounty.transaction_fee) if bounty.transaction_fee else 0
-        platform_fee = reward * 0.12
+        # M2: the platform fee is admin-configurable (default 20%,
+        # 15% for founding referrers) — the old hardcoded 12% is gone.
+        # The rate is locked in at match creation.
+        if reward > 0:
+            _gross, platform_fee, _net = compute_payout_amounts(
+                reward, fee_rate_for(pitch.hunter)
+            )
+        else:
+            platform_fee = 0
         transaction_fee = reward * 0.03
         match = Match(
             bounty_id=bounty.id,
@@ -426,18 +529,42 @@ def confirm_match(pitch_id):
 
     if match.hunter_confirmed and match.employer_confirmed:
         match.confirmed_at = datetime.now(timezone.utc)
-        match.payout_status = 'pending_release'
         bounty.status = 'completed'
         pitch.status = 'accepted'
-        db.session.commit()
 
         for user_id, score_delta in [(match.hunter_id, 10), (match.employer_id, 5)]:
             profile = Profile.query.filter_by(user_id=user_id).first()
             if profile:
                 profile.reputation_score = (profile.reputation_score or 0) + score_delta
+
+        # M1: referral completion side effects (karma, helped, free bump,
+        # win post, share-chain credit) + match-confirmed notifications.
+        complete_referral_for_match(match)
+        for user_id in (match.hunter_id, match.employer_id):
+            notify(
+                user_id, 'match_confirmed',
+                f'Match confirmed for "{bounty.title}"',
+                'Both parties confirmed the hire.',
+                link_url=url_for('bounties.confirmed_match', match_id=match.id),
+            )
+
+        # M2: release the escrow (capture the authorized payment, then
+        # transfer the referrer's share to their Connect account). The
+        # old code set payout_status='pending_release' here — a value
+        # that was never valid, so payouts dead-ended. Free needs
+        # complete immediately.
+        reward = float(bounty.reward_amount or 0)
+        if reward > 0:
+            escrow_ok, escrow_msg = release_escrow(match)
+        else:
+            match.set_payout_status('completed')
+            escrow_ok, escrow_msg = True, 'Free need — nothing to pay out.'
         db.session.commit()
 
-        flash('Match confirmed by both parties! Payment will be processed.', 'success')
+        if escrow_ok:
+            flash('Match confirmed by both parties! Payout is being processed.', 'success')
+        else:
+            flash(f'Match confirmed by both parties! Payout: {escrow_msg}', 'success')
         return redirect(url_for('bounties.confirmed_match', match_id=match.id))
 
     flash('Confirmation received. Waiting for the other party to confirm.', 'info')
@@ -468,8 +595,130 @@ def confirmed_match(match_id):
         return redirect(url_for('bounties.board'))
     pitch = db.session.get(Pitch, match.pitch_id) if match.pitch_id else None
     bounty = db.session.get(Bounty, match.bounty_id)
+    # M2: reviews for this match (only revealed ones are shown) and
+    # whether the viewer can still rate or file a dispute.
+    reviews = Review.query.filter_by(match_id=match.id).all()
+    revealed_reviews = [r for r in reviews if r.is_revealed()]
+    my_review = next(
+        (r for r in reviews if r.reviewer_id == current_user.id), None
+    )
+    open_dispute = Dispute.query.filter_by(
+        match_id=match.id, status='open'
+    ).first()
     return render_template('bounties/confirmed_match.html',
-                      match=match, pitch=pitch, bounty=bounty)
+                      match=match, pitch=pitch, bounty=bounty,
+                      revealed_reviews=revealed_reviews,
+                      my_review=my_review,
+                      open_dispute=open_dispute)
+
+
+@bounties_bp.route('/matches/<match_id>/rate', methods=['GET', 'POST'])
+@login_required
+def rate_match(match_id):
+    """GET/POST /bounties/matches/<match_id>/rate - Rate the other party
+    after a confirmed match. Double-blind: reviews are revealed only
+    once both sides have rated, or after 14 days."""
+    match = get_or_404(Match, match_id)
+    if current_user.id not in (match.hunter_id, match.employer_id):
+        flash('Access denied', 'danger')
+        return redirect(url_for('bounties.board'))
+    if not (match.hunter_confirmed and match.employer_confirmed):
+        flash('You can rate once both sides have confirmed the match.', 'warning')
+        return redirect(url_for('bounties.confirmed_match', match_id=match.id))
+    existing = Review.query.filter_by(
+        match_id=match.id, reviewer_id=current_user.id
+    ).first()
+    if existing:
+        flash('You have already rated this match.', 'info')
+        return redirect(url_for('bounties.confirmed_match', match_id=match.id))
+    # The reviewee's role determines the rating dimensions.
+    reviewee_id = match.employer_id if current_user.id == match.hunter_id else match.hunter_id
+    reviewee_role = 'poster' if current_user.id == match.hunter_id else 'referrer'
+    labels = Review.DIMENSION_LABELS[reviewee_role]
+    if request.method == 'POST':
+        try:
+            primary = int(request.form.get('rating_primary', 0))
+            secondary = int(request.form.get('rating_secondary', 0))
+        except ValueError:
+            primary = secondary = 0
+        if primary not in range(1, 6) or secondary not in range(1, 6):
+            flash('Please give both ratings (1–5 stars).', 'danger')
+            return render_template('bounties/rate.html', match=match,
+                                   reviewee_role=reviewee_role, labels=labels)
+        review = Review(
+            match_id=match.id,
+            reviewer_id=current_user.id,
+            reviewee_id=reviewee_id,
+            reviewee_role=reviewee_role,
+            rating_primary=primary,
+            rating_secondary=secondary,
+            comment=request.form.get('comment') or None,
+        )
+        db.session.add(review)
+        db.session.commit()
+        revealed = maybe_reveal_reviews(match.id)
+        db.session.commit()
+        if revealed:
+            for user_id in (match.hunter_id, match.employer_id):
+                notify(
+                    user_id, 'review_visible',
+                    'New review on your match',
+                    'Both sides have rated — the reviews are now visible.',
+                    link_url=url_for('bounties.confirmed_match', match_id=match.id),
+                )
+            db.session.commit()
+            flash('Thanks for rating! Both reviews are now visible.', 'success')
+        else:
+            flash(
+                'Thanks for rating! Your review will be revealed once the '
+                'other side rates too (or after 14 days).',
+                'success',
+            )
+        return redirect(url_for('bounties.confirmed_match', match_id=match.id))
+    return render_template('bounties/rate.html', match=match,
+                           reviewee_role=reviewee_role, labels=labels)
+
+
+@bounties_bp.route('/matches/<match_id>/dispute', methods=['GET', 'POST'])
+@login_required
+def file_dispute(match_id):
+    """GET/POST /bounties/matches/<match_id>/dispute - File a dispute on
+    a match. One open dispute per match; the admin resolve flow already
+    exists (see admin routes)."""
+    match = get_or_404(Match, match_id)
+    if current_user.id not in (match.hunter_id, match.employer_id):
+        flash('Access denied', 'danger')
+        return redirect(url_for('bounties.board'))
+    open_dispute = Dispute.query.filter_by(
+        match_id=match.id, status='open'
+    ).first()
+    if open_dispute:
+        flash('There is already an open dispute on this match.', 'info')
+        return redirect(url_for('bounties.confirmed_match', match_id=match.id))
+    if request.method == 'POST':
+        reason = (request.form.get('reason') or '').strip()
+        if len(reason) < 10:
+            flash('Please describe what happened (at least 10 characters).', 'danger')
+            return render_template('bounties/dispute_form.html', match=match)
+        dispute = Dispute(
+            match_id=match.id,
+            raised_by_id=current_user.id,
+            reason=reason,
+            status='open',
+        )
+        db.session.add(dispute)
+        other_id = match.employer_id if current_user.id == match.hunter_id else match.hunter_id
+        notify(
+            other_id, 'dispute_opened',
+            f'A dispute was opened on your match for "{match.bounty.title}"',
+            'An admin will review it. You will be notified of the outcome.',
+            actor_id=current_user.id,
+            link_url=url_for('bounties.confirmed_match', match_id=match.id),
+        )
+        db.session.commit()
+        flash('Dispute filed. An admin will review it.', 'success')
+        return redirect(url_for('bounties.confirmed_match', match_id=match.id))
+    return render_template('bounties/dispute_form.html', match=match)
 
 
 @bounties_bp.route('/recruitment')
@@ -481,9 +730,10 @@ def recruitment_board():
     query = Bounty.query.filter(
         Bounty.bounty_type == 'recruitment',
         Bounty.status == 'open',
-        db.or_(Bounty.deadline.is_(None), Bounty.deadline > now)
+        db.or_(Bounty.deadline.is_(None), Bounty.deadline > now),
+        Bounty.publicly_visible_filter()
     )
-    _apply_filters(query)
+    query = _apply_filters(query)
     query = query.order_by(desc(Bounty.created_at))
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     return render_template('bounties/recruitment_board.html',
@@ -491,7 +741,26 @@ def recruitment_board():
                           bounty_type='recruitment')
 
 
-
+@bounties_bp.route('/services')
+def services_board():
+    """GET /bounties/services - Services-referral needs only (M4
+    vertical #2: refer a service provider — a plumber, a designer —
+    to someone who needs them)."""
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    now = datetime.now(timezone.utc)
+    query = Bounty.query.filter(
+        Bounty.bounty_type == 'services',
+        Bounty.status == 'open',
+        db.or_(Bounty.deadline.is_(None), Bounty.deadline > now),
+        Bounty.publicly_visible_filter()
+    )
+    query = _apply_filters(query)
+    query = query.order_by(desc(Bounty.created_at))
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('bounties/services_board.html',
+                          bounties=pagination.items, pagination=pagination,
+                          bounty_type='services')
 
 
 def _apply_filters(query):
@@ -507,6 +776,19 @@ def _apply_filters(query):
     direction = request.args.get('direction')
     if direction:
         query = query.filter(Bounty.bounty_direction == direction)
+    # M4: keyword search + skills + category (same as the main board).
+    search_q = (request.args.get('q') or '').strip()
+    if search_q:
+        query = query.filter(or_(
+            Bounty.title.ilike(f'%{search_q}%'),
+            Bounty.description.ilike(f'%{search_q}%'),
+        ))
+    skill = (request.args.get('skill') or '').strip()
+    if skill:
+        query = query.filter(Bounty.skills.ilike(f'%{skill}%'))
+    category = request.args.get('category')
+    if category:
+        query = query.filter_by(category=category)
     return query
 
 
@@ -526,21 +808,19 @@ def secure_payment(id):
         return redirect(url_for('bounties.detail', id=id))
 
     if not bounty.reward_amount or bounty.reward_amount == 0:
-        flash('This bounty is free — no payment needed', 'info')
+        flash('This need is free — no payment needed', 'info')
         return redirect(url_for('bounties.detail', id=id))
 
     if bounty.payment_status == 'secured':
         flash('Payment already secured', 'info')
         return redirect(url_for('bounties.detail', id=id))
 
-    # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
-    # Marks the bounty secured without charging, so posting stays functional. Remove this
-    # branch when Stripe is reconfigured.
-    if not current_app.config.get('STRIPE_ENABLED', True):
-        if bounty.payment_status != 'secured':
-            bounty.payment_status = 'secured'
-            db.session.commit()
-        flash('Payments are currently disabled — bounty marked secured (no charge).', 'info')
+    # M2: fail closed — when payments are disabled, a paid need cannot
+    # be secured at all (the old free passthrough marked it secured
+    # without charging). The kill-switch stays; it just blocks paid
+    # features instead of giving them away.
+    if not stripe_enabled():
+        flash('Payments are currently unavailable — this need cannot be secured right now.', 'warning')
         return redirect(url_for('bounties.detail', id=id))
 
     base_url = request.host_url.rstrip('/')
@@ -550,11 +830,13 @@ def secure_payment(id):
     bounty_amount = float(bounty.reward_amount)
     transaction_fee = bounty_amount * 0.03
     total_charge = bounty_amount + transaction_fee
-    
-    amount_cents = int(total_charge * 100)
-    description = f'Bounty Reward: {bounty.title} (${bounty_amount:.2f} + 3% fee: ${transaction_fee:.2f})'
 
-    checkout_url = _stripe_checkout_url(
+    amount_cents = int(total_charge * 100)
+    description = f'Referral Need Reward: {bounty.title} (${bounty_amount:.2f} + 3% fee: ${transaction_fee:.2f})'
+
+    # M2: manual capture — the payment is authorized (escrow), not
+    # taken. It is captured when the match is confirmed by both sides.
+    checkout_url = create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
         amount_cents=amount_cents,
@@ -563,7 +845,8 @@ def secure_payment(id):
             'bounty_id': bounty.id,
             'bounty_amount': str(bounty_amount),
             'transaction_fee': str(transaction_fee)
-        }
+        },
+        capture_method='manual',
     )
 
     if not checkout_url:
@@ -582,21 +865,17 @@ def secure_third_party(id):
     bounty = get_or_404(Bounty, id)
 
     if bounty.payer_type != 'third_party':
-        flash('This bounty does not require third-party payment', 'warning')
+        flash('This need does not require third-party payment', 'warning')
         return redirect(url_for('bounties.detail', id=id))
 
     if bounty.payment_status == 'secured':
         flash('Payment already secured', 'info')
         return redirect(url_for('bounties.detail', id=id))
 
-    # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
-    # Third-party payer "pays" by simply securing the bounty for free. Remove when Stripe
-    # is reconfigured.
-    if not current_app.config.get('STRIPE_ENABLED', True):
-        if bounty.payment_status != 'secured':
-            bounty.payment_status = 'secured'
-            db.session.commit()
-        flash('Payments are currently disabled — bounty marked secured (no charge).', 'info')
+    # M2: fail closed — when payments are disabled, a paid need cannot
+    # be secured at all (see secure_payment).
+    if not stripe_enabled():
+        flash('Payments are currently unavailable — this need cannot be secured right now.', 'warning')
         return redirect(url_for('bounties.detail', id=id))
 
     agreement = BountyPaymentAgreement.query.filter_by(
@@ -616,7 +895,7 @@ def secure_third_party(id):
             flash('You must accept the payment invitation first.', 'warning')
             return redirect(url_for('bounties.invitation', agreement_id=pending.id))
         
-        flash('You have not been invited to pay for this bounty.', 'danger')
+        flash('You have not been invited to pay for this need.', 'danger')
         return redirect(url_for('bounties.detail', id=id))
 
     if request.method == 'POST':
@@ -629,9 +908,11 @@ def secure_third_party(id):
         total_charge = bounty_amount + transaction_fee
         
         amount_cents = int(total_charge * 100)
-        description = f'Bounty Reward: {bounty.title} (${bounty_amount:.2f} + 3% fee: ${transaction_fee:.2f})'
+        description = f'Referral Need Reward: {bounty.title} (${bounty_amount:.2f} + 3% fee: ${transaction_fee:.2f})'
 
-        checkout_url = _stripe_checkout_url(
+        # M2: manual capture — the payment is authorized (escrow), not
+        # taken. It is captured when the match is confirmed by both sides.
+        checkout_url = create_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
             amount_cents=amount_cents,
@@ -641,7 +922,8 @@ def secure_third_party(id):
                 'bounty_amount': str(bounty_amount),
                 'transaction_fee': str(transaction_fee),
                 'third_party_payer': current_user.id
-            }
+            },
+            capture_method='manual',
         )
 
         if not checkout_url:
@@ -701,6 +983,70 @@ def my_invitations():
     return render_template('bounties/my_invitations.html', invitations=pending_invitations)
 
 
+def _handle_m3_checkout(session, session_id, m3_kind, metadata, logger):
+    """Fulfill an M3 (bump/boost/Pro/recurring) checkout.session.completed
+    event. All fulfillment is idempotent on the session id, so a
+    duplicate event is a no-op. Does not commit — the caller commits."""
+    user_id = metadata.get('user_id')
+    user = db.session.get(User, user_id) if user_id else None
+    if user is None:
+        logger.warning(f'M3 checkout {session_id}: unknown user {user_id}')
+        return
+
+    if m3_kind == 'bump_pack':
+        try:
+            pack_size = int(metadata.get('pack_size', 0))
+            price_cents = int(metadata.get('price_cents', 0))
+        except (TypeError, ValueError):
+            logger.warning(f'M3 bump pack {session_id}: bad metadata {metadata}')
+            return
+        _purchase, created = fulfill_bump_pack(
+            user.id, pack_size, price_cents, session_id
+        )
+        logger.info(f'Bump pack fulfilled for {user_id}: {pack_size} bumps (new={created})')
+        return
+
+    if m3_kind == 'pro':
+        sub = fulfill_pro_checkout(session)
+        logger.info(f'Pro checkout fulfilled for {user_id}: {sub}')
+        return
+
+    post_id = metadata.get('post_id')
+    post = db.session.get(Post, post_id) if post_id else None
+    if post is None:
+        logger.warning(f'M3 checkout {session_id}: unknown post {post_id}')
+        return
+
+    if m3_kind == 'bump_single':
+        _bump, error = fulfill_single_bump(user, post, session_id)
+        if error:
+            logger.warning(f'Single bump fulfillment failed: {error}')
+        else:
+            logger.info(f'Single bump fulfilled for post {post_id}')
+    elif m3_kind == 'boost':
+        try:
+            days = int(metadata.get('days', 1))
+        except (TypeError, ValueError):
+            days = 1
+        _boost, error = fulfill_boost(user, post, days, session_id)
+        if error:
+            logger.warning(f'Boost fulfillment failed: {error}')
+        else:
+            logger.info(f'Boost fulfilled for post {post_id} ({days} days)')
+    elif m3_kind == 'recurring_bump':
+        subscription_id = session.get('subscription')
+        if not subscription_id:
+            logger.warning(f'Recurring bump {session_id}: no subscription id')
+            return
+        _recurring, error = create_recurring_bump(user, post, subscription_id)
+        if error:
+            logger.info(f'Recurring bump created; first bump deferred: {error}')
+        else:
+            logger.info(f'Recurring bump created for post {post_id}')
+    else:
+        logger.warning(f'Unknown m3_kind {m3_kind!r} in checkout {session_id}')
+
+
 @bounties_bp.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
     """
@@ -716,23 +1062,22 @@ def stripe_webhook():
     """
     import logging
 
-    # TODO(STRIPE): When payments are disabled (STRIPE_ENABLED=false), the webhook is
-    # inert — fail closed so it cannot be abused to flip payment state. Remove this guard
-    # (or just ensure STRIPE_ENABLED=true) when Stripe is reconfigured.
-    if not current_app.config.get('STRIPE_ENABLED', True):
+    # M2: when payments are disabled the webhook is inert — fail closed
+    # so it cannot be abused to flip payment state.
+    if not stripe_enabled():
         return '', 400
 
     logger = logging.getLogger(__name__)
     logger.info(f'Webhook called from {request.remote_addr}')
     logger.info(f'Headers: {dict(request.headers)}')
     logger.info(f'Payload length: {len(request.data)} bytes')
-    
-    keys = _get_stripe_keys()
-    if not keys['secret']:
+
+    secret_key = AdminSettings.get('STRIPE_SECRET_KEY')
+    if not secret_key:
         logger.error('Stripe secret key not configured')
         return '', 400
 
-    stripe.api_key = keys['secret']
+    stripe.api_key = secret_key
     webhook_secret = AdminSettings.get('STRIPE_WEBHOOK_SECRET', '')
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
@@ -765,15 +1110,24 @@ def stripe_webhook():
     if event_type == 'checkout.session.completed':
         session = event['data']['object']
         session_id = session.get('id')
-        
+
+        # M3: bump/boost/Pro/recurring checkouts carry an m3_kind in
+        # their metadata and are fulfilled here (idempotent on the
+        # session id) — before the bounty flow, which needs a bounty_id.
+        metadata = session.get('metadata') or {}
+        m3_kind = metadata.get('m3_kind')
+        if m3_kind:
+            _handle_m3_checkout(session, session_id, m3_kind, metadata, logger)
+            db.session.commit()
+            return '', 200
+
         # Check for duplicate processing using session ID
         from models.bounty_upgrade import BountyUpgrade as BU
         existing_processed = BU.query.filter_by(stripe_session_id=session_id).first()
         if existing_processed and existing_processed.is_active:
             logger.info(f'Session {session_id} already processed, skipping')
             return '', 200
-        
-        metadata = session.get('metadata') or {}
+
         bounty_id = metadata.get('bounty_id')
         is_upgrade = metadata.get('upgrade_session') == 'true'
         
@@ -854,15 +1208,45 @@ def stripe_webhook():
             bounty.transaction_fee = float(meta_dict.get('transaction_fee', 0) or 0)
             db.session.commit()
             logger.info('Bounty ' + bounty_id + ' payment secured. Fee: ' + str(bounty.transaction_fee))
+            # M1: notify the poster (in-app + email — a key event).
+            notify(
+                bounty.poster_id, 'payment_secured',
+                f'Payment secured for "{bounty.title}"',
+                'Your referral need is now public — people can refer.',
+                link_url=url_for('bounties.detail', id=bounty.id),
+            )
+            db.session.commit()
     
     elif event_type == 'payment_intent.succeeded':
         # Optional: handle direct payment intent events
         logger.info(f'Payment intent succeeded: {event["data"]["object"].get("id")}')
-    
+
     elif event_type == 'payment_intent.payment_failed':
         # Optional: handle failed payments
         logger.warning(f'Payment failed: {event["data"]["object"].get("id")}')
-    
+
+    # M2: Connect events — onboarding status, transfer completion and
+    # bank payouts. Handlers live in utils/payments.py; they update
+    # payout status and notify the referrer.
+    elif event_type == 'account.updated':
+        handle_account_updated(event['data']['object'])
+        db.session.commit()
+
+    elif event_type.startswith('transfer.'):
+        handle_transfer_event(event_type, event['data']['object'])
+        db.session.commit()
+
+    elif event_type.startswith('payout.'):
+        handle_payout_event(
+            event_type, event['data']['object'], event.get('account')
+        )
+        db.session.commit()
+
+    # M3: Pro + recurring-bump subscription lifecycle.
+    elif event_type.startswith('customer.subscription.'):
+        handle_subscription_event(event['data']['object'], event_type)
+        db.session.commit()
+
     else:
         logger.info(f'Unhandled event type: {event_type}')
     
@@ -875,7 +1259,10 @@ def api_list():
     """GET /api/bounties - JSON API for featured bounties."""
     limit = request.args.get('limit', 3, type=int)
     
-    bounties = Bounty.query.filter_by(status='open').order_by(
+    bounties = Bounty.query.filter(
+        Bounty.status == 'open',
+        Bounty.publicly_visible_filter()
+    ).order_by(
         desc(Bounty.created_at)
     ).limit(limit).all()
     
@@ -883,6 +1270,8 @@ def api_list():
         'id': b.id,
         'title': b.title,
         'bounty_type': b.bounty_type,
+        'category': b.category,
+        'skills': b.skills,
         'reward_amount': float(b.reward_amount) if b.reward_amount else None,
         'location': b.location,
         'status': b.status,
@@ -932,7 +1321,7 @@ def repost(id):
     
     db.session.commit()
     
-    flash('Bounty reposted with new deadline!', 'success')
+    flash('Referral need reposted with new deadline!', 'success')
     return redirect(url_for('bounties.detail', id=id))
 
 
@@ -946,40 +1335,45 @@ def cancel_refund(id):
         flash('Access denied', 'danger')
         return redirect(url_for('bounties.detail', id=id))
 
-    # TODO(STRIPE): When payments are disabled (STRIPE_ENABLED=false) there is nothing to
-    # refund via Stripe, so just close/refund the record locally. Remove this branch when
-    # Stripe is reconfigured (note: the live refund path also referenced bounty.amount which
-    # does not exist — fixed to bounty.reward_amount).
-    if not current_app.config.get('STRIPE_ENABLED', True):
+    # M2: fail closed — when payments are disabled and a payment was
+    # secured, refuse: the Stripe authorization cannot be cancelled
+    # while the kill-switch is on, so the bounty must stay secured
+    # until payments come back. An unsecured need can still be closed
+    # locally (no money involved).
+    if not stripe_enabled():
         if bounty.payment_status == 'secured':
-            bounty.payment_status = 'refunded'
+            flash('Payments are currently unavailable — the secured payment cannot be released right now. Please try again later.', 'warning')
+            return redirect(url_for('bounties.detail', id=id))
         bounty.status = 'closed'
         db.session.commit()
-        flash('Bounty cancelled. Payments are disabled — no Stripe refund issued.', 'info')
+        flash('Need cancelled.', 'info')
         return redirect(url_for('profile.view', user_id=current_user.id))
 
-    refund_amount = bounty.reward_amount
-
     if bounty.payment_status == 'secured' and bounty.stripe_payment_intent:
-        keys = _get_stripe_keys()
-        if keys['secret']:
-            stripe.api_key = keys['secret']
-            try:
-                refund = stripe.Refund.create(
-                    payment_intent=bounty.stripe_payment_intent,
-                    amount=int((refund_amount - (refund_amount * 0.029 + 0.30)) * 100)
-                )
-                bounty.payment_status = 'refunded'
-                print(f'Refunded {bounty.id}: {refund.id}')
-            except Exception as e:
-                print(f'Refund failed: {e}')
-                flash('Refund failed. Please contact support.', 'danger')
+        reward = float(bounty.reward_amount or 0)
+        # M2: cancel the authorization when the payment was never
+        # captured (the escrow hold is released in full — the poster
+        # pays nothing); refund a captured payment minus Stripe's
+        # processing fees.
+        if payment_intent_status(bounty.stripe_payment_intent) == 'succeeded':
+            refund_cents = to_cents(max(0.0, reward - (reward * 0.029 + 0.30)))
+            _refund_id, refund_error = create_refund(
+                bounty.stripe_payment_intent, refund_cents
+            )
+            if not _refund_id:
+                flash(f'Refund failed: {refund_error}', 'danger')
                 return redirect(url_for('bounties.detail', id=id))
-    
+        else:
+            ok, error = cancel_authorization(bounty.stripe_payment_intent)
+            if not ok:
+                flash(f'Could not release the payment: {error}', 'danger')
+                return redirect(url_for('bounties.detail', id=id))
+        bounty.payment_status = 'refunded'
+
     bounty.status = 'closed'
     db.session.commit()
-    
-    flash('Bounty cancelled. Refund initiated (minus fees).', 'success')
+
+    flash('Need cancelled. Refund initiated (minus fees).', 'success')
     return redirect(url_for('profile.view', user_id=current_user.id))
 
 
@@ -1026,24 +1420,10 @@ def upgrade(id):
         info = BountyUpgrade.UPGRADE_TYPES[upgrade_type]
         price_per_day = info['price_per_day']
 
-        # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
-        # Activates the upgrade at no charge instead of creating a Stripe Checkout session.
-        # Remove this branch (and the ones in extend_upgrade) when Stripe is reconfigured.
-        if not current_app.config.get('STRIPE_ENABLED', True):
-            now = datetime.now(timezone.utc)
-            expires_at = now + timedelta(days=duration_days)
-            upgrade = BountyUpgrade(
-                bounty_id=bounty.id,
-                upgrade_type=upgrade_type,
-                duration_days=duration_days,
-                price_paid=0,
-                is_active=True,
-                starts_at=now,
-                expires_at=expires_at
-            )
-            db.session.add(upgrade)
-            db.session.commit()
-            flash(f"{info['name']} upgrade activated (free — Stripe disabled).", 'info')
+        # M2: fail closed — when payments are disabled, upgrades cannot
+        # be bought at all (the old branch activated them for free).
+        if not stripe_enabled():
+            flash('Payments are currently unavailable — upgrades cannot be purchased right now.', 'warning')
             return redirect(url_for('bounties.detail', id=id))
         total_price = price_per_day * duration_days
         
@@ -1054,7 +1434,7 @@ def upgrade(id):
         amount_cents = int(total_price * 100)
         description = f'{info["name"]} Upgrade: {bounty.title} ({duration_days} days)'
         
-        checkout_url = _stripe_checkout_url(
+        checkout_url = create_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
             amount_cents=amount_cents,
@@ -1067,13 +1447,13 @@ def upgrade(id):
                 'upgrade_session': 'true'
             }
         )
-        
+
         if not checkout_url:
             flash('Stripe is not configured', 'danger')
             return redirect(url_for('bounties.detail', id=id))
-        
+
         return redirect(checkout_url)
-    
+
     active_upgrades = [u for u in bounty.upgrades.all() if u.is_valid]
     return render_template('bounties/upgrade.html', bounty=bounty, active_upgrades=active_upgrades,
                            upgrade_types=BountyUpgrade.UPGRADE_TYPES)
@@ -1128,12 +1508,10 @@ def extend_upgrade(id):
     info = BountyUpgrade.UPGRADE_TYPES[upgrade_type]
     total_price = info['price_per_day'] * additional_days
 
-    # TODO(STRIPE): Free passthrough while payments are disabled (STRIPE_ENABLED=false).
-    # Extends the upgrade at no charge. Remove when Stripe is reconfigured.
-    if not current_app.config.get('STRIPE_ENABLED', True):
-        existing.expires_at = existing.expires_at + timedelta(days=additional_days)
-        db.session.commit()
-        flash(f"{info['name']} upgrade extended (free — Stripe disabled).", 'info')
+    # M2: fail closed — when payments are disabled, upgrades cannot be
+    # extended at all (the old branch extended them for free).
+    if not stripe_enabled():
+        flash('Payments are currently unavailable — upgrades cannot be extended right now.', 'warning')
         return redirect(url_for('bounties.detail', id=id))
 
     base_url = request.host_url.rstrip('/')
@@ -1143,7 +1521,7 @@ def extend_upgrade(id):
     amount_cents = int(total_price * 100)
     description = f'{info["name"]} Extension: {bounty.title} ({additional_days} days)'
     
-    checkout_url = _stripe_checkout_url(
+    checkout_url = create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
         amount_cents=amount_cents,
@@ -1178,7 +1556,7 @@ def close(id):
         return redirect(url_for('bounties.detail', id=id))
     
     if bounty.status in ['completed', 'closed']:
-        flash('This bounty is already closed', 'info')
+        flash('This need is already closed', 'info')
         return redirect(url_for('bounties.detail', id=id))
     
     if request.method == 'POST':
@@ -1190,12 +1568,12 @@ def close(id):
             if close_action == 'refund':
                 return redirect(url_for('bounties.cancel_refund', id=id))
             elif close_action == 'reuse':
-                flash('Bounty closed. Your payment is kept secure for your next bounty.', 'success')
+                flash('Need closed. Your payment is kept secure for your next need.', 'success')
                 return redirect(url_for('bounties.post'))
         
         db.session.commit()
         
-        flash('Bounty closed successfully.', 'success')
+        flash('Need closed successfully.', 'success')
         return redirect(url_for('profile.view', user_id=current_user.id))
     
     return render_template('bounties/close.html', bounty=bounty)

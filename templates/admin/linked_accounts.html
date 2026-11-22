@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Linked accounts review - Admin{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Linked accounts review</h2>
+    <p class="text-muted">Manual review queue — verify the link by hand. {{ manual_count }} waiting for manual review, {{ pending_count }} pending in total.</p>
+    <div class="mb-3">
+        <a href="{{ url_for('admin.linked_accounts', manual=1) }}" class="btn btn-sm {{ 'btn-primary' if manual_only else 'btn-outline-primary' }}">Manual review requests</a>
+        <a href="{{ url_for('admin.linked_accounts', manual=0) }}" class="btn btn-sm {{ 'btn-primary' if not manual_only else 'btn-outline-primary' }}">All pending</a>
+    </div>
+    {% if accounts %}
+    <table class="table">
+        <thead><tr><th>User</th><th>Platform</th><th>Link</th><th>Method</th><th>Requested</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for account in accounts %}
+        <tr>
+            <td>{{ account.user.full_name or account.user.email }}<br><span class="text-muted small">{{ account.user.email }}</span></td>
+            <td>{{ account.platform|title }}</td>
+            <td><a href="{{ account.url }}" target="_blank" rel="noopener">{{ account.handle or account.url }}</a>
+                {% if account.verification_code %}<br><code>{{ account.verification_code }}</code>{% endif %}
+            </td>
+            <td>{{ account.method }}</td>
+            <td>{{ account.created_at.strftime('%b %d, %Y') if account.created_at }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('admin.approve_linked_account', id=account.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.reject_linked_account', id=account.id) }}" class="d-inline">
+                    <input type="text" name="admin_note" placeholder="Reason (optional)" class="form-control form-control-sm d-inline w-auto">
+                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">Nothing in this queue.</p>
+    {% endif %}
+</div>
+{% endblock %}

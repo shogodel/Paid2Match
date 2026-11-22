@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Bump packs - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Bump packs</h2>
+    <p class="text-muted">A bump returns a post to the top of the chronological Following feed for 24 hours, always labeled "Bumped". Free bumps: <strong>{{ free_balance }}</strong> (1 per completed referral). Pack bumps left: <strong>{{ pack_balance }}</strong>.</p>
+    {% if not payments_enabled %}
+    <div class="alert alert-warning">Payments are currently unavailable — packs cannot be purchased right now.</div>
+    {% endif %}
+    <div class="row">
+        {% for size, price in packs.items() %}
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-body text-center">
+                    <h5>{{ size }} bumps</h5>
+                    <div class="fs-3">${{ "%.2f"|format(price / 100) }}</div>
+                    <p class="text-muted small">${{ "%.2f"|format(price / size / 100) }} per bump — use anytime.</p>
+                    <form method="POST" action="{{ url_for('payments.buy_bump_pack') }}">
+                        <input type="hidden" name="pack_size" value="{{ size }}">
+                        <button type="submit" class="btn btn-primary" {{ 'disabled' if not payments_enabled }}>Buy {{ size }}-pack</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-body text-center">
+                    <h5>Single bump</h5>
+                    <div class="fs-3">${{ "%.2f"|format(single_price_cents / 100) }}</div>
+                    <p class="text-muted small">Buy one bump for a specific post, from that post's bump page.</p>
+                    <a href="{{ url_for('social.feed') }}" class="btn btn-outline-primary">Go to my feed</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p class="text-muted small">Limits: 1 bump per post per 24 hours, 3 bumps per day, Member accounts and above, posts must be 24 hours old. A bumped post removed for a policy violation gets no refund.</p>
+</div>
+{% endblock %}

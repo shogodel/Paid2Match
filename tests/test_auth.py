@@ -77,7 +77,11 @@ class TestAuthRegister:
         assert r.status_code == 200
 
     def test_register_success(self, client, app):
-        """Valid registration creates user + profile and redirects."""
+        """Valid registration creates an UNVERIFIED user and redirects to login.
+
+        Since M0, signup requires email confirmation: no auto-login, the
+        user must confirm via the emailed link before logging in.
+        """
         r = client.post('/auth/register', data={
             'full_name': 'New User',
             'email': 'newuser@example.com',
@@ -85,9 +89,9 @@ class TestAuthRegister:
             'confirm_password': 'NewPass123!',
         }, follow_redirects=False)
         assert r.status_code == 302
-        assert '/profile/setup' in r.location
+        assert '/auth/login' in r.location
 
-        # Verify user created
+        # Verify user created, unverified
         with app.app_context():
             from models.user import User
             from extensions import db
@@ -95,6 +99,7 @@ class TestAuthRegister:
             assert u is not None
             assert u.full_name == 'New User'
             assert u.role == 'user'
+            assert u.email_verified is False
 
     def test_register_duplicate_email(self, client, sample_user):
         """Duplicate email shows error."""

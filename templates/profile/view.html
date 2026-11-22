@@ -84,6 +84,69 @@
                 </div>
             </div>
 
+            <!-- Analytics Card (M1) -->
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-chart-line me-2"></i>Your numbers</h5>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ profile.karma or 0 }}</span>
+                        <span class="stat-label">Karma</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ profile.helped_count or 0 }}</span>
+                        <span class="stat-label">Helped</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ trust_level }}</span>
+                        <span class="stat-label">Trust ({{ trust_score }}/100)</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ analytics.profile_views_7d }}</span>
+                        <span class="stat-label">Profile views (7d)</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ analytics.followers }}</span>
+                        <span class="stat-label">Followers</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ analytics.referrals.completed }}</span>
+                        <span class="stat-label">Referrals completed</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('social.analytics') }}" class="btn btn-sm btn-outline-primary mt-2">Full analytics</a>
+            </div>
+
+            <!-- Verification Card (M2) -->
+            <div class="profile-card">
+                <h5 class="profile-card-title"><i class="fas fa-badge-check me-2"></i>Verification</h5>
+                {% if profile.verified %}
+                <p class="text-success mb-0"><i class="fas fa-check-circle"></i> Your profile is verified.</p>
+                {% elif verification_request %}
+                <p class="text-muted mb-0">Your verification request is pending admin review.</p>
+                {% else %}
+                <p class="small text-muted">Get the verified badge (+5 trust, unlocks the Trusted level). Tell us how an admin can check who you are — a LinkedIn profile, a business registration, a phone call.</p>
+                <form method="POST" action="{{ url_for('profile.verify_request') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" name="note" class="form-control form-control-sm mb-2" placeholder="How can we verify you? (optional)">
+                    <button type="submit" class="btn btn-sm btn-primary">Request verification</button>
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- No-ghosting SLA (M2): open breaches are visible here. -->
+            {% if open_breaches %}
+            <div class="profile-card border-warning">
+                <h5 class="profile-card-title text-warning"><i class="fas fa-clock me-2"></i>Referrals waiting for your reply</h5>
+                <p class="small text-muted">You have 5 business days to answer a referral. Unanswered referrals past their deadline suspend your trust badge.</p>
+                {% for breach in open_breaches %}
+                <p class="small mb-1">
+                    <a href="{{ url_for('bounties.detail', id=breach.bounty.id) }}">{{ breach.bounty.title }}</a>
+                    — due {{ breach.due_at.strftime('%Y-%m-%d') }}
+                </p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Skills Card -->
             {% if profile.skills %}
             <div class="profile-card">
@@ -106,7 +169,7 @@
                     <div class="stat-item">
                         <i class="fas fa-paper-plane fa-2x mb-2 text-primary"></i>
                         <span class="stat-number">{{ pitches_count }}</span>
-                        <span class="stat-label">Pitches</span>
+                        <span class="stat-label">Referrals</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-handshake fa-2x mb-2 text-success"></i>
@@ -162,12 +225,46 @@
                         <a href="{{ profile.github_url }}" target="_blank">GitHub Profile</a>
                     </div>
                 {% endif %}
+
+                {% if profile.instagram_url %}
+                    <div class="mt-2">
+                        <i class="fab fa-instagram me-2 text-primary"></i>
+                        <a href="{{ profile.instagram_url }}" target="_blank">Instagram</a>
+                    </div>
+                {% endif %}
+
+                {% if profile.facebook_url %}
+                    <div class="mt-2">
+                        <i class="fab fa-facebook me-2 text-primary"></i>
+                        <a href="{{ profile.facebook_url }}" target="_blank">Facebook</a>
+                    </div>
+                {% endif %}
+
+                {% if profile.tiktok_url %}
+                    <div class="mt-2">
+                        <i class="fab fa-tiktok me-2 text-primary"></i>
+                        <a href="{{ profile.tiktok_url }}" target="_blank">TikTok</a>
+                    </div>
+                {% endif %}
+
+                {% if profile.youtube_url %}
+                    <div class="mt-2">
+                        <i class="fab fa-youtube me-2 text-primary"></i>
+                        <a href="{{ profile.youtube_url }}" target="_blank">YouTube</a>
+                    </div>
+                {% endif %}
             </div>
 
             <!-- Profile Actions -->
-            <div class="profile-actions mt-3">
+            <div class="profile-actions mt-3 d-flex gap-2 flex-wrap">
                 <a href="{{ url_for('profile.edit') }}" class="btn btn-primary">
                     <i class="fas fa-edit me-2"></i>Edit Profile
+                </a>
+                <a href="{{ url_for('profile.linked_accounts') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-link me-2"></i>Linked Accounts
+                </a>
+                <a href="{{ url_for('payments.bump_packs') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-up me-2"></i>Bump Packs
                 </a>
                 {% if profile.remote_ok %}
                     <span class="btn btn-outline-success btn-sm">

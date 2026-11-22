@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}My payouts{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4"><i class="fas fa-wallet"></i> My payouts</h1>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Paid out</h6>
+                    <h3 class="mb-0">${{ "{:,.2f}".format(total_paid) }} CAD</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Pending / processing</h6>
+                    <h3 class="mb-0">${{ "{:,.2f}".format(total_pending) }} CAD</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Payout setup</h6>
+                    {% if account and account.is_ready %}
+                    <h5 class="mb-0 text-success"><i class="fas fa-check-circle"></i> Ready</h5>
+                    {% else %}
+                    <h5 class="mb-0 text-warning"><i class="fas fa-exclamation-triangle"></i> Not set up</h5>
+                    <a href="{{ url_for('payments.connect_status') }}" class="btn btn-sm btn-primary mt-2">Set up payouts</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Earned from shares</h6>
+                    <h3 class="mb-0">${{ "{:,.2f}".format(earnings.chain_paid) }} CAD</h3>
+                    <small class="text-muted">Your cut when a share of yours led to a hire (30% of the referrer's share).</small>
+                    {% if earnings.chain_pending > 0 %}
+                    <div class="small">${{ "{:,.2f}".format(earnings.chain_pending) }} CAD pending</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Referrals</h6>
+                    <h3 class="mb-0">{{ earnings.referrals_total + earnings.direct_pitches_total }}</h3>
+                    <small class="text-muted">
+                        {{ earnings.matches_total }} matches · {{ earnings.completed_matches }} completed
+                    </small>
+                    <div class="small mt-1">
+                        {% for status, count in earnings.referrals_by_status.items() %}
+                        <span class="badge bg-secondary">{{ status|title }}: {{ count }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Earned from referrals</h6>
+                    <h3 class="mb-0">${{ "{:,.2f}".format(earnings.referral_paid) }} CAD</h3>
+                    {% if earnings.referral_pending > 0 %}
+                    <div class="small">${{ "{:,.2f}".format(earnings.referral_pending) }} CAD pending</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if payouts %}
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Need</th>
+                            <th>Kind</th>
+                            <th>Reward</th>
+                            <th>Platform fee</th>
+                            <th>You receive</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payout in payouts %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('bounties.confirmed_match', match_id=payout.match_id) }}">
+                                    {{ payout.match.bounty.title if payout.match and payout.match.bounty else '—' }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if payout.kind == 'chain_share' %}
+                                <span class="badge bg-info text-dark" title="Your cut for a share that led to a hire">Chain share</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Referral</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ "{:,.2f}".format(payout.gross_amount) }}</td>
+                            <td>${{ "{:,.2f}".format(payout.platform_fee) }}</td>
+                            <td><strong>${{ "{:,.2f}".format(payout.amount) }} CAD</strong></td>
+                            <td>{{ payout.method|title }}</td>
+                            <td>
+                                <span class="badge bg-{{ {'pending': 'warning', 'processing': 'info', 'completed': 'success', 'failed': 'danger'}.get(payout.status, 'secondary') }}">
+                                    {{ payout.status|title }}
+                                </span>
+                                {% if payout.failure_reason %}
+                                <div class="small text-muted">{{ payout.failure_reason }}</div>
+                                {% endif %}
+                                {% if payout.manual_reference %}
+                                <div class="small text-muted">Ref: {{ payout.manual_reference }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ payout.created_at.strftime('%Y-%m-%d') if payout.created_at else '—' }}</td>
+                            <td>
+                                {% if payout.status in ('pending', 'failed') and payout.method == 'stripe' %}
+                                <form method="POST" action="{{ url_for('payments.retry_payout', payout_id=payout.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Retry</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No payouts yet. When a referral you made is confirmed by both
+        sides, your payout will appear here.
+    </div>
+    {% endif %}
+
+    {% if earnings.per_need %}
+    <h3 class="mt-5 mb-3">Per-need stats</h3>
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Need</th>
+                            <th>Vertical</th>
+                            <th>Referrals</th>
+                            <th>Matches</th>
+                            <th>Earned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in earnings.per_need %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('bounties.detail', id=row.bounty.id) }}">{{ row.bounty.title }}</a>
+                            </td>
+                            <td>{{ row.bounty.type_label }}</td>
+                            <td>{{ row.referrals }}</td>
+                            <td>{{ row.matches }}</td>
+                            <td><strong>${{ "{:,.2f}".format(row.earned) }} CAD</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

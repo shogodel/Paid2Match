@@ -86,7 +86,7 @@ class TestBountyEdit:
             db.session.commit()
         r = logged_in_user.get(f'/bounties/{sample_bounty.id}/edit')
         assert r.status_code == 200
-        assert b'Edit Bounty' in r.data
+        assert b'Edit Referral Need' in r.data
 
     def test_edit_updates_bounty(self, logged_in_user, client, app, sample_bounty):
         with app.app_context():
@@ -191,3 +191,109 @@ class TestPitchResponse:
             data={'response': 'invalid'}
         )
         assert r.status_code == 302
+
+class TestBountyVisibility:
+    """M0: paid bounties stay hidden until payment is secured; free ones show."""
+
+    def _make_bounty(self, app, sample_user, title, reward, payment_status, is_free=False):
+        from models.bounty import Bounty
+        from extensions import db
+        with app.app_context():
+            bounty = Bounty(
+                poster_id=sample_user.id,
+                title=title,
+                description='A detailed description for this test bounty, long enough to pass any validation.',
+                bounty_type='recruitment',
+                bounty_direction='seeking_opportunity',
+                reward_amount=reward,
+                status='open',
+                payment_status=payment_status,
+                is_free=is_free,
+                location='Montreal',
+            )
+            db.session.add(bounty)
+            db.session.commit()
+            return bounty.id
+
+    def test_unsecured_paid_bounty_hidden_from_board(self, client, app, sample_user):
+        self._make_bounty(app, sample_user, 'Hidden Unsecured Paid Need XYZ', 5000, 'unsecured')
+        r = client.get('/bounties/')
+        assert r.status_code == 200
+        assert b'Hidden Unsecured Paid Need XYZ' not in r.data
+
+    def test_secured_paid_bounty_visible_on_board(self, client, app, sample_user):
+        self._make_bounty(app, sample_user, 'Visible Secured Paid Need XYZ', 5000, 'secured')
+        r = client.get('/bounties/')
+        assert r.status_code == 200
+        assert b'Visible Secured Paid Need XYZ' in r.data
+
+    def test_free_bounty_visible_on_board(self, client, app, sample_user):
+        self._make_bounty(app, sample_user, 'Visible Free Need XYZ', 0, 'unsecured', is_free=True)
+        r = client.get('/bounties/')
+        assert r.status_code == 200
+        assert b'Visible Free Need XYZ' in r.data
+
+    def test_unsecured_paid_bounty_hidden_from_recruitment_board(self, client, app, sample_user):
+        self._make_bounty(app, sample_user, 'Hidden Recruitment Need XYZ', 5000, 'unsecured')
+        r = client.get('/bounties/recruitment')
+        assert r.status_code == 200
+        assert b'Hidden Recruitment Need XYZ' not in r.data
+
+    def test_unsecured_detail_redirects_non_poster(self, client, app, sample_user):
+        bounty_id = self._make_bounty(app, sample_user, 'Hidden Detail Need XYZ', 5000, 'unsecured')
+        r = client.get(f'/bounties/{bounty_id}', follow_redirects=False)
+        assert r.status_code == 302
+        assert '/bounties/' in r.location
+
+    def test_unsecured_detail_loads_for_poster(self, logged_in_user, client, app, sample_user):
+        bounty_id = self._make_bounty(app, sample_user, 'Poster Detail Need XYZ', 5000, 'unsecured')
+        r = logged_in_user.get(f'/bounties/{bounty_id}')
+        assert r.status_code == 200
+        assert b'Poster Detail Need XYZ' in r.data
+
+    def test_pitch_rejected_on_unsecured_bounty(self, logged_in_hunter, client, app, sample_user, sample_hunter):
+        bounty_id = self._make_bounty(app, sample_user, 'No Pitch Need XYZ', 5000, 'unsecured')
+        r = logged_in_hunter.post(f'/bounties/{bounty_id}/pitch', data={
+            'candidate_teaser': 'I have extensive experience in Python and Flask development and I am very interested in this role.',
+        }, follow_redirects=False)
+        assert r.status_code == 302
+        with app.app_context():
+            from models.pitch import Pitch
+            assert Pitch.query.filter_by(bounty_id=bounty_id).count() == 0
+
+
+class TestRecruitmentBoardFilters:
+    """M0: recruitment_board() ignored _apply_filters() — filters did nothing."""
+
+    def test_location_filter_works(self, client, app, sample_user):
+        from models.bounty import Bounty
+        from extensions import db
+        with app.app_context():
+            for title, city in [('Montreal Need XYZ', 'Montreal'), ('Toronto Need XYZ', 'Toronto')]:
+                db.session.add(Bounty(
+                    poster_id=sample_user.id, title=title,
+                    description='A detailed description for this test bounty, long enough.',
+                    bounty_type='recruitment', bounty_direction='seeking_opportunity',
+                    reward_amount=None, status='open', payment_status='unsecured',
+                    is_free=True, location=city,
+                ))
+            db.session.commit()
+        r = client.get('/bounties/recruitment?location=Montreal')
+        assert r.status_code == 200
+        assert b'Montreal Need XYZ' in r.data
+        assert b'Toronto Need XYZ' not in r.data
+
+
+class TestPostPaidBountyRedirect:
+    """M0: posting a paid bounty must go to secure-payment, not upgrades."""
+
+    def test_post_paid_bounty_redirects_to_secure_payment(self, logged_in_user, client):
+        r = logged_in_user.post('/bounties/post', data={
+            'title': 'A Paid Bounty Redirect Test Here',
+            'description': 'This bounty has a paid reward and should redirect to the payment page after creation.',
+            'bounty_type': 'recruitment',
+            'bounty_direction': 'seeking_opportunity',
+            'reward_amount': '2500',
+        }, follow_redirects=False)
+        assert r.status_code == 302
+        assert '/secure-payment' in r.location

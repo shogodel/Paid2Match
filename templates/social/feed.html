@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Feed - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Feed</h2>
+                <a href="{{ url_for('social.new_post') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New post
+                </a>
+            </div>
+
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if tab == 'following' }}" href="{{ url_for('social.feed', tab='following') }}">Following</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if tab == 'discover' }}" href="{{ url_for('social.feed', tab='discover') }}">Discover</a>
+                </li>
+            </ul>
+
+            {% if tab == 'following' %}
+            <p class="text-muted small">Chronological, from people you follow. Nothing hidden, no algorithm.</p>
+            {% else %}
+            <div class="alert alert-info small">
+                <strong>How Discover ranks posts:</strong> {{ discover_rules }}
+            </div>
+            {% endif %}
+
+            {% if feed['items'] %}
+                {% for item in feed['items'] %}
+                    {% set post = item.post %}
+                    {% set share = item.share %}
+                    {% include 'social/_post_card.html' %}
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-light text-center">
+                    {% if tab == 'following' %}
+                    Nothing here yet — follow some people, or be the first to post.
+                    {% else %}
+                    Nothing to discover yet — check back once people start posting.
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if feed.pages > 1 %}
+            <nav>
+                <ul class="pagination">
+                    {% if feed.has_prev %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('social.feed', tab=tab, page=feed.page - 1) }}">Previous</a></li>
+                    {% endif %}
+                    <li class="page-item disabled"><span class="page-link">Page {{ feed.page }} of {{ feed.pages }}</span></li>
+                    {% if feed.has_next %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('social.feed', tab=tab, page=feed.page + 1) }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>People who refer in your area</h5>
+                    {% if suggested %}
+                        {% for user in suggested %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <a href="{{ url_for('profile.public_profile', user_id=user.id) }}">{{ user.full_name }}</a>
+                            <form method="POST" action="{{ url_for('social.follow', user_id=user.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Follow</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small mb-0">Add a location to your profile and we'll suggest people near you.</p>
+                    {% endif %}
+                    <a href="{{ url_for('social.people') }}" class="btn btn-sm btn-link p-0 mt-2">Browse all people</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

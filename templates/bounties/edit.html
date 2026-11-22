@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Bounty - Paid2Match{% endblock %}
+{% block title %}Edit Referral Need - Paid2Match{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <h1 class="mb-3">Edit Bounty</h1>
+    <h1 class="mb-3">Edit Referral Need</h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -21,10 +21,24 @@
             <div class="col-lg-8">
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-list"></i> Bounty Type & Direction</h5>
+                        <h5 class="mb-0"><i class="fas fa-list"></i> Need Type & Direction</h5>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.bounty_type.label }}</label>
+                                {{ form.bounty_type(class="form-select") }}
+                                {% for error in form.bounty_type.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.category.label }}</label>
+                                {{ form.category(class="form-select") }}
+                                {% for error in form.category.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.bounty_direction.label }}</label>
                                 {{ form.bounty_direction(class="form-select") }}
@@ -63,7 +77,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.reward_amount.label }} ($)</label>
-                                {{ form.reward_amount(class="form-control", placeholder="0 for free bounty") }}
+                                {{ form.reward_amount(class="form-control", placeholder="0 for a free need") }}
                                 {% for error in form.reward_amount.errors %}
                                 <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
@@ -77,8 +91,12 @@
                                 {{ form.deadline(class="form-control", type="date") }}
                             </div>
                             <div class="col-12">
+                                <label class="form-label">{{ form.skills.label }}</label>
+                                {{ form.skills(class="form-control", placeholder="Python, SQL, Leadership") }}
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label">{{ form.success_criteria.label }}</label>
-                                {{ form.success_criteria(class="form-control", rows="3", placeholder="What makes this bounty complete?") }}
+                                {{ form.success_criteria(class="form-control", rows="3", placeholder="What makes this need complete?") }}
                             </div>
                         </div>
                     </div>
@@ -93,7 +111,7 @@
             <div class="col-lg-4">
                 <div class="card bg-light">
                     <div class="card-body">
-                        <h6 class="text-muted">Bounty Status</h6>
+                        <h6 class="text-muted">Need Status</h6>
                         <div class="mb-3">
                             <span class="badge bg-{{ 'success' if bounty.status == 'open' else 'warning' }}">{{ bounty.status }}</span>
                             <span class="badge bg-{{ 'success' if bounty.payment_status == 'secured' else 'warning' }}">{{ bounty.payment_status }}</span>

@@ -5,17 +5,47 @@
 {% block content %}
 <div class="container py-5">
     <h1>Disputes</h1>
+    <div class="btn-group mb-3" role="group">
+        <a href="{{ url_for('admin.disputes', status='open') }}" class="btn btn-sm btn-outline-primary {% if status == 'open' %}active{% endif %}">Open</a>
+        <a href="{{ url_for('admin.disputes', status='resolved') }}" class="btn btn-sm btn-outline-primary {% if status == 'resolved' %}active{% endif %}">Resolved</a>
+    </div>
     {% for dispute in disputes %}
         <div class="card mb-3">
             <div class="card-body">
-                <p><strong>Status:</strong> {{ dispute.status }}</p>
+                <p>
+                    <strong>Status:</strong> {{ dispute.status }}
+                    {% if dispute.outcome %}| <strong>Outcome:</strong> {{ dispute.outcome }}{% endif %}
+                    | <strong>Raised by:</strong> {{ dispute.raised_by.email if dispute.raised_by else '—' }}
+                    | <strong>Match:</strong>
+                    <a href="{{ url_for('bounties.confirmed_match', match_id=dispute.match_id) }}">{{ dispute.match.bounty.title if dispute.match and dispute.match.bounty else dispute.match_id }}</a>
+                </p>
                 <p>{{ dispute.reason }}</p>
+                {% if dispute.resolution %}
+                <p class="text-muted"><strong>Resolution:</strong> {{ dispute.resolution }}</p>
+                {% endif %}
+                {% if dispute.status == 'open' %}
                 <form method="POST" action="{{ url_for('admin.resolve_dispute', id=dispute.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <textarea name="resolution" class="form-control mb-2" placeholder="Resolution notes"></textarea>
-                    <button class="btn btn-primary">Resolve</button>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1" for="outcome-{{ dispute.id }}">Outcome</label>
+                            <select name="outcome" id="outcome-{{ dispute.id }}" class="form-select" required>
+                                <option value="">Choose…</option>
+                                <option value="upheld">Upheld — the respondent lost (−15 trust)</option>
+                                <option value="dismissed">Dismissed — the raiser lost (−15 trust)</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-primary">Resolve</button>
+                        </div>
+                    </div>
                 </form>
+                {% endif %}
             </div>
         </div>
+    {% else %}
+        <p class="text-muted">No {{ status }} disputes.</p>
     {% endfor %}
 </div>
 {% endblock %}

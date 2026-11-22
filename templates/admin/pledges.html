@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Pledges - Admin{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Human-reviewed hiring pledges</h2>
+    <p class="text-muted">Suspended = the pledger has an open no-ghosting breach (a referral unanswered past 5 business days). Revocation is for broken promises — AI screening or repeated ghosting.</p>
+    {% if entries %}
+    <table class="table">
+        <thead><tr><th>Company</th><th>User</th><th>Pledged</th><th>Status</th><th>Compliance (30d)</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.pledge.company_name }}{% if entry.pledge.website %}<br><a href="{{ entry.pledge.website }}" target="_blank" rel="noopener" class="small">{{ entry.pledge.website }}</a>{% endif %}</td>
+            <td>{{ entry.pledge.user.full_name or entry.pledge.user.email }}</td>
+            <td>{{ entry.pledge.created_at.strftime('%b %d, %Y') if entry.pledge.created_at }}</td>
+            <td>
+                {% if entry.status == 'active' %}<span class="badge bg-success">Active</span>
+                {% elif entry.status == 'suspended' %}<span class="badge bg-warning text-dark">Suspended</span>
+                {% else %}<span class="badge bg-secondary">Revoked</span>{% endif %}
+                {% if entry.pledge.revoke_reason %}<br><span class="text-muted small">{{ entry.pledge.revoke_reason }}</span>{% endif %}
+            </td>
+            <td>{% if entry.compliance_rate is not none %}{{ (entry.compliance_rate * 100)|round(0) }}% ({{ entry.compliance_due }} due){% else %}<span class="text-muted">No referrals due yet</span>{% endif %}</td>
+            <td>
+                {% if entry.pledge.status != 'revoked' %}
+                <form method="POST" action="{{ url_for('admin.revoke_pledge', id=entry.pledge.id) }}" class="d-inline">
+                    <input type="text" name="reason" placeholder="Reason" class="form-control form-control-sm d-inline w-auto">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Revoke this pledge?')">Revoke</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No pledges yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

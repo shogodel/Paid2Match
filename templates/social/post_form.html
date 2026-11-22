@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit post' if post else 'New post' }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <h2>{{ 'Edit post' if post else 'New post' }}</h2>
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                {% if not post %}
+                <div class="mb-3">
+                    {{ form.post_type.label(class="form-label") }}
+                    {{ form.post_type(class="form-select") }}
+                    <div class="form-text">A referral need is a post with a job attached — free (community) or paid (escrow a bounty).</div>
+                </div>
+                <div class="mb-3">
+                    {{ form.title.label(class="form-label") }}
+                    {{ form.title(class="form-control") }}
+                    {% for e in form.title.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    {{ form.body.label(class="form-label") }}
+                    {{ form.body(class="form-control", rows=5) }}
+                    {% for e in form.body.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                </div>
+                <div class="mb-3">
+                    {{ form.photo.label(class="form-label") }}
+                    {{ form.photo(class="form-control") }}
+                </div>
+                {% if not post %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.reward_amount.label(class="form-label") }}
+                        {{ form.reward_amount(class="form-control") }}
+                        {% for e in form.reward_amount.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.location.label(class="form-label") }}
+                        {{ form.location(class="form-control") }}
+                    </div>
+                </div>
+                {% endif %}
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('social.feed') }}" class="btn btn-link">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -7,7 +7,7 @@
     <h1>Manage Users</h1>
     {% if pagination %}
         <table class="table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Email</th><th>Founding</th><th>Actions</th></tr></thead>
             <tbody>
                 {% for user in users %}
                 <tr>
@@ -15,12 +15,25 @@
                     <td>{{ user.email }}</td>
                     <td>{{ user.role }}</td>
                     <td>{{ 'Active' if user.is_active else 'Inactive' }}</td>
+                    <td>{{ 'Verified' if user.email_verified else 'Unverified' }}</td>
+                    <td>{{ 'Yes (15% fee)' if user.founding_referrer else 'No' }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('admin.activate_user', id=user.id) }}" style="display:inline">
                             <button class="btn btn-sm btn-success">Activate</button>
                         </form>
                         <form method="POST" action="{{ url_for('admin.deactivate_user', id=user.id) }}" style="display:inline">
                             <button class="btn btn-sm btn-warning">Deactivate</button>
+                        </form>
+                        {% if not user.email_verified %}
+                        <form method="POST" action="{{ url_for('admin.verify_user_email', id=user.id) }}" style="display:inline">
+                            <button class="btn btn-sm btn-info">Verify Email</button>
+                        </form>
+                        {% endif %}
+                        <form method="POST" action="{{ url_for('admin.toggle_founding_referrer', id=user.id) }}" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-outline-primary">
+                                {{ 'Remove founding' if user.founding_referrer else 'Make founding' }}
+                            </button>
                         </form>
                     </td>
                 </tr>

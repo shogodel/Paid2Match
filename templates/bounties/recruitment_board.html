@@ -7,16 +7,24 @@
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-briefcase"></i> Recruitment Referrals</h1>
-            <p class="text-muted">Find and post recruitment bounties — hire talent or earn referral fees</p>
+            <p class="text-muted">Find and post recruitment referral needs — hire talent or earn referral fees</p>
         </div>
         <div class="col-auto">
-            <a href="{{ url_for('bounties.post') }}" class="btn btn-primary">Post Bounty</a>
+            <a href="{{ url_for('bounties.post') }}" class="btn btn-primary">Post a Referral Need</a>
         </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" value="{{ request.args.get('q', '') }}" placeholder="Keyword…">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Skill</label>
+                    <input type="text" name="skill" class="form-control" value="{{ request.args.get('skill', '') }}" placeholder="e.g. Python">
+                </div>
                 <div class="col-md-3">
                     <label class="form-label">Direction</label>
                     <select name="direction" class="form-select">
@@ -46,7 +54,7 @@
     </div>
 
     <div class="mb-3">
-        <span class="badge bg-primary">{{ pagination.total }} Recruitment Bounties</span>
+        <span class="badge bg-primary">{{ pagination.total }} Recruitment Needs</span>
     </div>
 
     {% if bounties %}
@@ -103,9 +111,9 @@
         {% endif %}
     {% else %}
         <div class="text-center py-5">
-            <h3>No recruitment bounties found</h3>
+            <h3>No recruitment needs found</h3>
             <p>Be the first to post one!</p>
-            <a href="{{ url_for('bounties.post') }}" class="btn btn-primary">Post Bounty</a>
+            <a href="{{ url_for('bounties.post') }}" class="btn btn-primary">Post a Referral Need</a>
         </div>
     {% endif %}
 </div>
