@@ -18,6 +18,7 @@ Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
 Flask-WTF==1.2.2
 greenlet==3.4.0
+gunicorn==25.3.0
 idna==3.12
 iniconfig==2.3.0
 itsdangerous==2.2.0
@@ -38,6 +39,5 @@ SQLAlchemy==2.0.49
 stripe==15.0.1
 typing_extensions==4.15.0
 urllib3==2.6.3
-uWSGI==2.0.31
 Werkzeug==3.1.8
 WTForms==3.2.1
