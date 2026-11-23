@@ -95,7 +95,7 @@ class TestPWA:
         assert r.status_code == 200
         assert r.content_type.startswith('application/javascript')
         body = r.data.decode()
-        assert 'p2m-v1' in body
+        assert 'p2m-v2' in body
         assert '/offline' in body
         # Auth/API/POSTs are network-only, never cached.
         assert '/auth/' in body

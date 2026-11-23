@@ -11,11 +11,13 @@
 // network-only. NEVER cached: feed data, API responses, user profiles,
 // messages, search results, or any HTML other than /offline.
 
-const CACHE_VERSION = 'p2m-v1';
+const CACHE_VERSION = 'p2m-v2';
 const CACHE_NAME = CACHE_VERSION;
 const OFFLINE_URL = '/offline';
 
-// ~815 KB total — well under 1 MB.
+// ~860 KB total — well under 1 MB. icons.svg is precached too: the
+// logo mark lives in the sprite now (logo_mark macro), so every page
+// needs it, including offline.
 const PRECACHE_URLS = [
     OFFLINE_URL,
     '/static/css/bootstrap.min.css',
@@ -25,6 +27,7 @@ const PRECACHE_URLS = [
     '/static/js/bootstrap.bundle.min.js',
     '/static/js/main.js',
     '/static/img/logo-mark.svg',
+    '/static/img/icons.svg',
     '/static/img/favicon.svg',
     '/static/img/icon-192.png',
     '/static/img/icon-512.png',
