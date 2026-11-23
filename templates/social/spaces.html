@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('Spaces') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>{{ _('Spaces') }}</h2>
+    <p class="text-muted">{{ _('Places inside the network — by trade, city, or interest. Posts in a space still appear in the main feed; the space is an extra home for them, not a silo.') }}</p>
+
+    {% if spaces %}
+    <div class="row g-3">
+        {% for space in spaces %}
+        {% set membership = memberships.get(space.id) %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 space-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="space-icon">{{ icon(space.icon or 'layers', 22) }}</span>
+                        <h5 class="card-title mb-0"><a href="{{ url_for('social.space_detail', slug=space.slug) }}" class="text-decoration-none">{{ space.name }}</a></h5>
+                    </div>
+                    {% if space.description %}
+                    <p class="text-muted small">{{ space.description }}</p>
+                    {% endif %}
+                    <p class="text-muted small mb-3">{{ space.member_count }} {{ _('members') }} &middot; {{ space.post_count }} {{ _('posts') }}</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('social.space_detail', slug=space.slug) }}" class="btn btn-sm btn-outline-primary">{{ _('Open space') }}</a>
+                        {% if current_user.is_authenticated %}
+                            {% if membership %}
+                            <form method="POST" action="{{ url_for('social.leave_space', slug=space.slug) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Leave') }}</button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('social.join_space', slug=space.slug) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-primary">{{ _('Join') }}</button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">{{ icon('layers', 28) }}</div>
+        <h5>{{ _('No spaces yet') }}</h5>
+        <p class="text-muted mb-0">{{ _('Spaces are coming — check back soon.') }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -18,12 +18,14 @@ from blueprints.referrals.forms import ReferForm
 from extensions import db, get_or_404
 from models.bounty import Bounty
 from models.follow import Follow
+from models.message import Message
 from models.pitch import Pitch
 from models.referral import Referral
 from models.user import User
 from utils.chains import validate_share_for_referral
 from utils.email import send_referral_invite_email
 from utils.notifications import notify
+from utils.staged_rewards import record_stage_event
 
 referrals_bp = Blueprint('referrals', __name__)
 
@@ -175,6 +177,9 @@ def confirm_referral(referral_id):
     referral.pitch_id = pitch.id
     referral.status = 'consented'
     referral.referred_user_id = current_user.id
+    # Phase 3: the consented referral completes the 'submit' stage
+    # (recorded only — no payout; see utils/staged_rewards.py).
+    record_stage_event(pitch, 'submit')
     from models import utc_now
     referral.consented_at = utc_now()
 
@@ -245,7 +250,12 @@ def mine():
 def detail(referral_id):
     """GET /referrals/<id> — referral detail (referrer, poster, or the
     referred person). Shows the invite link while it is still pending,
-    so the referrer can share it manually if email failed."""
+    so the referrer can share it manually if email failed.
+    Phase 3: one thread per referral — the messages about this
+    referral (pitch_id == referral.pitch_id) live here, not lost in
+    generic DMs. Only the referrer and the poster can write in the
+    thread; the referred person sees the referral status, not the
+    thread's write box."""
     referral = get_or_404(Referral, referral_id)
     allowed = (
         current_user.id in (referral.referrer_id, referral.referred_user_id)
@@ -256,6 +266,72 @@ def detail(referral_id):
         flash('Access denied', 'danger')
         return redirect(url_for('bounties.board'))
     invite_url = url_for('referrals.consent', token=referral.invite_token, _external=True)
+    thread_messages = []
+    if referral.pitch_id:
+        thread_messages = Message.query.filter_by(
+            pitch_id=referral.pitch_id,
+        ).order_by(Message.created_at).all()
+        # Mark the thread read for the viewer (their incoming messages).
+        unread = [
+            m for m in thread_messages
+            if m.recipient_id == current_user.id and not m.is_read
+        ]
+        if unread:
+            for m in unread:
+                m.is_read = True
+            db.session.commit()
+    can_message = current_user.id in (
+        referral.referrer_id, referral.bounty.poster_id,
+    )
     return render_template(
-        'referrals/detail.html', referral=referral, invite_url=invite_url
+        'referrals/detail.html', referral=referral, invite_url=invite_url,
+        thread_messages=thread_messages, can_message=can_message,
+    )
+
+
+@referrals_bp.route('/<referral_id>/message', methods=['POST'])
+@login_required
+def post_thread_message(referral_id):
+    """POST /referrals/<id>/message — write in the referral thread.
+    Referrer and poster only; the message carries bounty_id +
+    pitch_id so it stays attached to this referral. The other party
+    gets a message_new notification linking back to the thread."""
+    referral = get_or_404(Referral, referral_id)
+    poster_id = referral.bounty.poster_id
+    if current_user.id not in (referral.referrer_id, poster_id):
+        flash('Access denied', 'danger')
+        return redirect(url_for('referrals.detail', referral_id=referral.id))
+    content = (request.form.get('content') or '').strip()
+    if not content:
+        flash('Write a message first.', 'warning')
+        return redirect(
+            url_for('referrals.detail', referral_id=referral.id)
+            + '#thread'
+        )
+    recipient_id = (
+        poster_id
+        if current_user.id == referral.referrer_id
+        else referral.referrer_id
+    )
+    msg = Message(
+        sender_id=current_user.id,
+        recipient_id=recipient_id,
+        bounty_id=referral.bounty_id,
+        pitch_id=referral.pitch_id,
+        content=content,
+    )
+    db.session.add(msg)
+    db.session.commit()
+    notify(
+        recipient_id, 'message_new',
+        f'{current_user.full_name} messaged you about a referral',
+        content[:200],
+        actor_id=current_user.id,
+        link_url=url_for(
+            'referrals.detail', referral_id=referral.id
+        ) + '#thread',
+    )
+    db.session.commit()
+    return redirect(
+        url_for('referrals.detail', referral_id=referral.id) + '#thread'
     )

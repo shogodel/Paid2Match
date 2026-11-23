@@ -2,6 +2,7 @@
 import re
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
+from flask_babel import lazy_gettext as _l
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
 
 from models.user import User
@@ -25,36 +26,36 @@ def validate_password_strength(password):
 
 class LoginForm(FlaskForm):
     """Login form with CSRF protection."""
-    email = StringField('Email', validators=[
+    email = StringField(_l('Email'), validators=[
         DataRequired(message='Email is required'),
         Email(message='Please enter a valid email address')
     ])
-    password = PasswordField('Password', validators=[
+    password = PasswordField(_l('Password'), validators=[
         DataRequired(message='Password is required')
     ])
-    remember = SubmitField('Remember Me')
-    submit = SubmitField('Login')
+    remember = SubmitField(_l('Remember Me'))
+    submit = SubmitField(_l('Login'))
 
 
 class RegistrationForm(FlaskForm):
     """Registration form with CSRF protection."""
-    full_name = StringField('Full Name', validators=[
+    full_name = StringField(_l('Full Name'), validators=[
         DataRequired(message='Full name is required'),
         Length(min=2, max=120, message='Name must be between 2 and 120 characters')
     ])
-    email = StringField('Email', validators=[
+    email = StringField(_l('Email'), validators=[
         DataRequired(message='Email is required'),
         Email(message='Please enter a valid email address')
     ])
-    password = PasswordField('Password', validators=[
+    password = PasswordField(_l('Password'), validators=[
         DataRequired(message='Password is required'),
         Length(min=8, max=128, message='Password must be at least 8 characters'),
     ])
-    confirm_password = PasswordField('Confirm Password', validators=[
+    confirm_password = PasswordField(_l('Confirm Password'), validators=[
         DataRequired(message='Please confirm your password'),
         EqualTo('password', message='Passwords must match')
     ])
-    submit = SubmitField('Create Account')
+    submit = SubmitField(_l('Create Account'))
 
     def validate_password(self, field):
         """Validate password strength."""
@@ -72,24 +73,24 @@ class RegistrationForm(FlaskForm):
 
 class ForgotPasswordForm(FlaskForm):
     """Request a password reset link."""
-    email = StringField('Email', validators=[
+    email = StringField(_l('Email'), validators=[
         DataRequired(message='Email is required'),
         Email(message='Please enter a valid email address')
     ])
-    submit = SubmitField('Send Reset Link')
+    submit = SubmitField(_l('Send Reset Link'))
 
 
 class ResetPasswordForm(FlaskForm):
     """Choose a new password from a reset link."""
-    password = PasswordField('New Password', validators=[
+    password = PasswordField(_l('New Password'), validators=[
         DataRequired(message='Password is required'),
         Length(min=8, max=128, message='Password must be at least 8 characters'),
     ])
-    confirm_password = PasswordField('Confirm New Password', validators=[
+    confirm_password = PasswordField(_l('Confirm New Password'), validators=[
         DataRequired(message='Please confirm your password'),
         EqualTo('password', message='Passwords must match')
     ])
-    submit = SubmitField('Reset Password')
+    submit = SubmitField(_l('Reset Password'))
 
     def validate_password(self, field):
         """Validate password strength (same rules as registration)."""
@@ -100,8 +101,8 @@ class ResetPasswordForm(FlaskForm):
 
 class ResendVerificationForm(FlaskForm):
     """Request a new email confirmation link."""
-    email = StringField('Email', validators=[
+    email = StringField(_l('Email'), validators=[
         DataRequired(message='Email is required'),
         Email(message='Please enter a valid email address')
     ])
-    submit = SubmitField('Resend Confirmation Email')
+    submit = SubmitField(_l('Resend Confirmation Email'))

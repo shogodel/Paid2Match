@@ -64,3 +64,109 @@ def unread_count(user_id):
     if not user_id:
         return 0
     return Notification.query.filter_by(recipient_id=user_id, is_read=False).count()
+
+
+# Phase 3: the bell panel + full notifications page need more than the
+# count — the items themselves, with actor avatars, and an icon per
+# type (Lucide names from static/img/icons.svg).
+
+NOTIFICATION_ICONS = {
+    'like': 'heart',
+    'comment': 'message-circle',
+    'mention': 'message-circle',
+    'follow': 'user',
+    'share': 'share-2',
+    'space_post': 'layers',
+    'message_new': 'mail',
+    'referral_new': 'handshake',
+    'referral_accepted': 'handshake',
+    'referral_rejected': 'handshake',
+    'referral_invite': 'handshake',
+    'referral_consented': 'handshake',
+    'referral_declined': 'handshake',
+    'referral_completed': 'handshake',
+    'share_led_to_hire': 'handshake',
+    'match_confirmed': 'handshake',
+    'payment_secured': 'wallet',
+    'payment_released': 'wallet',
+    'payout_pending': 'wallet',
+    'payout_failed': 'wallet',
+    'connect_ready': 'wallet',
+    'review_visible': 'star',
+    'dispute_opened': 'flag',
+    'dispute_resolved': 'flag',
+    'verification_approved': 'badge-check',
+    'verification_rejected': 'badge-check',
+    'endorsement': 'award',
+    'linked_verified': 'link',
+    'linked_rejected': 'link',
+    'pledge_revoked': 'shield-check',
+}
+
+
+def notification_icon(notification_type):
+    """The Lucide icon for a notification type (bell by default)."""
+    return NOTIFICATION_ICONS.get(notification_type, 'bell')
+
+
+def recent_notifications(user_id, limit=10):
+    """The user's latest notifications, newest first — the bell
+    panel's content. Returns [{'notification', 'actor', 'actor_profile'}]
+    so the panel can show actor avatars without extra queries per row
+    (one profile query for all actors)."""
+    from models.profile import Profile
+    from models.user import User
+    notifications = Notification.query.filter_by(
+        recipient_id=user_id,
+    ).order_by(Notification.created_at.desc()).limit(limit).all()
+    actor_ids = {n.actor_id for n in notifications if n.actor_id}
+    actors = {
+        u.id: u
+        for u in User.query.filter(User.id.in_(actor_ids)).all()
+    } if actor_ids else {}
+    profiles = {
+        p.user_id: p
+        for p in Profile.query.filter(Profile.user_id.in_(actor_ids)).all()
+    } if actor_ids else {}
+    return [{
+        'notification': n,
+        'actor': actors.get(n.actor_id),
+        'actor_profile': profiles.get(n.actor_id),
+    } for n in notifications]
+
+
+def notification_to_dict(notification):
+    """One notification as JSON for the panel refresh + the toast
+    poll. Actor details are included so the client can render the row
+    without another round trip."""
+    from models.profile import Profile
+    from models.user import User
+    from flask import url_for
+    actor = None
+    actor_profile = None
+    if notification.actor_id:
+        actor = db.session.get(User, notification.actor_id)
+        actor_profile = Profile.query.filter_by(
+            user_id=notification.actor_id
+        ).first()
+    return {
+        'id': notification.id,
+        'type': notification.type,
+        'icon': notification_icon(notification.type),
+        'title': notification.title,
+        'body': notification.body,
+        'link_url': notification.link_url,
+        'is_read': notification.is_read,
+        'created_at': (
+            notification.created_at.isoformat()
+            if notification.created_at else None
+        ),
+        'actor_name': actor.full_name if actor else None,
+        'actor_url': (
+            url_for('profile.public_profile', user_id=actor.id)
+            if actor else None
+        ),
+        'actor_avatar_url': (
+            actor_profile.avatar_url if actor_profile else None
+        ),
+    }

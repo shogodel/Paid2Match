@@ -80,33 +80,33 @@
                             <div id="rec-seeking_opportunity" class="direction-group d-none">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Company</label>
-                                        <input type="text" name="company" class="form-control" placeholder="Company name">
+                                        <label class="form-label">{{ _('Company') }}</label>
+                                        <input type="text" name="company" class="form-control" placeholder="{{ _('Company name') }}">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Job Title</label>
-                                        <input type="text" name="job_title" class="form-control" placeholder="e.g. Senior Engineer">
+                                        <label class="form-label">{{ _('Job Title') }}</label>
+                                        <input type="text" name="job_title" class="form-control" placeholder="{{ _('e.g. Senior Engineer') }}">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Job Type</label>
+                                        <label class="form-label">{{ _('Job Type') }}</label>
                                         <select name="job_type" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="full-time">Full-Time</option>
-                                            <option value="part-time">Part-Time</option>
-                                            <option value="contract">Contract</option>
-                                            <option value="internship">Internship</option>
-                                            <option value="remote">Remote</option>
+                                            <option value="">{{ _('Select...') }}</option>
+                                            <option value="full-time">{{ _('Full-Time') }}</option>
+                                            <option value="part-time">{{ _('Part-Time') }}</option>
+                                            <option value="contract">{{ _('Contract') }}</option>
+                                            <option value="internship">{{ _('Internship') }}</option>
+                                            <option value="remote">{{ _('Remote') }}</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Experience Level</label>
+                                        <label class="form-label">{{ _('Experience Level') }}</label>
                                         <select name="experience_level" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="entry">Entry</option>
-                                            <option value="mid">Mid-Level</option>
-                                            <option value="senior">Senior</option>
-                                            <option value="lead">Lead/Manager</option>
-                                            <option value="executive">Executive</option>
+                                            <option value="">{{ _('Select...') }}</option>
+                                            <option value="entry">{{ _('Entry') }}</option>
+                                            <option value="mid">{{ _('Mid-Level') }}</option>
+                                            <option value="senior">{{ _('Senior') }}</option>
+                                            <option value="lead">{{ _('Lead/Manager') }}</option>
+                                            <option value="executive">{{ _('Executive') }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -114,48 +114,48 @@
                             <div id="rec-offering_opportunity" class="direction-group d-none">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Candidate Specialty</label>
-                                        <input type="text" name="candidate_specialty" class="form-control" placeholder="e.g. Full-Stack Engineering">
+                                        <label class="form-label">{{ _('Candidate Specialty') }}</label>
+                                        <input type="text" name="candidate_specialty" class="form-control" placeholder="{{ _('e.g. Full-Stack Engineering') }}">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Experience Level</label>
+                                        <label class="form-label">{{ _('Experience Level') }}</label>
                                         <select name="candidate_experience" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="entry">Entry</option>
-                                            <option value="mid">Mid-Level</option>
-                                            <option value="senior">Senior</option>
-                                            <option value="lead">Lead/Manager</option>
+                                            <option value="">{{ _('Select...') }}</option>
+                                            <option value="entry">{{ _('Entry') }}</option>
+                                            <option value="mid">{{ _('Mid-Level') }}</option>
+                                            <option value="senior">{{ _('Senior') }}</option>
+                                            <option value="lead">{{ _('Lead/Manager') }}</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Availability</label>
+                                        <label class="form-label">{{ _('Availability') }}</label>
                                         <select name="availability" class="form-select">
-                                            <option value="">Select...</option>
-                                            <option value="immediately">Immediately</option>
-                                            <option value="2-weeks">2 Weeks Notice</option>
-                                            <option value="30-days">30 Days Notice</option>
-                                            <option value="passive">Passive (Open to Offers)</option>
+                                            <option value="">{{ _('Select...') }}</option>
+                                            <option value="immediately">{{ _('Immediately') }}</option>
+                                            <option value="2-weeks">{{ _('2 Weeks Notice') }}</option>
+                                            <option value="30-days">{{ _('30 Days Notice') }}</option>
+                                            <option value="passive">{{ _('Passive (Open to Offers)') }}</option>
                                         </select>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label">Additional Notes</label>
-                                        <textarea name="offering_notes" class="form-control" rows="2" placeholder="Anything else about the candidate..."></textarea>
+                                        <label class="form-label">{{ _('Additional Notes') }}</label>
+                                        <textarea name="offering_notes" class="form-control" rows="2" placeholder="{{ _('Anything else about the candidate...') }}"></textarea>
                                     </div>
                                 </div>
                             </div>
                             <div id="rec-seeking_opportunity" class="direction-group d-none">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Desired Role</label>
-                                        <input type="text" name="desired_role" class="form-control" placeholder="e.g. VP of Engineering">
+                                        <label class="form-label">{{ _('Desired Role') }}</label>
+                                        <input type="text" name="desired_role" class="form-control" placeholder="{{ _('e.g. VP of Engineering') }}">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Target Companies</label>
-                                        <input type="text" name="target_companies" class="form-control" placeholder="Company A, Company B">
+                                        <label class="form-label">{{ _('Target Companies') }}</label>
+                                        <input type="text" name="target_companies" class="form-control" placeholder="{{ _('Company A, Company B') }}">
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label">Your Background</label>
-                                        <textarea name="candidate_background" class="form-control" rows="3" placeholder="Brief summary of your experience and what you're looking for..."></textarea>
+                                        <label class="form-label">{{ _('Your Background') }}</label>
+                                        <textarea name="candidate_background" class="form-control" rows="3" placeholder="{{ _("Brief summary of your experience and what you're looking for...") }}"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -173,14 +173,15 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.reward_amount.label }} ($)</label>
-                                {{ form.reward_amount(class="form-control", placeholder="0 for a free need") }}
+                                {{ form.reward_amount(class="form-control", placeholder=_('0 for a free need — $50 minimum for a paid need')) }}
                                 {% for error in form.reward_amount.errors %}
                                 <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
+                                <div class="form-text">{{ _('Paid needs need a bounty of at least $50. Free needs carry no reward.') }}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.location.label }}</label>
-                                {{ form.location(class="form-control", placeholder="City, State or Remote") }}
+                                {{ form.location(class="form-control", placeholder=_('City, State or Remote')) }}
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.deadline.label }}</label>
@@ -188,38 +189,64 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label">{{ form.skills.label }}</label>
-                                {{ form.skills(class="form-control", placeholder="Python, SQL, Leadership") }}
+                                {{ form.skills(class="form-control", placeholder=_('Python, SQL, Leadership')) }}
                             </div>
                             <div class="col-12">
                                 <label class="form-label">{{ form.success_criteria.label }}</label>
-                                {{ form.success_criteria(class="form-control", rows="3", placeholder="What makes this need complete?") }}
+                                {{ form.success_criteria(class="form-control", rows="3", placeholder=_('What makes this need complete?')) }}
+                            </div>
+                        </div>
+                        <hr>
+                        <h6>{{ _('Staged rewards (optional)') }}</h6>
+                        <p class="form-text">{{ _('Reward the steps, not just the hire: a small amount when a referral is submitted, more when a candidate is interviewed. These amounts are shown on the need; completed stages are recorded as pending until stage payouts are wired.') }}</p>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.stage_submit_reward.label }}</label>
+                                {{ form.stage_submit_reward(class="form-control", placeholder=_('Optional')) }}
+                                {% for error in form.stage_submit_reward.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.stage_interview_reward.label }}</label>
+                                {{ form.stage_interview_reward(class="form-control", placeholder=_('Optional')) }}
+                                {% for error in form.stage_interview_reward.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.stage_hire_reward.label }}</label>
+                                {{ form.stage_hire_reward(class="form-control", placeholder=_('Optional')) }}
+                                {% for error in form.stage_hire_reward.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             </div>
                         </div>
                         <div class="form-check mt-3">
                             <input type="checkbox" name="is_free" id="is_free" class="form-check-input" value="1">
-                            <label for="is_free" class="form-check-label">This is a free need (no reward payment required)</label>
+                            <label for="is_free" class="form-check-label">{{ _('This is a free need (no reward payment required)') }}</label>
                         </div>
                         
                         <div id="payerSection" class="mt-4">
-                            <h6>Who will pay the referral reward?</h6>
+                            <h6>{{ _('Who will pay the referral reward?') }}</h6>
                             <div class="form-check mb-2 p-3 border rounded">
                                 <input type="radio" class="form-check-input" name="payer_type" value="poster" id="payerPoster" checked>
                                 <label class="form-check-label" for="payerPoster">
-                                    <strong>I will pay</strong>
-                                    <p class="text-muted mb-0 small">You secure the payment with your card</p>
+                                    <strong>{{ _('I will pay') }}</strong>
+                                    <p class="text-muted mb-0 small">{{ _('You secure the payment with your card') }}</p>
                                 </label>
                             </div>
                             <div class="form-check mb-2 p-3 border rounded">
                                 <input type="radio" class="form-check-input" name="payer_type" value="third_party" id="payerThirdParty">
                                 <label class="form-check-label" for="payerThirdParty">
-                                    <strong>Invite someone to pay</strong>
-                                    <p class="text-muted mb-0 small">They must accept the agreement before paying</p>
+                                    <strong>{{ _('Invite someone to pay') }}</strong>
+                                    <p class="text-muted mb-0 small">{{ _('They must accept the agreement before paying') }}</p>
                                 </label>
                                 <div id="invitePayerFields" class="mt-2 d-none">
-                                    <label class="form-label small">Username to invite</label>
-                                    <input type="text" name="payer_username" class="form-control form-control-sm" placeholder="Enter their username">
-                                    <label class="form-label small mt-2">Message (optional)</label>
-                                    <textarea name="payer_message" class="form-control form-control-sm" rows="2" placeholder="Optional message to the payer"></textarea>
+                                    <label class="form-label small">{{ _('Username to invite') }}</label>
+                                    <input type="text" name="payer_username" class="form-control form-control-sm" placeholder="{{ _('Enter their username') }}">
+                                    <label class="form-label small mt-2">{{ _('Message (optional)') }}</label>
+                                    <textarea name="payer_message" class="form-control form-control-sm" rows="2" placeholder="{{ _('Optional message to the payer') }}"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -246,8 +273,8 @@
                         <hr>
                         <h6 class="text-muted">{{ _('Direction Guide') }}</h6>
                         <ul class="small mb-0">
-                            <li><strong>{{ _("Seeking Opportunity") }}:</strong> You're hiring, find me someone</li>
-                            <li><strong>{{ _("Offering Opportunity") }}:</strong> I have a candidate, pay me</li>
+                            <li><strong>{{ _("Seeking Opportunity") }}:</strong> {{ _("You're hiring, find me someone") }}</li>
+                            <li><strong>{{ _("Offering Opportunity") }}:</strong> {{ _('I have a candidate, pay me') }}</li>
                             
                         </ul>
                     </div>

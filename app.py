@@ -1,11 +1,25 @@
 """Flask application factory."""
 import os
-from flask import Flask, render_template, redirect, url_for, session, request
+from flask import Flask, flash, g, jsonify, render_template, redirect, url_for, session, request
 from flask_login import current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from extensions import db, login_manager, migrate, bcrypt, babel, mail, csrf, get_or_404
 from models import Profile
+
+
+def _is_safe_redirect(url):
+    """True when url is a same-origin redirect target: a relative path
+    (not protocol-relative), or an absolute URL on this host. Used by
+    the language switcher so it can return the user to their page
+    without becoming an open redirect."""
+    if not url:
+        return False
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if not parsed.netloc:
+        return url.startswith('/') and not url.startswith('//')
+    return parsed.netloc == request.host
 
 
 def create_app(config_name: str = None) -> Flask:
@@ -47,29 +61,51 @@ def create_app(config_name: str = None) -> Flask:
     
     # Setup Babel locale selector
     def get_locale():
-        """Get locale for translations - priority: session > user profile > browser > default English."""
-        # 1. Check session preference (cached from profile or manual set)
+        """Get locale for translations - priority: session > user
+        profile > browser > default English.
+
+        Phase 2 cleanup: one session key only ('language'). The old
+        code cached the profile language under a second key
+        ('user_language') that fought the switcher; the profile
+        language is now read live per request (cached on flask.g for
+        the request, so it costs one query at most). A stale
+        'user_language' from an older session is migrated once.
+
+        Lazy strings (lazy_gettext) are evaluated wherever a label
+        is used — including app-context-only code with no request
+        (CLI commands, unit tests, background jobs). The session /
+        request / current_user lookups below all need a request
+        context, so without one this returns the cached value or
+        English instead of raising.
+        """
+        from flask import has_request_context
+        if not has_request_context():
+            return getattr(g, '_p2m_locale', None) or 'en'
+        if getattr(g, '_p2m_locale', None):
+            return g._p2m_locale
+        # One-time migration of the legacy session key.
+        if 'language' not in session and 'user_language' in session:
+            session['language'] = session.pop('user_language')
+        # 1. Explicit session preference (set by the switcher).
         lang = session.get('language')
         if lang in ['en', 'fr', 'es']:
+            g._p2m_locale = lang
             return lang
-        
-        # 2. Check user profile preference (if logged in) - cache in session
-        if current_user.is_authenticated and 'user_language' not in session:
-            profile = db.session.query(Profile).filter_by(user_id=current_user.id).first()
+        # 2. User profile preference (if logged in).
+        if current_user.is_authenticated:
+            profile = db.session.query(Profile).filter_by(
+                user_id=current_user.id
+            ).first()
             if profile and profile.language in ['en', 'fr', 'es']:
-                session['user_language'] = profile.language
+                g._p2m_locale = profile.language
                 return profile.language
-        
-        # Return cached profile language if available
-        if 'user_language' in session:
-            return session['user_language']
-        
-        # 3. Check browser preference
+        # 3. Browser preference.
         browser_lang = request.accept_languages.best_match(['en', 'fr', 'es'])
         if browser_lang:
+            g._p2m_locale = browser_lang
             return browser_lang
-        
-        # 4. Default to English
+        # 4. Default to English.
+        g._p2m_locale = 'en'
         return 'en'
     
     babel.init_app(app, locale_selector=get_locale)
@@ -82,12 +118,89 @@ def create_app(config_name: str = None) -> Flask:
         _=gettext
     )
 
+    # Relative timestamps for feed cards: "now", "5m", "2h",
+    # "Yesterday", weekday, or "Mar 4" — never the verbose absolute
+    # date the old cards used.
+    from datetime import datetime, timezone
+
+    def _relative_time(value):
+        if not value:
+            return ''
+        now = datetime.now(timezone.utc)
+        dt = value if value.tzinfo is not None else value.replace(
+            tzinfo=timezone.utc)
+        seconds = (now - dt).total_seconds()
+        if seconds < 60:
+            return 'now'
+        if seconds < 3600:
+            return f"{int(seconds // 60)}m"
+        if seconds < 86400:
+            return f"{int(seconds // 3600)}h"
+        if seconds < 172800:
+            return 'Yesterday'
+        if seconds < 604800:
+            return dt.strftime('%a')
+        if dt.year == now.year:
+            return dt.strftime('%b %-d')
+        return dt.strftime('%b %-d, %Y')
+
+    app.jinja_env.filters['relativetime'] = _relative_time
+
+    # Phase 2: @mentions in post/comment text link to the profile.
+    from utils.mentions import link_mentions
+    app.jinja_env.filters['mention_links'] = link_mentions
+
+    # Phase 2: trust-level / rank display labels. The level strings
+    # are logic keys in Python (compared, not displayed); templates
+    # translate them at render time through this filter.
+    from utils.trust import level_label
+    app.jinja_env.filters['level_label'] = level_label
+
+    # Phase 3: the Lucide icon for a notification type, used by the
+    # shared notification-item partial (bell panel + full page).
+    from utils.notifications import notification_icon
+    app.jinja_env.globals['notification_icon'] = notification_icon
+
+    # Phase 3: trust visibility on cards. has_active_pledge drives
+    # the pledge badge on board cards, bounty detail, and nested need
+    # cards in the feed; poster_reputation drives the poster line on
+    # board cards and the detail "Posted by" card. Both are cached
+    # per request (pledges on flask.g; metrics memoize per id here).
+    from utils.pledges import has_active_pledge
+    from utils.reputation import reputation_metrics as _reputation_metrics
+    app.jinja_env.globals['has_active_pledge'] = has_active_pledge
+
+    def _cached_reputation_metrics(user_id):
+        cache = g.get('_reputation_cache')
+        if cache is None:
+            cache = g._reputation_cache = {}
+        if user_id not in cache:
+            cache[user_id] = _reputation_metrics(user_id)
+        return cache[user_id]
+
+    app.jinja_env.globals['poster_reputation'] = _cached_reputation_metrics
+
     # Flask-Login configured in extensions.py
 
     @login_manager.user_loader
     def load_user(user_id):
         from models.user import User
         return db.session.get(User, user_id)
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        """Phase 1: feed interactions are AJAX. An AJAX request to a
+        login-walled route gets a 401 JSON (the client redirects to
+        login); plain browser navigation keeps the classic flash +
+        redirect to the login page."""
+        wants_json = (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or request.accept_mimetypes.best == 'application/json'
+        )
+        if wants_json:
+            return jsonify({'error': 'authentication required'}), 401
+        flash(login_manager.login_message, login_manager.login_message_category)
+        return redirect(url_for('auth.login', next=request.url))
 
     # Register blueprints
     from blueprints.auth import auth_bp
@@ -108,12 +221,31 @@ def create_app(config_name: str = None) -> Flask:
     app.register_blueprint(referrals_bp, url_prefix='/referrals')
     app.register_blueprint(payments_bp)
 
-    # M1: unread notification count for the navbar badge.
+    # M1: unread notification count for the navbar badge. Phase 3:
+    # the bell panel also needs the latest items (with actor avatars),
+    # server-rendered so the panel works before any JS runs.
     @app.context_processor
     def inject_notifications():
-        from utils.notifications import unread_count
-        count = unread_count(current_user.id) if current_user.is_authenticated else 0
-        return {'unread_notifications': count}
+        from utils.notifications import (
+            recent_notifications, unread_count,
+        )
+        if not current_user.is_authenticated:
+            return {
+                'unread_notifications': 0,
+                'recent_notifications': [],
+            }
+        return {
+            'unread_notifications': unread_count(current_user.id),
+            'recent_notifications': recent_notifications(
+                current_user.id, limit=10,
+            ),
+        }
+
+    # Phase 2: the active locale for <html lang> and the switcher's
+    # active-language indicator.
+    @app.context_processor
+    def inject_locale():
+        return {'current_locale': get_locale()}
 
     # M3: recurring-bump runner — apply due $5/month auto-bumps. Run
     # on a schedule on the server (e.g. daily cron: flask
@@ -126,15 +258,83 @@ def create_app(config_name: str = None) -> Flask:
         applied = sum(1 for _id, ok, _msg in results if ok)
         print(f'{applied} recurring bumps applied, {len(results) - applied} deferred.')
 
+    # Phase 2: seed the topic spaces (models/space.py SEEDED_SPACES).
+    # Idempotent — safe to re-run; only missing slugs are created.
+    # Run once after `flask db upgrade` on a fresh deploy.
+    @app.cli.command('seed-spaces')
+    def seed_spaces_command():
+        from models.space import seed_spaces
+        created = seed_spaces()
+        db.session.commit()
+        if created:
+            print(f"Seeded {len(created)} space(s): "
+                  + ', '.join(s.slug for s in created))
+        else:
+            print('Spaces already seeded — nothing to do.')
+
+    # Phase 3: weekly digest email (utils/digest.py). Recipients are
+    # active users with a verified email. Mail is NOT configured on
+    # the live container (no MAIL_* env vars), so the command runs
+    # and reports 0 sent there until SMTP is fixed — expected, not a
+    # bug; see DEPLOYMENT.md for the cron line.
+    @app.cli.command('send-weekly-digest')
+    def send_weekly_digest_command():
+        from utils.digest import send_weekly_digest
+        sent, skipped = send_weekly_digest()
+        print(f'Weekly digest: {sent} sent, {skipped} skipped.')
+
     # Language switcher route
     @app.route('/set-language/<lang>')
     def set_language(lang):
-        """Change language preference."""
+        """Change language preference. The preference is stored in the
+        session and, when logged in, on the profile (so it survives
+        across devices). Returns the user to the page they were on:
+        an explicit ?next= wins, then the referrer (same host only),
+        else the homepage."""
         if lang in ['en', 'fr', 'es']:
             session['language'] = lang
-            # Clear cached profile language so new preference takes effect
+            # Drop the legacy key (Phase 2 locale cleanup).
             session.pop('user_language', None)
+            g._p2m_locale = lang
+            if current_user.is_authenticated:
+                profile = db.session.query(Profile).filter_by(
+                    user_id=current_user.id
+                ).first()
+                if profile and profile.language != lang:
+                    profile.language = lang
+                    db.session.commit()
+        target = request.args.get('next') or ''
+        if not _is_safe_redirect(target):
+            target = request.referrer or ''
+            if not _is_safe_redirect(target):
+                target = ''
+        if target:
+            return redirect(target)
         return redirect(url_for('index'))
+
+    # PWA (Phase 2): the manifest and the service worker must be
+    # served from the site root. A service worker under /static/
+    # could only control /static/* — /sw.js controls the whole
+    # origin. Both are network-only by design (the SW must never be
+    # served stale, so it gets Cache-Control: no-cache).
+    @app.route('/manifest.json')
+    def manifest():
+        return app.send_static_file('manifest.json'), 200, {
+            'Content-Type': 'application/manifest+json',
+        }
+
+    @app.route('/sw.js')
+    def service_worker():
+        return app.send_static_file('sw.js'), 200, {
+            'Content-Type': 'application/javascript',
+            'Cache-Control': 'no-cache',
+        }
+
+    @app.route('/offline')
+    def offline():
+        """Offline fallback page — precached by the service worker and
+        served from cache when a navigation fails."""
+        return render_template('offline.html')
 
     # Index route - landing page with cached stats
     @app.route('/')
@@ -186,13 +386,22 @@ def create_app(config_name: str = None) -> Flask:
 
         # Homepage social preview: the 4 most recent public posts, using
         # the same visibility rule as Discover (hidden posts never show;
-        # a signed-in viewer's blocked authors are excluded).
+        # a signed-in viewer's blocked authors are excluded). Rendered
+        # with the same post-card component as the feed, so the card
+        # needs the same context (like/share state, trust levels).
         from models.post import Post
         from utils.feed import _visible_posts_query
+        from blueprints.social.forms import ShareForm
+        from blueprints.social.routes import (
+            _author_levels, _author_profiles, _liked_and_shared_ids,
+            _poll_votes, _saved_ids,
+        )
         viewer_id = current_user.id if current_user.is_authenticated else None
         recent_posts = _visible_posts_query(viewer_id).order_by(
             Post.created_at.desc()
         ).limit(4).all()
+        post_ids = [p.id for p in recent_posts]
+        liked_ids, shared_ids = _liked_and_shared_ids(post_ids)
 
         return render_template('index.html',
                           total_users=stats['total_users'],
@@ -201,7 +410,14 @@ def create_app(config_name: str = None) -> Flask:
                           successful_matches=stats['successful_matches'],
                           featured=featured,
                           top_helpers=top_helpers,
-                          recent_posts=recent_posts)
+                          recent_posts=recent_posts,
+                          liked_ids=liked_ids,
+                          shared_ids=shared_ids,
+                          saved_ids=_saved_ids(post_ids),
+                          poll_votes=_poll_votes(post_ids),
+                          author_levels=_author_levels(recent_posts),
+                          author_profiles=_author_profiles(recent_posts),
+                          share_form=ShareForm())
 
     # Error handlers
     @app.errorhandler(404)

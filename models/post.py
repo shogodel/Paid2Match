@@ -1,4 +1,6 @@
 """Social models: posts, likes, comments, shares (M1 social core)."""
+from flask_babel import lazy_gettext as _l
+
 from extensions import db
 from models import generate_uuid, utc_now
 
@@ -9,14 +11,41 @@ class Post(db.Model):
     attributed reshare cards in the feed."""
     __tablename__ = 'posts'
 
-    POST_TYPES = ['need_paid', 'need_free', 'update', 'win', 'ask', 'intro']
+    # Phase 2 post-type taxonomy (flair): Discussion / Win / Ask /
+    # Referral Need / Available, plus Intro (#intros). Stored types map
+    # onto the taxonomy: 'update' is a Discussion, both need types are
+    # a Referral Need, 'available' is new (someone open to work).
+    POST_TYPES = [
+        'need_paid', 'need_free', 'update', 'win', 'ask', 'intro',
+        'available',
+    ]
+    # Labels are lazy_gettext (aliased _l) so the card chips translate;
+    # pybabel extracts the _l keyword (see babel.cfg keywords).
     POST_TYPE_LABELS = {
-        'need_paid': 'Referral need',
-        'need_free': 'Community referral',
-        'update': 'Update',
-        'win': 'Win',
-        'ask': 'Ask',
-        'intro': 'Intro',
+        'need_paid': _l('Referral need'),
+        'need_free': _l('Referral need'),
+        'update': _l('Discussion'),
+        'win': _l('Win'),
+        'ask': _l('Ask'),
+        'intro': _l('Intro'),
+        'available': _l('Available'),
+    }
+    # Flair filter values (feed ?flair=...) -> stored post types.
+    FLAIR_TYPES = {
+        'discussion': ['update'],
+        'win': ['win'],
+        'ask': ['ask'],
+        'need': ['need_paid', 'need_free'],
+        'available': ['available'],
+        'intro': ['intro'],
+    }
+    FLAIR_LABELS = {
+        'discussion': _l('Discussion'),
+        'win': _l('Win'),
+        'ask': _l('Ask'),
+        'need': _l('Referral Need'),
+        'available': _l('Available'),
+        'intro': _l('Intro'),
     }
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
@@ -26,6 +55,9 @@ class Post(db.Model):
     photo_url = db.Column(db.String(500), nullable=True)
     # Set when the post is (or becomes) a referral need.
     bounty_id = db.Column(db.String(36), db.ForeignKey('bounties.id'), nullable=True, index=True)
+    # Phase 2: the topic space this post belongs to (NULL = the
+    # general feed). Space posts still appear in the main feeds.
+    space_id = db.Column(db.String(36), db.ForeignKey('spaces.id'), nullable=True, index=True)
     # Moderation: hidden posts never appear in feeds or search.
     is_hidden = db.Column(db.Boolean, default=False)
     # M3: set when the post was auto-hidden by the report threshold
@@ -83,6 +115,14 @@ class Post(db.Model):
     @property
     def type_label(self):
         return self.POST_TYPE_LABELS.get(self.post_type, self.post_type)
+
+    @property
+    def flair(self):
+        """The taxonomy flair key for this post's stored type."""
+        for flair, types in self.FLAIR_TYPES.items():
+            if self.post_type in types:
+                return flair
+        return 'discussion'
 
     @property
     def like_count(self):
@@ -176,3 +216,23 @@ class Share(db.Model):
 
     def __repr__(self):
         return f'<Share {self.user_id} -> {self.post_id}>'
+
+
+class Bookmark(db.Model):
+    """A saved post (Phase 2 — closes the Phase 1 Save deferral). One
+    bookmark per user per post; the Saved view lists them newest first."""
+    __tablename__ = 'bookmarks'
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'post_id', name='uq_bookmark_user_post'),
+    )
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, index=True)
+    post_id = db.Column(db.String(36), db.ForeignKey('posts.id'), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now)
+
+    post = db.relationship('Post', backref='bookmarks')
+    user = db.relationship('User', backref='bookmarks')
+
+    def __repr__(self):
+        return f'<Bookmark {self.user_id} -> {self.post_id}>'

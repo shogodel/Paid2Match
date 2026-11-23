@@ -1,0 +1,28 @@
+{# One notification row — shared by the bell panel and the full
+   notifications page. Expects: n (Notification), actor_profile
+   (the actor's Profile or None), notification_icon (callable:
+   type -> Lucide name). The row links to the notification's target
+   (or the notifications page when there is none); unread rows carry
+   the primary dot on the left edge. #}
+{% from 'partials/icon.html' import icon %}
+{% set target = n.link_url if n.link_url and n.link_url.startswith('/') else url_for('social.notifications') %}
+<a href="{{ target }}" class="notification-item {{ 'is-unread' if not n.is_read }}">
+    {% if not n.is_read %}<span class="notification-dot" aria-hidden="true"></span>{% endif %}
+    <span class="notification-item-icon">
+        {% if actor_profile and actor_profile.avatar_url %}
+        <img src="{{ actor_profile.avatar_url }}" alt="" class="avatar avatar-36">
+        {% elif n.actor_id %}
+        <span class="avatar-placeholder avatar-36" aria-hidden="true">{{ (n.actor.full_name or 'P')[0] | upper }}</span>
+        {% else %}
+        <span class="notification-type-icon">{{ icon(notification_icon(n.type), 18) }}</span>
+        {% endif %}
+    </span>
+    <span class="notification-item-main">
+        <span class="notification-item-title">{{ n.title }}</span>
+        {% if n.body %}<span class="notification-item-body">{{ n.body }}</span>{% endif %}
+        <span class="notification-item-time">{{ n.created_at | relativetime }}</span>
+    </span>
+    {% if not n.is_read %}
+    <span class="notification-type-icon notification-type-icon-end">{{ icon(notification_icon(n.type), 16) }}</span>
+    {% endif %}
+</a>

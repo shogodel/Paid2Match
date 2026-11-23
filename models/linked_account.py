@@ -24,6 +24,7 @@ import secrets
 import string
 
 from extensions import db
+from flask_babel import lazy_gettext as _l
 from models import generate_uuid, utc_now
 
 # How long a verification lasts before re-verification is due.
@@ -43,7 +44,7 @@ PLATFORM_LABELS = {
     'tiktok': 'TikTok',
     'x': 'X',
     'youtube': 'YouTube',
-    'website': 'Website',
+    'website': _l('Website'),
 }
 # OAuth is only realistic for LinkedIn + GitHub at this scale (§2.2) —
 # Meta/TikTok/X OAuth needs app review; those go through bio-link or code.

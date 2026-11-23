@@ -2,8 +2,17 @@
 import math
 from datetime import datetime, timedelta, timezone
 from extensions import db
+from flask_babel import lazy_gettext as _l
 from sqlalchemy.orm import validates
 from models import generate_uuid, utc_now
+
+# Phase 3: the minimum bounty on a PAID referral need (CAD). A paid
+# need must state a bounty of at least $50 — no more $0 "paid" needs.
+# Free ($0) community needs stay allowed: they carry no reward at all
+# (reward_amount None or 0), so the floor never touches them. This is
+# a product decision Remus can adjust by changing this one constant —
+# the form validators and the model guard below all read it.
+MIN_PAID_BOUNTY_CAD = 50
 
 
 class Bounty(db.Model):
@@ -14,8 +23,8 @@ class Bounty(db.Model):
     # referrals (M4). Other types stay locked until a later milestone.
     VALID_BOUNTY_TYPES = ['recruitment', 'services']
     BOUNTY_TYPE_LABELS = {
-        'recruitment': 'Recruitment',
-        'services': 'Services',
+        'recruitment': _l('Recruitment'),
+        'services': _l('Services'),
     }
     # Category system (M4): each vertical has its own categories. A
     # need's category must belong to its vertical (enforced in the
@@ -23,21 +32,21 @@ class Bounty(db.Model):
     # which vertical a category belongs to at validation time).
     CATEGORIES = {
         'recruitment': {
-            'trades': 'Skilled trades',
-            'hospitality': 'Hospitality & food',
-            'healthcare': 'Healthcare',
-            'office_admin': 'Office & admin',
-            'sales': 'Sales',
-            'tech': 'Tech',
-            'other': 'Other',
+            'trades': _l('Skilled trades'),
+            'hospitality': _l('Hospitality & food'),
+            'healthcare': _l('Healthcare'),
+            'office_admin': _l('Office & admin'),
+            'sales': _l('Sales'),
+            'tech': _l('Tech'),
+            'other': _l('Other'),
         },
         'services': {
-            'home_services': 'Home services',
-            'creative_design': 'Creative & design',
-            'professional': 'Professional services',
-            'wellness': 'Health & wellness',
-            'tech_services': 'Tech services',
-            'other': 'Other',
+            'home_services': _l('Home services'),
+            'creative_design': _l('Creative & design'),
+            'professional': _l('Professional services'),
+            'wellness': _l('Health & wellness'),
+            'tech_services': _l('Tech services'),
+            'other': _l('Other'),
         },
     }
     VALID_STATUSES = ['pending', 'open', 'funded', 'closed', 'completed', 'expired']
@@ -45,8 +54,8 @@ class Bounty(db.Model):
     VALID_PAYER_TYPES = ['poster', 'third_party']
     VALID_DIRECTIONS = ['seeking_opportunity', 'offering_opportunity']
     VALID_DIRECTIONS_DISPLAY = {
-        'seeking_opportunity': 'Seeking Opportunity',
-        'offering_opportunity': 'Offering Opportunity'
+        'seeking_opportunity': _l('Seeking Opportunity'),
+        'offering_opportunity': _l('Offering Opportunity')
     }
 
     @validates('bounty_type')
@@ -54,6 +63,22 @@ class Bounty(db.Model):
         if value is not None and value not in self.VALID_BOUNTY_TYPES:
             raise ValueError(
                 f"bounty_type must be one of {self.VALID_BOUNTY_TYPES}, got {value!r}"
+            )
+        return value
+
+    @validates('reward_amount')
+    def _validate_reward_amount(self, key, value):
+        """Phase 3 bounty floor: a positive reward below the floor is
+        not a paid need — it is a $0 need pretending to be paid. Free
+        needs (None or 0) pass; anything positive must be at least
+        MIN_PAID_BOUNTY_CAD. The forms catch this first with a proper
+        error message; this guard is the backstop for direct
+        construction (and it never fires on rows loaded from the DB,
+        so pre-floor bounties are untouched)."""
+        if value is not None and 0 < value < MIN_PAID_BOUNTY_CAD:
+            raise ValueError(
+                f"reward_amount must be 0 (free need) or at least "
+                f"${MIN_PAID_BOUNTY_CAD}, got {value!r}"
             )
         return value
 
@@ -71,6 +96,18 @@ class Bounty(db.Model):
     skills = db.Column(db.Text, nullable=True)
     reward_amount = db.Column(db.Numeric(12, 2), nullable=True)
     transaction_fee = db.Column(db.Numeric(12, 2), nullable=True)
+    # Phase 3 staged rewards (Paraform model — display only, see
+    # models/staged_reward.py): optional amounts the poster declares
+    # for each stage of a referral — a referral submitted, a candidate
+    # interviewed, a hire made. Declaring them costs nothing and moves
+    # no money: completed stages are recorded as StageRewardEvent rows
+    # with status 'pending_stripe' until the payout wiring lands (no
+    # live Stripe keys exist in the container yet, so there is no
+    # payout path to call). All three are optional and independent of
+    # the main reward_amount.
+    stage_submit_reward = db.Column(db.Numeric(12, 2), nullable=True)
+    stage_interview_reward = db.Column(db.Numeric(12, 2), nullable=True)
+    stage_hire_reward = db.Column(db.Numeric(12, 2), nullable=True)
     status = db.Column(db.String(20), nullable=False, default='open')
     payment_status = db.Column(db.String(20), nullable=False, default='unsecured')
     payer_type = db.Column(db.String(20), default='poster')
@@ -124,6 +161,35 @@ class Bounty(db.Model):
     @property
     def is_free_bounty(self):
         return not self.reward_amount or self.reward_amount == 0
+
+    @property
+    def has_staged_rewards(self):
+        """True when the poster declared at least one stage reward."""
+        return bool(
+            (self.stage_submit_reward and self.stage_submit_reward > 0)
+            or (self.stage_interview_reward and self.stage_interview_reward > 0)
+            or (self.stage_hire_reward and self.stage_hire_reward > 0)
+        )
+
+    @property
+    def stage_rewards(self):
+        """Declared stage rewards in stage order, as a list of
+        {'stage', 'label', 'amount'} dicts — only the stages the
+        poster actually set a (positive) amount for."""
+        from utils.staged_rewards import STAGE_LABELS
+        rewards = []
+        for stage, column in (
+            ('submit', self.stage_submit_reward),
+            ('interview', self.stage_interview_reward),
+            ('hire', self.stage_hire_reward),
+        ):
+            if column and column > 0:
+                rewards.append({
+                    'stage': stage,
+                    'label': STAGE_LABELS[stage],
+                    'amount': column,
+                })
+        return rewards
 
     @property
     def is_publicly_visible(self):
@@ -270,6 +336,9 @@ class Bounty(db.Model):
             'category': self.category,
             'skills': self.skills,
             'reward_amount': float(self.reward_amount) if self.reward_amount else None,
+            'stage_submit_reward': float(self.stage_submit_reward) if self.stage_submit_reward else None,
+            'stage_interview_reward': float(self.stage_interview_reward) if self.stage_interview_reward else None,
+            'stage_hire_reward': float(self.stage_hire_reward) if self.stage_hire_reward else None,
             'is_free': self.is_free_bounty,
             'status': self.status,
             'payment_status': self.payment_status,

@@ -101,7 +101,12 @@ class TestNotificationCenter:
         db.session.commit()
         resp = client.get('/social/feed')
         assert resp.status_code == 200
-        assert b'badge bg-danger' in resp.data
+        # Phase 1 nav: the unread count rides on the bell as a
+        # terracotta pill (nav-badge) and on the mobile tab bar
+        # (tab-badge), replacing the old bg-danger Bootstrap badge.
+        assert b'nav-badge' in resp.data
+        assert b'tab-badge' in resp.data
+        assert b'>1<' in resp.data
 
     def test_mark_one_read_follows_link(self, client, logged_in_user, app, sample_user, second_user):
         n = notify(sample_user.id, 'like', 'Someone liked your post',

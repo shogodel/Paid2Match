@@ -229,7 +229,9 @@ class TestFeeds:
         assert b'Hello network' in resp.data
         resp = client.get('/social/feed?tab=discover')
         assert resp.status_code == 200
-        assert b'How Discover ranks posts' in resp.data
+        # Phase 2 renamed the Discover tab to Top (the tab=discover
+        # URL is kept for existing links).
+        assert b'How Top ranks posts' in resp.data
 
 
 class TestPeopleSearch:
@@ -256,8 +258,12 @@ class TestPeopleSearch:
         db.session.commit()
         suggested = suggested_connections(sample_user.id)
         ids = [u.id for u in suggested]
+        # Phase 3: suggestions are score-based (shared spaces, city,
+        # karma, referrals, trust) — the same-city user ranks first,
+        # but a different-city user is still suggested (never an
+        # empty rail), and you are never suggested to yourself.
         assert second_user.id in ids
-        assert third_user.id not in ids  # Laval != Montreal
+        assert ids.index(second_user.id) < ids.index(third_user.id)
         assert sample_user.id not in ids
 
 

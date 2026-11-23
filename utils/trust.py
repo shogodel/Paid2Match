@@ -43,6 +43,8 @@ in it).
 """
 from datetime import timedelta, timezone
 
+from flask_babel import lazy_gettext as _l
+
 from extensions import db
 from models import utc_now
 from models.bounty import Bounty
@@ -57,6 +59,26 @@ from models.review import revealed_reviews_for_user
 from utils.sla import has_open_breach, sla_breach_count_90d
 
 LEVELS = ['Newcomer', 'Member', 'Trusted', 'Ambassador']
+
+# Display labels for trust levels (and the gamification ranks, which
+# share the 'Newcomer' key). The LEVELS strings above are logic keys —
+# code compares against them (e.g. level == 'Ambassador' for flag
+# weight) — so they stay English everywhere in Python; only the
+# rendered label is translated, via the level_label filter.
+LEVEL_LABELS = {
+    'Newcomer': _l('Newcomer'),
+    'Member': _l('Member'),
+    'Trusted': _l('Trusted'),
+    'Ambassador': _l('Ambassador'),
+    'Explorer': _l('Explorer'),
+    'Contributor': _l('Contributor'),
+}
+
+
+def level_label(level):
+    """The translated display label for a trust level / rank key.
+    Unknown keys pass through unchanged."""
+    return LEVEL_LABELS.get(level, level)
 
 
 def _as_aware(dt):

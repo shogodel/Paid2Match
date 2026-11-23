@@ -24,6 +24,38 @@
                     {% endif %}
                 </div>
             </div>
+
+            {# Phase 3: one thread per referral — the conversation
+               about this referral lives here. Only the referrer and
+               the poster can write; the referred person can read the
+               status above but not post. #}
+            <div class="card mt-3" id="thread">
+                <div class="card-body">
+                    <h5>{{ _('Conversation about this referral') }}</h5>
+                    {% if thread_messages %}
+                    <div class="referral-thread">
+                        {% for msg in thread_messages %}
+                        <div class="referral-thread-message {{ 'is-mine' if msg.sender_id == current_user.id }}">
+                            <div class="small text-muted">
+                                <strong>{{ msg.sender.full_name }}</strong> &middot; {{ msg.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                            </div>
+                            <p class="mb-0">{{ msg.content }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">{{ _('No messages yet — start the conversation below.') }}</p>
+                    {% endif %}
+                    {% if can_message %}
+                    <form method="POST" action="{{ url_for('referrals.post_thread_message', referral_id=referral.id) }}" class="mt-3">
+                        <div class="mb-2">
+                            <textarea name="content" class="form-control" rows="3" placeholder="{{ _('Message about this referral…') }}" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">{{ _('Send message') }}</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

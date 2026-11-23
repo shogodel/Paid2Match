@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from 'partials/icon.html' import icon %}
+
+{% block title %}{{ _('You are offline') }} - Paid2Match{% endblock %}
+
+{% block content %}
+{# Offline fallback page — served by the service worker when a
+   navigation fails (see static/sw.js). Reuses the 404 layout: centred
+   message + one way back. Nothing here needs the network: the page
+   itself and its assets are precached on install. #}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto text-center">
+            <div class="empty-state-icon mb-3">{{ icon('globe', 28) }}</div>
+            <h1 class="h2">{{ _('You are offline') }}</h1>
+            <p class="lead text-muted">{{ _('Paid2Match needs an internet connection — your feed, messages, and profile live on the network, not on this device.') }}</p>
+            <p class="text-muted">{{ _('Check your connection, then try again.') }}</p>
+            <a href="/" class="btn btn-primary">{{ _('Try again') }}</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

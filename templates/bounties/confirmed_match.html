@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Match Confirmed{% endblock %}
+{% block title %}{{ _('Match Confirmed') }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -8,7 +8,7 @@
         <div class="col-lg-6">
             <div class="card border-success">
                 <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="fas fa-check-circle"></i> Match Confirmed!</h4>
+                    <h4 class="mb-0"><i class="fas fa-check-circle"></i> {{ _('Match Confirmed!') }}</h4>
                 </div>
                 <div class="card-body">
                     <h5>{{ bounty.title }}</h5>
@@ -16,12 +16,12 @@
 
                     <div class="alert alert-success">
                         <i class="fas fa-check"></i>
-                        Both parties have confirmed! Payment is being processed.
+                        {{ _('Both parties have confirmed! Payment is being processed.') }}
                     </div>
 
                     <table class="table table-sm mb-4">
                         <tr>
-                            <td><strong>Reward:</strong></td>
+                            <td><strong>{{ _('Reward:') }}</strong></td>
                             <td>
                                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
                                     ${{ "{:,.2f}".format(bounty.reward_amount) }} CAD
@@ -41,7 +41,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td><strong>Net Payout:</strong></td>
+                            <td><strong>{{ _('Net Payout:') }}</strong></td>
                             <td>
                                 {% if match.payout_amount and match.platform_fee %}
                                     ${{ "{:,.2f}".format(match.payout_amount - match.platform_fee) }} CAD
@@ -51,53 +51,53 @@
                             </td>
                         </tr>
                         <tr>
-                            <td><strong>Confirmed:</strong></td>
+                            <td><strong>{{ _('Confirmed:') }}</strong></td>
                             <td>{{ match.confirmed_at.strftime('%B %d, %Y at %I:%M %p') if match.confirmed_at else 'N/A' }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Payout Status:</strong></td>
+                            <td><strong>{{ _('Payout Status:') }}</strong></td>
                             <td>
                                 <span class="badge bg-{{ {'pending': 'warning', 'processing': 'info', 'completed': 'success', 'failed': 'danger'}.get(match.payout_status, 'secondary') }}">
                                     {{ match.payout_status|title }}
                                 </span>
                                 {% if match.payout_status == 'pending' %}
-                                <span class="small text-muted">— waiting on the referrer's payout setup</span>
+                                <span class="small text-muted">{{ _("— waiting on the referrer's payout setup") }}</span>
                                 {% elif match.payout_status == 'failed' %}
-                                <span class="small text-muted">— an admin will resolve this</span>
+                                <span class="small text-muted">{{ _('— an admin will resolve this') }}</span>
                                 {% endif %}
                             </td>
                         </tr>
                     </table>
 
                     <p class="small text-muted">
-                        Both parties' reputation scores have been updated.
+                        {{ _("Both parties' reputation scores have been updated.") }}
                     </p>
 
                     {# M2: rate the other party (double-blind) or file a dispute. #}
                     <div class="d-flex gap-2 flex-wrap mb-3">
                         {% if not my_review %}
                         <a href="{{ url_for('bounties.rate_match', match_id=match.id) }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-star"></i> Rate this match
+                            <i class="fas fa-star"></i> {{ _('Rate this match') }}
                         </a>
                         {% else %}
                         <span class="btn btn-outline-secondary btn-sm disabled">
-                            <i class="fas fa-star"></i> You rated this match
+                            <i class="fas fa-star"></i> {{ _('You rated this match') }}
                         </span>
                         {% endif %}
                         {% if not open_dispute %}
                         <a href="{{ url_for('bounties.file_dispute', match_id=match.id) }}" class="btn btn-outline-warning btn-sm">
-                            <i class="fas fa-flag"></i> File a dispute
+                            <i class="fas fa-flag"></i> {{ _('File a dispute') }}
                         </a>
                         {% else %}
                         <span class="btn btn-outline-secondary btn-sm disabled">
-                            <i class="fas fa-flag"></i> Dispute open — under admin review
+                            <i class="fas fa-flag"></i> {{ _('Dispute open — under admin review') }}
                         </span>
                         {% endif %}
                     </div>
 
                     {% if revealed_reviews %}
                     <hr>
-                    <h6>Reviews</h6>
+                    <h6>{{ _('Reviews') }}</h6>
                     {% for review in revealed_reviews %}
                     <div class="border rounded p-3 mb-2">
                         <div class="small text-muted">
@@ -117,16 +117,16 @@
                     {% elif my_review %}
                     <hr>
                     <p class="small text-muted mb-0">
-                        Your review is hidden until the other side rates too (or after 14 days).
+                        {{ _('Your review is hidden until the other side rates too (or after 14 days).') }}
                     </p>
                     {% endif %}
                 </div>
                 <div class="card-footer">
                     <a href="{{ url_for('messages.inbox') }}" class="btn btn-success">
-                        <i class="fas fa-envelope"></i> Message Counterpart
+                        <i class="fas fa-envelope"></i> {{ _('Message Counterpart') }}
                     </a>
                     <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-secondary">
-                        Browse More Needs
+                        {{ _('Browse More Needs') }}
                     </a>
                 </div>
             </div>

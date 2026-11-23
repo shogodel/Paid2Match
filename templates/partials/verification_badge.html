@@ -1,0 +1,10 @@
+{# One clickable verification badge (Phase 3). Expects tier_info =
+   (tier, label, signals) from utils.verification_tiers. Tier 0 shows
+   nothing — there is nothing to badge yet. The badge links to the
+   explainer page, which lists the tiers and how to reach each. #}
+{% from 'partials/icon.html' import icon %}
+{% if tier_info and tier_info[0] > 0 %}
+<a href="{{ url_for('social.verification') }}" class="verification-badge verification-badge-tier-{{ tier_info[0] }}" title="{{ _('Verification tier %(tier)s of 3 — click to learn how verification works', tier=tier_info[0]) }}">
+    {{ icon('badge-check', 18) }} {{ tier_info[1] }}
+</a>
+{% endif %}

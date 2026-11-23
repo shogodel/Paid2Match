@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ kind|title }} - {{ user.full_name }}{% endblock %}
+{% block title %}{{ _('Followers') if kind == 'followers' else _('Following') }} - {{ user.full_name }}{% endblock %}
 {% block content %}
 <div class="container py-4">
     <h2>{{ user.full_name }} — {{ kind|title }} ({{ follows|length }})</h2>
@@ -14,7 +14,7 @@
         </div>
         {% endfor %}
     {% else %}
-        <p class="text-muted">Nobody here yet.</p>
+        <p class="text-muted">{{ _('Nobody here yet.') }}</p>
     {% endif %}
 </div>
 {% endblock %}

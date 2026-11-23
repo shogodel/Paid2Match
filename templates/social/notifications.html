@@ -1,47 +1,92 @@
-{% extends "base.html" %}
-{% block title %}Notifications - Paid2Match{% endblock %}
+{% extends 'base.html' %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('Notifications') }} — {{ _('Paid2Match') }}{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0">Notifications {% if unread %}<span class="badge bg-danger">{{ unread }} new</span>{% endif %}</h2>
-        {% if unread %}
-        <form method="POST" action="{{ url_for('social.read_all_notifications') }}">
-            <button type="submit" class="btn btn-sm btn-outline-secondary">Mark all read</button>
-        </form>
-        {% endif %}
-    </div>
-    {% if notifications %}
-        {% for n in notifications %}
-        <div class="card mb-2 {{ '' if n.is_read else 'border-primary' }}">
-            <div class="card-body py-2 d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>{{ n.title }}</strong>
-                    {% if n.body %}<div class="text-muted small">{{ n.body }}</div>{% endif %}
-                    <small class="text-muted">{{ n.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
-                </div>
-                <form method="POST" action="{{ url_for('social.read_notification', notification_id=n.id) }}">
-                    <button type="submit" class="btn btn-sm {{ 'btn-outline-primary' if not n.is_read else 'btn-outline-secondary' }}">
-                        {{ 'View' if n.link_url else 'Mark read' }}
-                    </button>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">{{ _('Notifications') }}</h2>
+                {% if unread %}
+                <form method="POST" action="{{ url_for('social.read_all_notifications') }}">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">{{ _('Mark all read') }}</button>
                 </form>
+                {% endif %}
             </div>
+
+            {# Phase 3: filter chips — All / Likes / Comments / Follows /
+               Referrals / Payouts. Types not in a group (messages,
+               shares, reviews, verification…) appear under All only. #}
+            <div class="notification-filters mb-3" role="tablist" aria-label="{{ _('Filter notifications') }}">
+                {% set filter_labels = {
+                    'all': _('All'),
+                    'likes': _('Likes'),
+                    'comments': _('Comments'),
+                    'follows': _('Follows'),
+                    'referrals': _('Referrals'),
+                    'payouts': _('Payouts'),
+                } %}
+                {% for key, label in filter_labels.items() %}
+                <a href="{{ url_for('social.notifications', filter=key) }}"
+                   class="flair-chip {{ 'active' if filter_key == key }}"
+                   role="tab"
+                   aria-selected="{{ 'true' if filter_key == key else 'false' }}">
+                    {{ label }}
+                    {% if filter_counts and filter_counts[key] %}<span class="badge bg-secondary ms-1">{{ filter_counts[key] }}</span>{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+
+            {% if notifications %}
+            <div class="card">
+                <div class="card-body p-0">
+                    {% set unread_list = notifications | selectattr('is_read', 'equalto', false) | list %}
+                    {% set read_list = notifications | selectattr('is_read') | list %}
+                    {% if unread_list %}
+                    <div class="notification-group-label px-3 pt-3">{{ _('New') }}</div>
+                    {% for n in unread_list %}
+                        {% set actor_profile = actor_profiles.get(n.actor_id) %}
+                        {% include 'partials/notification_item.html' %}
+                    {% endfor %}
+                    {% endif %}
+                    {% if read_list %}
+                    <div class="notification-group-label px-3 pt-3">{{ _('Earlier') }}</div>
+                    {% for n in read_list %}
+                        {% set actor_profile = actor_profiles.get(n.actor_id) %}
+                        {% include 'partials/notification_item.html' %}
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if pagination.pages > 1 %}
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('social.notifications', page=pagination.prev_num, filter=filter_key) }}">{{ _('Previous') }}</a></li>
+                    {% endif %}
+                    <li class="page-item disabled"><span class="page-link">{{ pagination.page }} / {{ pagination.pages }}</span></li>
+                    {% if pagination.has_next %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('social.notifications', page=pagination.next_num, filter=filter_key) }}">{{ _('Next') }}</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                {{ icon('bell', 48) }}
+                <h4 class="mt-3">{{ _('No notifications here') }}</h4>
+                <p class="text-muted">
+                    {% if filter_key == 'all' %}
+                    {{ _('When someone likes your posts, follows you, or sends a referral, it will show up here.') }}
+                    {% else %}
+                    {{ _('Nothing in this group yet.') }}
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
         </div>
-        {% endfor %}
-        {% if pagination.pages > 1 %}
-        <nav>
-            <ul class="pagination">
-                {% if pagination.has_prev %}
-                <li class="page-item"><a class="page-link" href="{{ url_for('social.notifications', page=pagination.prev_num) }}">Previous</a></li>
-                {% endif %}
-                <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
-                {% if pagination.has_next %}
-                <li class="page-item"><a class="page-link" href="{{ url_for('social.notifications', page=pagination.next_num) }}">Next</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
-    {% else %}
-        <p class="text-muted">No notifications yet.</p>
-    {% endif %}
+    </div>
 </div>
 {% endblock %}

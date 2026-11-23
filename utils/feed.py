@@ -18,7 +18,9 @@ the interleaved portion, in rank order.
 Feed items are dicts: {'kind': 'post'|'share', 'post': Post,
 'share': Share|None, 'score': float|None, 'sort_key': datetime}.
 """
-from datetime import timezone
+from datetime import timedelta, timezone
+
+from flask_babel import lazy_gettext as _l
 
 from extensions import db
 from models import utc_now
@@ -27,7 +29,7 @@ from models.moderation import Block
 from models.post import Post, Share
 from utils.trust import compute_trust_score
 
-PUBLISHED_DISCOVER_RULES = (
+PUBLISHED_DISCOVER_RULES = _l(
     "Discover ranks posts by engagement (likes, comments and shares), "
     "how recent they are, and the author's trust score. Referral needs "
     "are capped at about 1 in 3 posts, so the feed stays social — not a "
@@ -36,8 +38,20 @@ PUBLISHED_DISCOVER_RULES = (
     "visibility and is always labeled Boosted."
 )
 
+# Phase 3: how Trending differs from Top (Discover), published on the
+# page next to the tab — the same transparency rule as Discover.
+PUBLISHED_TRENDING_RULES = _l(
+    "Trending shows what the network is engaging with most right now: "
+    "posts from the last 7 days, ordered by likes, comments and shares "
+    "only — no trust score, no boost lift, no cap on referral needs, "
+    "and your own posts can trend too."
+)
+
 # A post's recency bonus decays to zero after 48 hours.
 RECENCY_WINDOW_HOURS = 48
+
+# Trending only looks back 7 days — older posts can't trend.
+TRENDING_WINDOW_DAYS = 7
 
 
 def _as_aware(dt):
@@ -70,6 +84,13 @@ def _visible_posts_query(viewer_id):
     return query
 
 
+def _flair_types(flair):
+    """Stored post types for a flair filter value, or None for 'all'."""
+    if not flair:
+        return None
+    return Post.FLAIR_TYPES.get(flair)
+
+
 def _paginate(items, page, per_page):
     total = len(items)
     start = (page - 1) * per_page
@@ -85,7 +106,7 @@ def _paginate(items, page, per_page):
     }
 
 
-def get_following_feed(viewer_id, page=1, per_page=20):
+def get_following_feed(viewer_id, page=1, per_page=20, flair=None):
     """Chronological feed: posts and shares from followed users + self.
     A bumped post sorts by its bump time (top for 24h); bumped posts
     are capped at 1 in 5 items so the feed never becomes an auction."""
@@ -95,9 +116,13 @@ def get_following_feed(viewer_id, page=1, per_page=20):
     }
     author_ids = followed_ids | {viewer_id}
 
-    posts = _visible_posts_query(viewer_id).filter(
+    posts_q = _visible_posts_query(viewer_id).filter(
         Post.author_id.in_(author_ids)
-    ).all()
+    )
+    types = _flair_types(flair)
+    if types:
+        posts_q = posts_q.filter(Post.post_type.in_(types))
+    posts = posts_q.all()
     items = [
         {'kind': 'post', 'post': p, 'share': None, 'score': None,
          'sort_key': p.effective_at or _as_aware(utc_now())}
@@ -109,6 +134,42 @@ def get_following_feed(viewer_id, page=1, per_page=20):
         Share.user_id.in_(author_ids),
         Post.is_hidden == False,  # noqa: E712 (SQLAlchemy boolean comparison)
     )
+    if types:
+        shares = shares.filter(Post.post_type.in_(types))
+    if hidden:
+        shares = shares.filter(~Post.author_id.in_(hidden))
+    for share in shares.all():
+        items.append({
+            'kind': 'share', 'post': share.post, 'share': share,
+            'score': None, 'sort_key': _as_aware(share.created_at),
+        })
+
+    items.sort(key=lambda i: i['sort_key'] or _as_aware(utc_now()), reverse=True)
+    items = apply_bump_cap(items)
+    return _paginate(items, page, per_page)
+
+
+def get_latest_feed(viewer_id, page=1, per_page=20, flair=None):
+    """Phase 2 (Bluesky model): chronological feed of the whole
+    network — every visible post and share, newest first, including
+    your own. No ranking, no algorithm; the bump cap still applies so
+    a bumped post can't crowd out everything else."""
+    types = _flair_types(flair)
+    posts_q = _visible_posts_query(viewer_id)
+    if types:
+        posts_q = posts_q.filter(Post.post_type.in_(types))
+    items = [
+        {'kind': 'post', 'post': p, 'share': None, 'score': None,
+         'sort_key': p.effective_at or _as_aware(utc_now())}
+        for p in posts_q.all()
+    ]
+
+    hidden = hidden_author_ids(viewer_id)
+    shares = Share.query.join(Post, Share.post_id == Post.id).filter(
+        Post.is_hidden == False,  # noqa: E712 (SQLAlchemy boolean comparison)
+    )
+    if types:
+        shares = shares.filter(Post.post_type.in_(types))
     if hidden:
         shares = shares.filter(~Post.author_id.in_(hidden))
     for share in shares.all():
@@ -198,17 +259,60 @@ def apply_need_cap(ranked_posts):
     return out
 
 
-def get_discover_feed(viewer_id, page=1, per_page=20):
+def get_discover_feed(viewer_id, page=1, per_page=20, flair=None):
     """Ranked feed for everyone else's posts (own posts excluded)."""
-    posts = _visible_posts_query(viewer_id).filter(
+    posts_q = _visible_posts_query(viewer_id).filter(
         Post.author_id != viewer_id
-    ).all()
+    )
+    types = _flair_types(flair)
+    if types:
+        posts_q = posts_q.filter(Post.post_type.in_(types))
+    posts = posts_q.all()
     ranked = sorted(posts, key=discover_score, reverse=True)
     capped = apply_need_cap(ranked)
     items = [
         {'kind': 'post', 'post': p, 'share': None,
          'score': discover_score(p), 'sort_key': _as_aware(p.created_at)}
         for p in capped
+    ]
+    return _paginate(items, page, per_page)
+
+
+def trending_score(post):
+    """Pure recent-engagement velocity: likes + 2x comments + shares.
+    No trust component, no decay curve, no boost lift — the 7-day
+    window is the only recency rule. Comments count double because a
+    comment costs more than a tap."""
+    return post.like_count + 2 * post.comment_count + post.share_count
+
+
+def get_trending_feed(viewer_id, page=1, per_page=20, flair=None):
+    """Phase 3 (Blind Popular model): what the network is engaging
+    with most right now. Only posts created in the last 7 days,
+    ordered by pure engagement velocity (trending_score), ties broken
+    by recency. Shares are not separate items — their engagement
+    counts on the post.
+    How it differs from Top (Discover): Top scores engagement + a
+    48h decay curve + the author's trust/10, caps needs at ~1 in 3,
+    excludes your own posts, and gives boosts a lift. Trending has no
+    trust component, no need cap, no boost lift, and includes your own
+    posts — what is hot is hot, whoever posted it."""
+    cutoff = utc_now() - timedelta(days=TRENDING_WINDOW_DAYS)
+    posts_q = _visible_posts_query(viewer_id).filter(
+        Post.created_at >= cutoff
+    )
+    types = _flair_types(flair)
+    if types:
+        posts_q = posts_q.filter(Post.post_type.in_(types))
+    posts = posts_q.all()
+    posts.sort(
+        key=lambda p: (trending_score(p), _as_aware(p.created_at)),
+        reverse=True,
+    )
+    items = [
+        {'kind': 'post', 'post': p, 'share': None,
+         'score': trending_score(p), 'sort_key': _as_aware(p.created_at)}
+        for p in posts
     ]
     return _paginate(items, page, per_page)
 
@@ -230,34 +334,74 @@ def create_need_post(bounty):
 
 
 def suggested_connections(user_id, limit=5):
-    """People who refer in your area (§1.2): users whose profile location
-    matches yours (same city/region substring), ordered by completed
-    referrals, excluding people you already follow and yourself."""
+    """Phase 3: "People to follow" — real suggestions, not the Phase 1
+    location stub. Candidates are active, non-deleted, public or
+    limited (privacy_level != 2), not you, not already followed, and
+    not hidden (blocked/muted). Scored by:
+      shared spaces +10 each, same city +5, karma/100 (capped at 10),
+      completed referrals +2 each (capped at 10), trust score/10.
+    With no location or spaces the score falls back to karma + trust
+    + referrals, so the rail is never empty for that reason. The same
+    function feeds the people page's suggestions."""
     from models.profile import Profile
+    from models.space import SpaceMembership
     from models.user import User
     from utils.trust import completed_referrals_count
 
     my_profile = Profile.query.filter_by(user_id=user_id).first()
-    if not my_profile or not my_profile.location:
-        return []
-    # Match on the first location segment ("Laval, QC" -> "Laval").
-    city = my_profile.location.split(',')[0].strip()
-    if not city:
-        return []
+    my_city = ''
+    if my_profile and my_profile.location:
+        my_city = my_profile.location.split(',')[0].strip()
+    my_spaces = {
+        m.space_id
+        for m in SpaceMembership.query.filter_by(user_id=user_id).all()
+    }
     followed_ids = {
         f.followed_id
         for f in Follow.query.filter_by(follower_id=user_id).all()
     }
     followed_ids.add(user_id)
     hidden = hidden_author_ids(user_id)
+
     candidates = User.query.join(
         Profile, Profile.user_id == User.id
     ).filter(
-        Profile.location.ilike(f'%{city}%'),
         User.is_active == True,  # noqa: E712
         User.is_deleted == False,  # noqa: E712
+        Profile.privacy_level != 2,
         ~User.id.in_(followed_ids),
     ).all()
     candidates = [u for u in candidates if u.id not in hidden]
-    candidates.sort(key=lambda u: completed_referrals_count(u.id), reverse=True)
+    if not candidates:
+        return []
+
+    # One membership query for all candidates, grouped by user.
+    memberships = SpaceMembership.query.filter(
+        SpaceMembership.user_id.in_([u.id for u in candidates])
+    ).all()
+    spaces_by_user = {}
+    for m in memberships:
+        spaces_by_user.setdefault(m.user_id, set()).add(m.space_id)
+    profiles_by_user = {
+        p.user_id: p
+        for p in Profile.query.filter(
+            Profile.user_id.in_([u.id for u in candidates])
+        ).all()
+    }
+
+    def score(user):
+        profile = profiles_by_user.get(user.id)
+        points = 0
+        shared = len(spaces_by_user.get(user.id, set()) & my_spaces)
+        points += shared * 10
+        if my_city and profile and profile.location:
+            if my_city.lower() in profile.location.lower():
+                points += 5
+        karma = (profile.karma or 0) if profile else 0
+        points += min(karma / 100.0, 10)
+        points += min(completed_referrals_count(user.id) * 2, 10)
+        points += compute_trust_score(user)[0] / 10.0
+        return points
+
+    candidates.sort(key=score, reverse=True)
     return candidates[:limit]

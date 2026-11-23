@@ -1,40 +1,41 @@
 {% extends "base.html" %}
-{% block title %}Post - Paid2Match{% endblock %}
+{% block title %}{{ _('Post') }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             {% set liked_ids = [post.id] if liked else [] %}
             {% set shared_ids = [post.id] if shared else [] %}
+            {% set saved_ids = [post.id] if saved else [] %}
             {% include 'social/_post_card.html' %}
 
             {% if current_user.is_authenticated and current_user.id == post.author_id %}
             <div class="d-flex gap-2 mb-4">
-                <a href="{{ url_for('social.edit_post', post_id=post.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('social.edit_post', post_id=post.id) }}" class="btn btn-sm btn-outline-primary">{{ _('Edit') }}</a>
                 <form method="POST" action="{{ url_for('social.delete_post', post_id=post.id) }}" onsubmit="return confirm('Delete this post?');">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
                 </form>
             </div>
             {% endif %}
 
-            <h4>Comments ({{ post.comment_count }})</h4>
+            <h4>{{ _('Comments') }} ({{ post.comment_count }})</h4>
             {% if top_comments %}
                 {% for comment in top_comments %}
                 <div class="card mb-2">
                     <div class="card-body py-2">
                         <div class="d-flex justify-content-between">
                             <strong><a href="{{ url_for('profile.public_profile', user_id=comment.author.id) }}">{{ comment.author.full_name }}</a></strong>
-                            <small class="text-muted">{{ comment.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+                            <small class="text-muted">{{ comment.created_at | relativetime }}</small>
                         </div>
-                        <p class="mb-1">{{ comment.body }}</p>
+                        <p class="mb-1">{{ comment.body | mention_links }}</p>
                         {% if current_user.is_authenticated and current_user.id != comment.author_id %}
-                        <a href="{{ url_for('social.report', target_type='comment', target_id=comment.id) }}" class="btn btn-sm btn-link text-muted p-0" title="Report"><i class="fas fa-flag"></i></a>
+                        <a href="{{ url_for('social.report', target_type='comment', target_id=comment.id) }}" class="btn btn-sm btn-link text-muted p-0" title="{{ _('Report') }}"><i class="fas fa-flag"></i></a>
                         {% endif %}
                         {% for reply in comment.replies.filter_by(is_hidden=False).order_by('created_at').all() %}
                         <div class="ms-4 mt-2 border-start ps-3">
                             <strong><a href="{{ url_for('profile.public_profile', user_id=reply.author.id) }}">{{ reply.author.full_name }}</a></strong>
-                            <small class="text-muted">{{ reply.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
-                            <p class="mb-1">{{ reply.body }}</p>
+                            <small class="text-muted">{{ reply.created_at | relativetime }}</small>
+                            <p class="mb-1">{{ reply.body | mention_links }}</p>
                         </div>
                         {% endfor %}
                         {% if current_user.is_authenticated %}
@@ -42,8 +43,8 @@
                             {{ comment_form.csrf_token }}
                             <input type="hidden" name="parent_id" value="{{ comment.id }}">
                             <div class="input-group">
-                                <input type="text" name="body" class="form-control" placeholder="Reply..." required maxlength="1000">
-                                <button type="submit" class="btn btn-outline-primary btn-sm">Reply</button>
+                                <input type="text" name="body" class="form-control" placeholder="{{ _('Reply...') }}" required maxlength="1000">
+                                <button type="submit" class="btn btn-outline-primary btn-sm">{{ _('Reply') }}</button>
                             </div>
                         </form>
                         {% endif %}
@@ -51,20 +52,20 @@
                 </div>
                 {% endfor %}
             {% else %}
-                <p class="text-muted">No comments yet — be the first.</p>
+                <p class="text-muted">{{ _('No comments yet — be the first.') }}</p>
             {% endif %}
 
             {% if current_user.is_authenticated %}
             <form method="POST" action="{{ url_for('social.comment_post', post_id=post.id) }}" class="mt-3">
                 {{ comment_form.hidden_tag() }}
                 <div class="mb-2">
-                    {{ comment_form.body(class="form-control", rows=3, placeholder="Write a comment...") }}
+                    {{ comment_form.body(class="form-control", rows=3, placeholder=_('Write a comment...')) }}
                     {% for e in comment_form.body.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
                 </div>
                 {{ comment_form.submit(class="btn btn-primary") }}
             </form>
             {% else %}
-            <p class="mt-3"><a href="{{ url_for('auth.login') }}">Log in</a> to comment.</p>
+            <p class="mt-3"><a href="{{ url_for('auth.login') }}">{{ _('Log in') }}</a> {{ _('to comment.') }}</p>
             {% endif %}
         </div>
     </div>

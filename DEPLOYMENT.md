@@ -1,5 +1,32 @@
 # Paid2Match Deployment Configuration
 
+## Docker deploy (current)
+
+The live site runs as a Docker container on the droplet (compose project at
+`/home/bogdan/apps/docker-compose.yaml`, service `paid2match`, image built
+from `./Paid2Match`). The image has no volume mounts — code is baked in at
+build. Deploy:
+
+```bash
+cd /home/bogdan/apps/Paid2Match
+git pull
+docker compose build paid2match
+docker compose up -d paid2match
+docker compose exec paid2match flask db upgrade
+```
+
+The repo `Dockerfile` runs `pybabel compile -d translations` at image build,
+so translations are always compiled from the current `.po` files.
+
+> **One-time warning:** the droplet's checkout used to carry an *untracked*
+> `Dockerfile` (created directly on the server). The first `git pull` after
+> this file lands in the repo will fail with "untracked working tree file
+> would be overwritten" unless that server-side file is removed first
+> (`rm /home/bogdan/apps/Paid2Match/Dockerfile` — it is identical in content
+> to the repo version apart from the `pybabel compile` step).
+
+The uWSGI/Nginx notes below are the older setup and are kept for reference.
+
 ## Overview
 Gunicorn has been replaced with **uWSGI** for better performance and integration with Nginx.
 
@@ -121,3 +148,29 @@ ps aux | grep uwsgi
 2. **502 Bad Gateway**: Verify uWSGI is running and socket permissions (666)
 3. **Static files not loading**: Check Nginx config `alias` paths
 4. **Database errors**: Verify `DATABASE_URL` in environment
+
+## Scheduled Jobs
+
+### Weekly digest email (Phase 3)
+`flask send-weekly-digest` emails every active user with a verified
+email a plain-text digest: the week's top posts (Trending ranking),
+new people to follow, new referral needs in their spaces, and their
+week's stats (karma earned, new followers, likes received). The
+command prints a summary (`N sent, M skipped`) and never raises on a
+send failure.
+
+Cron line (Mondays at 08:00 UTC — run inside the app container):
+```cron
+0 8 * * 1 cd /home/bogdan/apps && docker compose exec -T paid2match flask send-weekly-digest
+```
+
+**Mail is NOT configured on the live container** (no `MAIL_*` env
+vars), so the digest currently sends nothing there: the command runs,
+logs a warning per user, and reports `0 sent, N skipped`. That is
+expected until SMTP is configured (see `EMAIL_SETUP.md`) — do not
+work around it, and do not invent mail credentials. Once `MAIL_SERVER`
+is set, the same command starts sending with no code change.
+
+Links in the digest are built against `P2M_BASE_URL` (default
+`https://paid2match.work`); the CLI has no request to take the host
+from, so set it if the site ever moves.

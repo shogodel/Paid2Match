@@ -2,6 +2,7 @@
 import json
 
 from extensions import db
+from flask_babel import lazy_gettext as _l
 from models import generate_uuid, utc_now
 
 
@@ -116,15 +117,15 @@ class Profile(db.Model):
         """Return tips to complete profile."""
         tips = []
         if not self.display_name:
-            tips.append({'field': 'display_name', 'label': 'Add your name', 'priority': 'high'})
+            tips.append({'field': 'display_name', 'label': _l('Add your name'), 'priority': 'high'})
         if not self.headline:
-            tips.append({'field': 'headline', 'label': 'Add a headline', 'priority': 'medium'})
+            tips.append({'field': 'headline', 'label': _l('Add a headline'), 'priority': 'medium'})
         if not self.bio:
-            tips.append({'field': 'bio', 'label': 'Write a bio', 'priority': 'high'})
+            tips.append({'field': 'bio', 'label': _l('Write a bio'), 'priority': 'high'})
         if not self.avatar_url:
-            tips.append({'field': 'avatar_url', 'label': 'Upload a photo', 'priority': 'high'})
+            tips.append({'field': 'avatar_url', 'label': _l('Upload a photo'), 'priority': 'high'})
         if not self.skills:
-            tips.append({'field': 'skills', 'label': 'Add skills', 'priority': 'medium'})
+            tips.append({'field': 'skills', 'label': _l('Add skills'), 'priority': 'medium'})
         return tips
 
     @property

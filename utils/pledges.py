@@ -71,6 +71,31 @@ def effective_pledge_status(pledge):
     return 'active'
 
 
+def has_active_pledge(user_id):
+    """Phase 3: whether the user currently carries the pledge badge —
+    a pledge row whose EFFECTIVE status is 'active'. A suspended
+    pledge (open SLA breach) shows no badge: the promise is broken
+    until the overdue response is answered. Results are cached on
+    ``flask.g`` for the request, so the board (12 posters) and the
+    feed's nested need cards don't re-check the same poster."""
+    from flask import g, has_request_context
+    # Cache only inside a request: g outlives a single call in
+    # app-context-only runs (CLI, tests), where a cached False would
+    # go stale the moment a pledge is created.
+    cache = None
+    if has_request_context():
+        cache = g.get('_pledge_cache')
+        if cache is None:
+            cache = g._pledge_cache = {}
+    if cache is not None and user_id in cache:
+        return cache[user_id]
+    pledge = Pledge.query.filter_by(user_id=user_id).first()
+    result = pledge is not None and effective_pledge_status(pledge) == 'active'
+    if cache is not None:
+        cache[user_id] = result
+    return result
+
+
 def create_pledge(user, company_name, website=None):
     """Create a pledge for a user. One pledge per user — a revoked
     pledge can be re-made (a fresh pledge row replaces it). Returns

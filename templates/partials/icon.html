@@ -1,0 +1,9 @@
+{# Lucide icon macro. Icons live in one SVG sprite
+   (static/img/icons.svg, built from lucide-static 0.469.0, ISC license).
+   Usage: {% from 'partials/icon.html' import icon %}
+   then {{ icon('heart', 18) }} or {{ icon('bell', 20, 'me-1') }}.
+   Icons are decorative: aria-hidden, with a visible label or an
+   aria-label on the surrounding button. Stroke icons inherit the
+   current text colour; the active (filled) state is a CSS class on
+   the parent (see .post-action.is-active in main.css). #}
+{% macro icon(name, size=18, class='') %}<svg class="lucide-icon {{ class }}" width="{{ size }}" height="{{ size }}" aria-hidden="true" focusable="false"><use href="{{ url_for('static', filename='img/icons.svg') }}#icon-{{ name }}"></use></svg>{% endmacro %}

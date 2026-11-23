@@ -24,11 +24,11 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         # Every table the models declare exists after the upgrade.
         expected = set(db.metadata.tables.keys())
         assert expected <= tables, f'missing tables: {expected - tables}'
-        # The head revision is the M4 migration.
+        # The head revision is the Phase 3 discovery/trust migration.
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()
-        assert version == 'm4_vertical_chains'
+        assert version == 'phase3_discovery_trust'
         # Columns match the models exactly for every table.
         for table in expected:
             actual_cols = {c['name'] for c in inspector.get_columns(table)}
@@ -81,6 +81,27 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         assert 'kind' in {
             c['name'] for c in inspector.get_columns('payouts')
         }
+        # The Phase 2 tables exist with their key columns.
+        assert 'spaces' in tables
+        assert 'space_memberships' in tables
+        assert 'polls' in tables
+        assert 'poll_options' in tables
+        assert 'poll_votes' in tables
+        assert 'bookmarks' in tables
+        assert 'space_id' in {
+            c['name'] for c in inspector.get_columns('posts')
+        }
+        assert 'notification_level' in {
+            c['name'] for c in inspector.get_columns('space_memberships')
+        }
+        # The Phase 3 tables/columns exist.
+        assert 'stage_reward_events' in tables
+        assert 'stage_submit_reward' in bounty_cols
+        assert 'stage_interview_reward' in bounty_cols
+        assert 'stage_hire_reward' in bounty_cols
+        assert 'status' in {
+            c['name'] for c in inspector.get_columns('stage_reward_events')
+        }
 
         # The full chain downgrades cleanly back to base.
         flask_migrate.downgrade(revision='base')
@@ -101,7 +122,7 @@ def test_baseline_is_the_chain_root(tmp_path):
     )
     script = ScriptDirectory.from_config(cfg)
     heads = script.get_heads()
-    assert heads == ['m4_vertical_chains'], f'multiple heads: {heads}'
+    assert heads == ['phase3_discovery_trust'], f'multiple heads: {heads}'
     roots = [r for r in script.walk_revisions() if r.down_revision is None]
     assert len(roots) == 1
     assert roots[0].revision == 'baseline_create_all'

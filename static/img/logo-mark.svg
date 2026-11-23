@@ -1,0 +1,36 @@
+<!-- Paid2Match mark — simplified flat handshake, redrawn by hand from
+     static/img/logo.png (white handshake, gold cuffs, teal arcs).
+     The arcs, diamonds, cuff detailing, and baked-in wordmark are
+     dropped; what survives is the two-hands gesture in one solid
+     colour. Single-weight geometry: solid hands, cuffs suggested by
+     a gap (the notch), finger separations punched transparent via a
+     mask so the mark works on any background. Transparent background;
+     fill is the primary terracotta. For theme-aware inline use, see
+     templates/partials/logo_mark.html (currentColor version). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="#D9481C">
+  <defs>
+    <mask id="p2m-hand-gaps" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="white"/>
+      <g stroke="black" stroke-width="2" stroke-linecap="round" fill="none">
+        <!-- Thumb crossing over the top: separates the left thumb from
+             the right hand's back -->
+        <path d="M28 19.5 L22.5 30"/>
+        <!-- Boundary between the two hands (short, ends above the fingers) -->
+        <path d="M33.5 23 C32.5 27 32 30 31.5 34"/>
+        <!-- Left hand's fingers: short parallel slits, slanting down-right -->
+        <path d="M23.5 40 L26.5 47"/>
+        <path d="M28 39.5 L30.5 46.5"/>
+        <!-- Right hand's fingers: short parallel slits, slanting down-left -->
+        <path d="M40.5 40 L37.5 47"/>
+        <path d="M36 39.5 L33.5 46.5"/>
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#p2m-hand-gaps)">
+    <!-- Clasped hands: one silhouette, fingertips as arcs along the bottom -->
+    <path d="M14 28 L25 21 Q32 18.5 39 21 L50 28 L50 42 L45 42 a3.4 4.5 0 0 1 -6.5 0 a3.4 4.5 0 0 1 -6.5 0 a3.4 5 0 0 1 -6.5 0 a3.4 4.5 0 0 1 -6.5 0 L14 42 Z"/>
+    <!-- Cuffs, separated from the wrists by a 1.5px notch -->
+    <rect x="2.5" y="27" width="10" height="15" rx="2"/>
+    <rect x="51.5" y="27" width="10" height="15" rx="2"/>
+  </g>
+</svg>

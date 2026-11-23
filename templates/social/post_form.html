@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Edit post' if post else 'New post' }} - Paid2Match{% endblock %}
+{% block title %}{{ _('Edit post') if post else _('New post') }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
@@ -11,7 +11,7 @@
                 <div class="mb-3">
                     {{ form.post_type.label(class="form-label") }}
                     {{ form.post_type(class="form-select") }}
-                    <div class="form-text">A referral need is a post with a job attached — free (community) or paid (escrow a bounty).</div>
+                    <div class="form-text">{{ _('A referral need is a post with a job attached — free (community) or paid (escrow a bounty).') }}</div>
                 </div>
                 <div class="mb-3">
                     {{ form.title.label(class="form-label") }}
@@ -40,9 +40,26 @@
                         {{ form.location(class="form-control") }}
                     </div>
                 </div>
+                {% if spaces %}
+                <div class="mb-3">
+                    <label for="space_id" class="form-label">{{ _('Post in a space') }}</label>
+                    <select name="space_id" id="space_id" class="form-select">
+                        <option value="">{{ _('General feed') }}</option>
+                        {% for space in spaces %}
+                        <option value="{{ space.id }}">{{ space.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    {{ form.poll_options.label(class="form-label") }}
+                    {{ form.poll_options(class="form-control", rows=3, placeholder=_('Yes\nNo\nMaybe')) }}
+                    <div class="form-text">{{ _('Optional — 2 to 6 options, one per line. Results stay hidden until someone votes.') }}</div>
+                    {% for e in form.poll_options.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+                </div>
                 {% endif %}
                 {{ form.submit(class="btn btn-primary") }}
-                <a href="{{ url_for('social.feed') }}" class="btn btn-link">Cancel</a>
+                <a href="{{ url_for('social.feed') }}" class="btn btn-link">{{ _('Cancel') }}</a>
             </form>
         </div>
     </div>

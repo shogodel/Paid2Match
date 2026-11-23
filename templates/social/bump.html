@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Bump or boost - Paid2Match{% endblock %}
+{% block title %}{{ _('Bump or boost') }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <h2>Bump or boost this post</h2>
+    <h2>{{ _('Bump or boost this post') }}</h2>
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex gap-2 align-items-center">
                 <span class="badge bg-info">{{ post.post_type }}</span>
-                {% if post.is_bumped %}<span class="badge bg-warning text-dark">Bumped</span>{% endif %}
-                {% if post.is_boosted %}<span class="badge bg-danger">Boosted</span>{% endif %}
+                {% if post.is_bumped %}<span class="badge bg-warning text-dark">{{ _('Bumped') }}</span>{% endif %}
+                {% if post.is_boosted %}<span class="badge bg-danger">{{ _('Boosted') }}</span>{% endif %}
                 <span class="text-muted small">Posted {{ post.created_at.strftime('%b %d, %Y %H:%M') if post.created_at }}</span>
             </div>
             <p class="mt-2 mb-0">{{ post.content }}</p>
@@ -23,47 +23,47 @@
         <div class="col-md-6">
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5>Bump — 24h at the top</h5>
-                    <p class="text-muted small">A bump refreshes your post so it returns to the top of the chronological Following feed for 24 hours. The post is always labeled "Bumped" — never disguised as organic. Your free bumps: <strong>{{ free_balance }}</strong>. Pack bumps left: <strong>{{ pack_balance }}</strong>.</p>
+                    <h5>{{ _('Bump — 24h at the top') }}</h5>
+                    <p class="text-muted small">{{ _('A bump refreshes your post so it returns to the top of the chronological Following feed for 24 hours. The post is always labeled "Bumped" — never disguised as organic. Your free bumps:') }} <strong>{{ free_balance }}</strong>{{ _('. Pack bumps left:') }} <strong>{{ pack_balance }}</strong>.</p>
                     {% if eligible %}
                     <div class="d-flex gap-2 flex-wrap">
                         {% if free_balance > 0 %}
                         <form method="POST" action="{{ url_for('social.bump_post', post_id=post.id) }}">
                             <input type="hidden" name="source" value="free">
-                            <button type="submit" class="btn btn-success">Use a free bump</button>
+                            <button type="submit" class="btn btn-success">{{ _('Use a free bump') }}</button>
                         </form>
                         {% endif %}
                         {% if pack_balance > 0 %}
                         <form method="POST" action="{{ url_for('social.bump_post', post_id=post.id) }}">
                             <input type="hidden" name="source" value="pack">
-                            <button type="submit" class="btn btn-primary">Use a pack bump</button>
+                            <button type="submit" class="btn btn-primary">{{ _('Use a pack bump') }}</button>
                         </form>
                         {% endif %}
                         <form method="POST" action="{{ url_for('payments.buy_single_bump', post_id=post.id) }}">
                             <button type="submit" class="btn btn-outline-primary">Buy a bump — ${{ "%.2f"|format(single_price_cents / 100) }}</button>
                         </form>
                     </div>
-                    <p class="text-muted small mt-2 mb-0">Limits: 1 bump per post per 24 hours, 3 bumps per day. <a href="{{ url_for('payments.bump_packs') }}">Buy a pack</a> (5 for $8, 10 for $15).</p>
+                    <p class="text-muted small mt-2 mb-0">{{ _('Limits: 1 bump per post per 24 hours, 3 bumps per day.') }} <a href="{{ url_for('payments.bump_packs') }}">{{ _('Buy a pack') }}</a> {{ _('(5 for $8, 10 for $15).') }}</p>
                     {% endif %}
                 </div>
             </div>
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5>Recurring bump — ${{ "%.2f"|format(recurring_price_cents / 100) }}/month</h5>
+                    <h5>{{ _('Recurring bump') }} — ${{ "%.2f"|format(recurring_price_cents / 100) }}/{{ _('month') }}</h5>
                     {% if recurring %}
-                    <p class="text-success">Active — auto-bumps this post every 3 days. Next bump: {{ recurring.next_bump_at.strftime('%b %d, %Y') if recurring.next_bump_at }}.</p>
+                    <p class="text-success">{{ _('Active — auto-bumps this post every 3 days. Next bump:') }} {{ recurring.next_bump_at.strftime('%b %d, %Y') if recurring.next_bump_at }}.</p>
                     {% if recurring.cancel_at_period_end %}
-                    <p class="text-muted small">Set to cancel at the end of the paid month.</p>
+                    <p class="text-muted small">{{ _('Set to cancel at the end of the paid month.') }}</p>
                     {% else %}
                     <form method="POST" action="{{ url_for('payments.cancel_recurring_bump_route', recurring_id=recurring.id) }}">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">Cancel (runs to end of month)</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Cancel (runs to end of month)') }}</button>
                     </form>
                     {% endif %}
                     {% else %}
-                    <p class="text-muted small">Auto-bump this post every 3 days, $5/month. Cancel anytime — it runs to the end of the paid month.</p>
+                    <p class="text-muted small">{{ _('Auto-bump this post every 3 days, $5/month. Cancel anytime — it runs to the end of the paid month.') }}</p>
                     {% if eligible %}
                     <form method="POST" action="{{ url_for('payments.subscribe_recurring_bump', post_id=post.id) }}">
-                        <button type="submit" class="btn btn-outline-primary">Set up recurring bump</button>
+                        <button type="submit" class="btn btn-outline-primary">{{ _('Set up recurring bump') }}</button>
                     </form>
                     {% endif %}
                     {% endif %}
@@ -73,25 +73,25 @@
         <div class="col-md-6">
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5>Boost — ${{ "%.2f"|format(boost_price_per_day_cents / 100) }}/day</h5>
-                    <p class="text-muted small">Extra Discover visibility beyond your followers, labeled "Boosted".</p>
+                    <h5>{{ _('Boost') }} — ${{ "%.2f"|format(boost_price_per_day_cents / 100) }}/{{ _('day') }}</h5>
+                    <p class="text-muted small">{{ _('Extra Discover visibility beyond your followers, labeled "Boosted".') }}</p>
                     {% if eligible %}
                     <form method="POST" action="{{ url_for('payments.buy_boost', post_id=post.id) }}" class="d-flex gap-2 align-items-end">
                         <div>
                             <label class="form-label small" for="days">Days (1–{{ boost_max_days }})</label>
                             <input type="number" name="days" id="days" value="1" min="1" max="{{ boost_max_days }}" class="form-control" style="width: 90px;">
                         </div>
-                        <button type="submit" class="btn btn-primary">Buy boost</button>
+                        <button type="submit" class="btn btn-primary">{{ _('Buy boost') }}</button>
                     </form>
                     {% endif %}
                 </div>
             </div>
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5>Bump &amp; boost performance</h5>
+                    <h5>{{ _('Bump & boost performance') }}</h5>
                     {% if performance %}
                     <table class="table table-sm mb-0">
-                        <thead><tr><th>When</th><th>Kind</th><th>Views</th><th>Likes</th><th>Comments</th><th>Referrals</th></tr></thead>
+                        <thead><tr><th>{{ _('When') }}</th><th>{{ _('Kind') }}</th><th>{{ _('Views') }}</th><th>{{ _('Likes') }}</th><th>{{ _('Comments') }}</th><th>{{ _('Referrals') }}</th></tr></thead>
                         <tbody>
                         {% for row in performance %}
                         <tr>
@@ -105,9 +105,9 @@
                         {% endfor %}
                         </tbody>
                     </table>
-                    <p class="text-muted small mt-2 mb-0">Gains measured from the start of each bump/boost.</p>
+                    <p class="text-muted small mt-2 mb-0">{{ _('Gains measured from the start of each bump/boost.') }}</p>
                     {% else %}
-                    <p class="text-muted small mb-0">No bumps or boosts on this post yet.</p>
+                    <p class="text-muted small mb-0">{{ _('No bumps or boosts on this post yet.') }}</p>
                     {% endif %}
                 </div>
             </div>

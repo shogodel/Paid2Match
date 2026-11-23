@@ -1,0 +1,40 @@
+{# Staged rewards (Phase 3, Paraform model — display only).
+   Renders the stage amounts a poster declared on a need. Two modes:
+   compact (a single line for board cards and nested bounty cards)
+   and full (the detail page: breakdown + recorded events + the
+   pending note). Expects: bounty; full mode also takes stage_events
+   (recorded StageRewardEvent rows, poster-only).
+   Nothing here implies money moved: the full mode says plainly that
+   completed stages are pending until stage payouts are wired. #}
+{% if bounty.has_staged_rewards %}
+{% if compact %}
+<div class="stage-rewards-compact">
+    <span class="stage-rewards-label">{{ _('Staged rewards:') }}</span>
+    {% for stage in bounty.stage_rewards %}
+    <span class="stage-rewards-item">{{ stage.label }} ${{ "{:,.0f}".format(stage.amount) }}</span>{% if not loop.last %}<span class="stage-rewards-sep">&middot;</span>{% endif %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="stage-rewards-full">
+    <h4 class="mt-4">{{ _('Staged rewards') }}</h4>
+    <p class="text-muted small">{{ _('This need rewards the steps, not just the hire — a thank-you for each introduction that moves forward.') }}</p>
+    <ul class="list-unstyled mb-2">
+        {% for stage in bounty.stage_rewards %}
+        <li class="stage-rewards-row">
+            <span>{{ stage.label }}</span>
+            <strong class="bounty-reward">${{ "{:,.0f}".format(stage.amount) }}</strong>
+        </li>
+        {% endfor %}
+    </ul>
+    {% if stage_events %}
+    <p class="small mb-1"><strong>{{ _('Completed stages') }}</strong></p>
+    <ul class="list-unstyled small mb-2">
+        {% for event in stage_events %}
+        <li>{{ event.label }} — ${{ "{:,.0f}".format(event.amount) }} <span class="badge bg-warning text-dark">{{ _('Pending — stage payouts not wired yet') }}</span></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="text-muted small mb-0">{{ _('Stage payouts are not wired yet: completed stages are recorded here and marked pending. No money moves until payouts are connected.') }}</p>
+</div>
+{% endif %}
+{% endif %}

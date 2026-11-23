@@ -16,6 +16,7 @@ pitching remains for referrers representing someone.
 """
 from extensions import db
 from models import utc_now
+from models.pitch import Pitch
 from models.post import Post, Share
 from models.referral import KarmaEvent, Referral
 from utils.chains import compute_chain_split, resolve_chain_sharer
@@ -24,6 +25,7 @@ from utils.karma import (
     record_helped,
 )
 from utils.notifications import notify
+from utils.staged_rewards import record_stage_event
 
 
 def _is_circular(referral, referrer_id):
@@ -73,6 +75,13 @@ def complete_referral_for_match(match):
             'The match was confirmed by both sides.',
             link_url=f'/bounties/matches/{match.id}/confirmed',
         )
+
+    # Phase 3: a confirmed hire completes the 'hire' stage (recorded
+    # only — no payout; see utils/staged_rewards.py).
+    if match.pitch_id:
+        pitch = db.session.get(Pitch, match.pitch_id)
+        if pitch is not None:
+            record_stage_event(pitch, 'hire')
 
     # Win post, auto-generated for the referrer (§1.1). The amount is
     # what the referrer actually receives: with a chain (M4), the net

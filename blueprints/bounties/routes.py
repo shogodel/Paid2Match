@@ -18,6 +18,7 @@ from models.profile import Profile
 from models.admin_settings import AdminSettings
 from models.bounty_upgrade import BountyUpgrade
 from models.review import Review, maybe_reveal_reviews
+from models.referral import Referral
 from models.user import User
 from utils.bumps import (
     create_recurring_bump,
@@ -44,6 +45,9 @@ from utils.payments import (
     to_cents,
 )
 from utils.referrals import complete_referral_for_match
+from utils.staged_rewards import (
+    record_stage_event, stage_events_for_bounty,
+)
 
 
 bounties_bp = Blueprint('bounties', __name__)
@@ -114,6 +118,21 @@ def board():
     if category:
         query = query.filter_by(category=category)
 
+    # Phase 3: poster filter — the "We're hiring" strip's "View all"
+    # links here with ?poster=<user id>.
+    poster_id = request.args.get('poster')
+    if poster_id:
+        query = query.filter_by(poster_id=poster_id)
+
+    # Phase 3: free-needs chip — reward null/0 or the is_free flag.
+    show_free = request.args.get('free') == '1'
+    if show_free:
+        query = query.filter(db.or_(
+            Bounty.reward_amount.is_(None),
+            Bounty.reward_amount == 0,
+            Bounty.is_free == True,  # noqa: E712
+        ))
+
     bounties = query.all()
     
     def get_sort_key(b):
@@ -149,6 +168,9 @@ def board():
                         search_q=search_q,
                         skill=skill,
                         category=category,
+                        poster_id=poster_id,
+                        show_free=show_free,
+                        show_urgent=show_urgent,
                         categories=Bounty.CATEGORIES)
 
 
@@ -187,6 +209,26 @@ def detail(id):
                         pitches=pitches,
                         pitch_form=pitch_form,
                         user_pitched=user_pitched,
+                        # Phase 3: the referral behind each pitch, so
+                        # the Message button opens the referral thread
+                        # instead of the generic inbox.
+                        pitch_referrals={
+                            r.pitch_id: r.id
+                            for r in Referral.query.filter(
+                                Referral.pitch_id.in_(
+                                    [p.id for p in pitches]
+                                )
+                            ).all()
+                        } if pitches else {},
+                        # Phase 3: recorded stage events are the
+                        # poster's view of what is owed-and-pending;
+                        # other visitors see only the declared stages.
+                        stage_events=(
+                            stage_events_for_bounty(bounty.id)
+                            if current_user.is_authenticated
+                            and current_user.id == bounty.poster_id
+                            else []
+                        ),
                         # M4: the share this visit came through (from a
                         # share card) — the pitch form carries it on.
                         share_id=request.args.get('share_id') or None)
@@ -219,6 +261,11 @@ def edit(id):
         bounty.skills = (form.skills.data or '').strip() or None
         bounty.bounty_direction = form.bounty_direction.data
         bounty.reward_amount = form.reward_amount.data or None
+        # Phase 3: staged rewards are display-only declarations
+        # (recorded as pending when a stage completes; no payout).
+        bounty.stage_submit_reward = form.stage_submit_reward.data or None
+        bounty.stage_interview_reward = form.stage_interview_reward.data or None
+        bounty.stage_hire_reward = form.stage_hire_reward.data or None
         bounty.location = form.location.data or None
         bounty.deadline = form.deadline.data
         bounty.success_criteria = form.success_criteria.data or None
@@ -267,6 +314,11 @@ def post():
             skills=(form.skills.data or '').strip() or None,
             bounty_direction=form.bounty_direction.data,
             reward_amount=reward or None,
+            # Phase 3 staged rewards (display only — see
+            # models/staged_reward.py).
+            stage_submit_reward=form.stage_submit_reward.data or None,
+            stage_interview_reward=form.stage_interview_reward.data or None,
+            stage_hire_reward=form.stage_hire_reward.data or None,
             location=form.location.data or None,
             deadline=form.deadline.data or None,
             success_criteria=form.success_criteria.data or None,
@@ -388,6 +440,10 @@ def pitch(id):
             via_share_id=share.id if share else None,
         )
         db.session.add(pitch)
+        # Phase 3: a submitted referral completes the 'submit' stage
+        # (recorded only — no payout; see utils/staged_rewards.py).
+        db.session.flush()
+        record_stage_event(pitch, 'submit')
         db.session.commit()
 
         # M1: notify the poster (in-app + email — a key event).
@@ -426,6 +482,10 @@ def respond_to_pitch(pitch_id):
     pitch.updated_at = datetime.now(timezone.utc)
     # M2: first-response time for the no-ghosting SLA (5 business days).
     pitch.responded_at = datetime.now(timezone.utc)
+    # Phase 3: an accepted referral completes the 'interview' stage
+    # (recorded only — no payout; see utils/staged_rewards.py).
+    if response == 'interested':
+        record_stage_event(pitch, 'interview')
     db.session.commit()
 
     if response == 'interested':

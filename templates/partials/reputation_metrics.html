@@ -1,0 +1,22 @@
+{# Portable reputation metrics (Phase 3, BountyJobs model). Expects
+   metrics = utils.reputation.reputation_metrics(user_id). Only
+   metrics with data are shown — no data, no row (never a zero).
+   Compact: one line of items, used on profile headers, the bounty
+   detail "Posted by" card, and board cards. #}
+{% from 'partials/icon.html' import icon %}
+{% if metrics and (metrics.fill_rate is not none or metrics.response_time or metrics.completed_referrals or metrics.response_rate is not none) %}
+<div class="reputation-metrics">
+    {% if metrics.fill_rate is not none %}
+    <span class="reputation-metric" title="{{ _('Share of this poster\'s past needs that ended in a hire') }}">{{ icon('circle-check', 14) }} {{ _('Fill rate') }} {{ (metrics.fill_rate * 100)|round|int }}%</span>
+    {% endif %}
+    {% if metrics.response_time %}
+    <span class="reputation-metric" title="{{ _('Median time to answer a referral on this poster\'s needs') }}">{{ icon('clock', 14) }} {{ _('Responds') }} {{ metrics.response_time }}</span>
+    {% endif %}
+    {% if metrics.completed_referrals %}
+    <span class="reputation-metric" title="{{ _('Referrals completed (both sides confirmed)') }}">{{ icon('handshake', 14) }} {{ metrics.completed_referrals }} {{ _('completed referral') if metrics.completed_referrals == 1 else _('completed referrals') }}</span>
+    {% endif %}
+    {% if metrics.response_rate is not none %}
+    <span class="reputation-metric" title="{{ _('Share of referrals received that got a response') }}">{{ icon('message-circle', 14) }} {{ (metrics.response_rate * 100)|round|int }}% {{ _('response rate') }}</span>
+    {% endif %}
+</div>
+{% endif %}

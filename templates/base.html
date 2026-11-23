@@ -1,56 +1,106 @@
 {% from 'partials/maple_leaf.html' import leaf %}
+{% from 'partials/icon.html' import icon %}
+{% from 'partials/logo_mark.html' import logo_mark %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_locale }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Paid2Match - The referral network for hiring. Real people, real referrals, proudly Canadian.">
+    <meta name="description" content="Paid2Match — the referral network for hiring. Real people vouching for real people.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#D9481C">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#F26B4A">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- PWA: manifest, iOS install tags. The service worker is
+         registered in main.js (it must be served from the site root,
+         /sw.js, to control the whole origin). -->
+    <link rel="manifest" href="{{ url_for('manifest') }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <!-- Open Graph / Twitter — link shares render a title card. -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Paid2Match">
+    <meta property="og:title" content="{% block og_title %}Paid2Match — the referral network for hiring{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Real people vouching for real people. No algorithms deciding your future.{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ url_for('static', filename='img/og-image.png', _external=True) }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Paid2Match — the referral network for hiring">
+    <meta name="twitter:description" content="Real people vouching for real people. No algorithms deciding your future.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='img/og-image.png', _external=True) }}">
     <title>{% block title %}Paid2Match{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
-    
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon-180.png') }}">
+
+    <!-- Anti-flash: set the theme before any stylesheet loads, so the
+         first paint is already in the right theme. Reads the stored
+         p2m-theme preference (light|dark|system, default system). -->
+    <script>
+    (function(){try{var t=localStorage.getItem('p2m-theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-bs-theme',d?'dark':'light');}catch(e){document.documentElement.setAttribute('data-bs-theme','light');}})();
+    </script>
+
     <!-- Bootstrap CSS first -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-    <!-- Font Awesome -->
+    <!-- Font Awesome (transition only — new components use Lucide) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.min.css') }}">
     <!-- Google Fonts -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/google-fonts.css') }}">
     <!-- Main CSS (must be last to override) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="container mt-3">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-    
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-ca">
+    {% if current_user.is_authenticated %}
+        {% set my_profile = current_user.profiles.first() %}
+    {% else %}
+        {% set my_profile = None %}
+    {% endif %}
+
+    <!-- Navigation: light surface bar, sticky. 13 items collapsed to
+         Feed, People, Opportunities, Post, bell, messages, avatar menu. -->
+    <nav class="navbar navbar-expand-lg navbar-p2m">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Paid2Match" class="brand-logo">
-                Paid2Match {{ leaf(16) }}
+                {{ logo_mark(32, 'nav') }}
+                <span class="brand-wordmark">paid<span class="brand-2">2</span>match</span>
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+
+            <!-- Mobile: theme toggle stays in the top bar, not buried
+                 in the collapsed menu (plan §3.6). -->
+            <button type="button" class="nav-icon-btn d-lg-none theme-toggle-btn" aria-label="{{ _('Toggle dark mode') }}" title="{{ _('Toggle dark mode') }}">
+                <span class="theme-icon-moon">{{ icon('moon', 20) }}</span>
+                <span class="theme-icon-sun">{{ icon('sun', 20) }}</span>
+            </button>
+
+            <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
+
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
+                <ul class="navbar-nav me-auto align-items-lg-center">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'social.feed' and request.args.get('tab', 'following') == 'following' }}" href="{{ url_for('social.feed') }}">
+                            {{ icon('house', 18) }} {{ _('Feed') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'social.people' }}" href="{{ url_for('social.people') }}">
+                            {{ icon('users', 18) }} {{ _('People') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint in ('social.spaces', 'social.space_detail') }}" href="{{ url_for('social.spaces') }}">
+                            {{ icon('layers', 18) }} {{ _('Spaces') }}
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-briefcase"></i> {{ _('Opportunities') }}
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ icon('briefcase', 18) }} {{ _('Opportunities') }}
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ url_for('bounties.board') }}">{{ _('All Opportunities') }}</a></li>
@@ -59,123 +109,222 @@
                             <li><a class="dropdown-item" href="{{ url_for('social.pledges') }}">{{ _('Human-reviewed hiring pledge') }}</a></li>
                         </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('bounties.post') }}">
-                            <i class="fas fa-plus-circle"></i> {{ _('Post a Referral Need') }}
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('social.search') }}">
+                            {{ icon('search', 18) }} {{ _('Search') }}
                         </a>
                     </li>
-                    
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('social.notifications') }}">
+                            {{ icon('bell', 18) }} {{ _('Notifications') }}
+                            {% if unread_notifications %}<span class="badge bg-primary ms-1">{{ unread_notifications if unread_notifications <= 99 else '99+' }}</span>{% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('messages.inbox') }}">
+                            {{ icon('message-circle', 18) }} {{ _('Messages') }}
+                        </a>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('profile.view') }}">
+                            {{ icon('user', 18) }} {{ _('Profile') }}
+                        </a>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('social.saved') }}">
+                            {{ icon('bookmark', 18) }} {{ _('Saved') }}
+                        </a>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('social.spaces') }}">
+                            {{ icon('layers', 18) }} {{ _('Spaces') }}
+                        </a>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('referrals.mine') }}">
+                            {{ icon('handshake', 18) }} {{ _('My Referrals') }}
+                        </a>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                            {{ icon('log-out', 18) }} {{ _('Logout') }}
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown d-lg-none">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ icon('globe', 18) }} {{ _('Language') }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item {{ 'active' if current_locale == 'en' }}" href="{{ url_for('set_language', lang='en') }}">English{% if current_locale == 'en' %} {{ icon('check', 16) }}{% endif %}</a></li>
+                            <li><a class="dropdown-item {{ 'active' if current_locale == 'fr' }}" href="{{ url_for('set_language', lang='fr') }}">Français{% if current_locale == 'fr' %} {{ icon('check', 16) }}{% endif %}</a></li>
+                            <li><a class="dropdown-item {{ 'active' if current_locale == 'es' }}" href="{{ url_for('set_language', lang='es') }}">Español{% if current_locale == 'es' %} {{ icon('check', 16) }}{% endif %}</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                {# Phase 3: nav-centre search (desktop) — one box for
+                   people, posts, and opportunities. Mobile gets a
+                   Search link in the collapsed menu instead. #}
+                <form method="GET" action="{{ url_for('social.search') }}" class="nav-search d-none d-lg-flex mx-2" role="search">
+                    {{ icon('search', 18) }}
+                    <input type="search" name="q" class="form-control nav-search-input" placeholder="{{ _('Search people, posts, opportunities…') }}" aria-label="{{ _('Search') }}" value="{{ request.args.get('q', '') if request.endpoint == 'social.search' else '' }}">
+                </form>
+
+                <ul class="navbar-nav ms-auto align-items-lg-center">
                     {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('social.feed') }}">
-                                <i class="fas fa-stream"></i> {{ _('Feed') }}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('social.people') }}">
-                                <i class="fas fa-users"></i> {{ _('People') }}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('referrals.mine') }}">
-                                <i class="fas fa-user-plus"></i> {{ _('My Referrals') }}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('social.notifications') }}">
-                                <i class="fas fa-bell"></i> {{ _('Notifications') }}
-                                {% if unread_notifications %}<span class="badge bg-danger">{{ unread_notifications }}</span>{% endif %}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('payments.payout_dashboard') }}">
-                                <i class="fas fa-wallet"></i> {{ _('Payouts') }}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('messages.inbox') }}">
-                                <i class="fas fa-envelope"></i> {{ _('Messages') }}
-                            </a>
-                        </li>
-                        {% if current_user.role == 'admin' %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                <i class="fas fa-cog"></i> {{ _('Admin') }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">{{ _('Dashboard') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">{{ _('Users') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.bounties') }}">{{ _('Opportunities') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.disputes') }}">{{ _('Disputes') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.reports') }}">{{ _('Reports') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.verifications') }}">{{ _('Verifications') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.linked_accounts') }}">{{ _('Linked Accounts') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.pledges') }}">{{ _('Pledges') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.payouts') }}">{{ _('Payouts') }}</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}">{{ _('Settings') }}</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('social.analytics') }}">
-                                <i class="fas fa-chart-line"></i> {{ _('Analytics') }}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('payments.pro_page') }}">
-                                <i class="fas fa-star"></i> {{ _('Pro') }}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('profile.view') }}">
-                                <i class="fas fa-user"></i> {{ _('Profile') }}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                                <i class="fas fa-sign-out-alt"></i> {{ _('Logout') }}
-                            </a>
-                        </li>
-                     {% else %}
-                         <li class="nav-item">
-                             <a class="btn btn-outline-light ms-2" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
-                         </li>
-                         <li class="nav-item">
-                             <a class="btn btn-primary ms-2" href="{{ url_for('auth.register') }}">{{ _('Register') }}</a>
-                         </li>
-                     {% endif %}
-                     
-                     <!-- Language Switcher -->
-                     <li class="nav-item dropdown">
-                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">🌐</a>
-                         <ul class="dropdown-menu dropdown-menu-end">
-                             <li><a class="dropdown-item" href="{{ url_for('set_language', lang='en') }}">English</a></li>
-                             <li><a class="dropdown-item" href="{{ url_for('set_language', lang='fr') }}">Français</a></li>
-                             <li><a class="dropdown-item" href="{{ url_for('set_language', lang='es') }}">Español</a></li>
-                         </ul>
-                     </li>
-                 </ul>
-    </div>
-    </div>
+                    <li class="nav-item d-none d-lg-block">
+                        <a class="btn btn-primary ms-2" href="{{ url_for('social.feed') }}#composer">
+                            {{ icon('plus', 16) }} {{ _('Post') }}
+                        </a>
+                    </li>
+                    {# Phase 3: the bell is a dropdown panel (380px,
+                       grouped New / Earlier, unread dot per item) —
+                       not a bare link. The mobile tab bar keeps its
+                       plain link to the full page. #}
+                    <li class="nav-item dropdown d-none d-lg-block">
+                        <button type="button"
+                                class="nav-icon-btn ms-2"
+                                id="notifications-bell"
+                                data-bs-toggle="dropdown"
+                                data-bs-auto-close="outside"
+                                aria-expanded="false"
+                                aria-label="{{ _('Notifications') }}"
+                                data-panel-url="{{ url_for('social.notifications_panel') }}"
+                                data-read-all-url="{{ url_for('social.read_all_notifications') }}"
+                                data-poll-url="{{ url_for('social.notifications_poll') }}">
+                            {{ icon('bell', 20) }}
+                            {% if unread_notifications %}<span class="nav-badge" id="nav-notifications-badge">{{ unread_notifications if unread_notifications <= 99 else '99+' }}</span>{% endif %}
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end notification-panel" aria-labelledby="notifications-bell">
+                            <div class="notification-panel-header">
+                                <strong>{{ _('Notifications') }}</strong>
+                                <button type="button" class="btn btn-link btn-sm p-0" id="panel-mark-all-read" data-read-all-url="{{ url_for('social.read_all_notifications') }}">{{ _('Mark all read') }}</button>
+                            </div>
+                            <div class="notification-panel-body" id="notification-panel-body">
+                                {% set unread_items = recent_notifications | selectattr('notification.is_read', 'equalto', false) | list %}
+                                {% set read_items = recent_notifications | selectattr('notification.is_read') | list %}
+                                {% if unread_items %}
+                                <div class="notification-group-label">{{ _('New') }}</div>
+                                {% for item in unread_items %}
+                                    {% set n = item.notification %}
+                                    {% set actor_profile = item.actor_profile %}
+                                    {% include 'partials/notification_item.html' %}
+                                {% endfor %}
+                                {% endif %}
+                                {% if read_items %}
+                                <div class="notification-group-label">{{ _('Earlier') }}</div>
+                                {% for item in read_items %}
+                                    {% set n = item.notification %}
+                                    {% set actor_profile = item.actor_profile %}
+                                    {% include 'partials/notification_item.html' %}
+                                {% endfor %}
+                                {% endif %}
+                                {% if not recent_notifications %}
+                                <p class="notification-empty text-center py-4 mb-0">{{ _('No notifications yet.') }}</p>
+                                {% endif %}
+                            </div>
+                            <a class="notification-panel-footer" href="{{ url_for('social.notifications') }}">{{ _('View all notifications') }}</a>
+                        </div>
+                    </li>
+                    <li class="nav-item d-none d-lg-block">
+                        <a class="nav-icon-btn" href="{{ url_for('messages.inbox') }}" aria-label="{{ _('Messages') }}">
+                            {{ icon('message-circle', 20) }}
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="btn btn-outline-secondary ms-2" href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="{{ url_for('auth.register') }}">{{ _('Register') }}</a>
+                    </li>
+                    {% endif %}
+
+                    <!-- Display preferences cluster: theme toggle + language. -->
+                    <li class="nav-item d-none d-lg-block">
+                        <button type="button" class="nav-icon-btn ms-2 theme-toggle-btn" aria-label="{{ _('Toggle dark mode') }}" title="{{ _('Toggle dark mode') }}">
+                            <span class="theme-icon-moon">{{ icon('moon', 20) }}</span>
+                            <span class="theme-icon-sun">{{ icon('sun', 20) }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item dropdown d-none d-lg-block">
+                        <a class="nav-icon-btn" href="#" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ _('Language') }}" title="{{ _('Language') }}">
+                            {{ icon('globe', 20) }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item {{ 'active' if current_locale == 'en' }}" href="{{ url_for('set_language', lang='en') }}">English{% if current_locale == 'en' %} {{ icon('check', 16) }}{% endif %}</a></li>
+                            <li><a class="dropdown-item {{ 'active' if current_locale == 'fr' }}" href="{{ url_for('set_language', lang='fr') }}">Français{% if current_locale == 'fr' %} {{ icon('check', 16) }}{% endif %}</a></li>
+                            <li><a class="dropdown-item {{ 'active' if current_locale == 'es' }}" href="{{ url_for('set_language', lang='es') }}">Español{% if current_locale == 'es' %} {{ icon('check', 16) }}{% endif %}</a></li>
+                        </ul>
+                    </li>
+
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown d-none d-lg-block">
+                        <button type="button" class="nav-avatar-btn ms-2" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ _('Account menu') }}">
+                            {% if my_profile and my_profile.avatar_url %}
+                            <img src="{{ my_profile.avatar_url }}" alt="" class="nav-avatar">
+                            {% else %}
+                            <span class="nav-avatar avatar-placeholder" aria-hidden="true">{{ (current_user.full_name or 'P')[0] | upper }}</span>
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">{{ current_user.full_name }}</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile.view') }}">{{ icon('user', 16) }} {{ _('Profile') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('social.saved') }}">{{ icon('bookmark', 16) }} {{ _('Saved') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('referrals.mine') }}">{{ icon('handshake', 16) }} {{ _('My Referrals') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('payments.payout_dashboard') }}">{{ icon('wallet', 16) }} {{ _('Payouts') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('social.analytics') }}">{{ icon('chart-line', 16) }} {{ _('Analytics') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('payments.pro_page') }}">{{ icon('star', 16) }} {{ _('Pro') }}</a></li>
+                            {% if current_user.role == 'admin' %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">{{ icon('settings', 16) }} {{ _('Admin') }}</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">{{ _('Appearance') }}</h6></li>
+                            <li><button type="button" class="dropdown-item theme-choice" data-theme="light">{{ icon('sun', 16) }} {{ _('Light') }} <span class="theme-check ms-auto" data-theme-check="light">{{ icon('check', 16) }}</span></button></li>
+                            <li><button type="button" class="dropdown-item theme-choice" data-theme="dark">{{ icon('moon', 16) }} {{ _('Dark') }} <span class="theme-check ms-auto" data-theme-check="dark">{{ icon('check', 16) }}</span></button></li>
+                            <li><button type="button" class="dropdown-item theme-choice" data-theme="system">{{ icon('refresh-cw', 16) }} {{ _('System') }} <span class="theme-check ms-auto" data-theme-check="system">{{ icon('check', 16) }}</span></button></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">{{ icon('log-out', 16) }} {{ _('Logout') }}</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
     </nav>
-    
+
     <!-- Main Content -->
     <main>
+        <!-- Flash Messages (dismissible by the user; they no longer
+             auto-vanish — see main.js) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
     </main>
-    
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="row">
                 <div class="col-lg-4 mb-4 mb-lg-0">
                     <div class="footer-title">
-                        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Paid2Match" class="footer-logo"> Paid2Match {{ leaf(16) }}
+                        <span style="color: var(--p2m-primary);">{{ logo_mark(24, 'footer', 'footer-mark') }}</span>
+                        <span class="footer-wordmark">paid<span class="brand-2">2</span>match</span>
                     </div>
                     <p class="text-white-50">{{ _('Connecting talent with opportunity across the globe.') }}</p>
-                    <p class="footer-canada mb-0">{{ leaf(16) }} {{ _('Proudly made in Canada') }}</p>
-                    <p class="text-white-50 small mb-0">{{ _('From coast to coast to coast — and beyond.') }}</p>
                 </div>
 
                 <div class="col-lg-4 mb-4 mb-lg-0">
@@ -204,15 +353,38 @@
             </div>
 
             <div class="footer-bottom">
-                <p>&copy; 2026 Paid2Match. {{ _('All rights reserved.') }}</p>
+                <p class="mb-0">&copy; 2026 Paid2Match. {{ _('All rights reserved.') }}</p>
+                <p class="footer-origin mb-0">{{ leaf(12, 'rgba(255,255,255,0.55)') }} {{ _('Made in Canada') }}</p>
             </div>
         </div>
     </footer>
-    
+
+    {% if current_user.is_authenticated %}
+    <!-- Mobile bottom tab bar — the primary mobile navigation. -->
+    <nav class="bottom-tabbar" aria-label="{{ _('Primary') }}">
+        <a class="tab-item {{ 'active' if request.endpoint == 'social.feed' and request.args.get('tab', 'following') == 'following' }}" href="{{ url_for('social.feed') }}">
+            {{ icon('house', 22) }}<span>{{ _('Feed') }}</span>
+        </a>
+        <a class="tab-item {{ 'active' if request.endpoint == 'social.feed' and request.args.get('tab') == 'discover' }}" href="{{ url_for('social.feed', tab='discover') }}">
+            {{ icon('compass', 22) }}<span>{{ _('Discover') }}</span>
+        </a>
+        <a class="tab-item tab-post" href="{{ url_for('social.feed') }}#composer" aria-label="{{ _('Post') }}">
+            <span class="tab-post-btn">{{ icon('plus', 24) }}</span><span>{{ _('Post') }}</span>
+        </a>
+        <a class="tab-item {{ 'active' if request.endpoint == 'social.notifications' }}" href="{{ url_for('social.notifications') }}">
+            {{ icon('bell', 22) }}<span>{{ _('Alerts') }}</span>
+            {% if unread_notifications %}<span class="tab-badge">{{ unread_notifications if unread_notifications <= 99 else '99+' }}</span>{% endif %}
+        </a>
+        <a class="tab-item {{ 'active' if request.endpoint in ('profile.view', 'profile.public_profile') }}" href="{{ url_for('profile.view') }}">
+            {{ icon('user', 22) }}<span>{{ _('Profile') }}</span>
+        </a>
+    </nav>
+    {% endif %}
+
     <!-- JavaScript -->
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -12,6 +12,7 @@ from datetime import timedelta
 from sqlalchemy import func
 
 from extensions import db
+from flask_babel import lazy_gettext as _l
 from models import generate_uuid, utc_now
 
 
@@ -29,8 +30,8 @@ class Review(db.Model):
     # referral quality + communication; posters on communication/speed +
     # payment reliability.
     DIMENSION_LABELS = {
-        'referrer': ('Referral quality', 'Communication'),
-        'poster': ('Communication & speed', 'Payment reliability'),
+        'referrer': (_l('Referral quality'), _l('Communication')),
+        'poster': (_l('Communication & speed'), _l('Payment reliability')),
     }
     REVEAL_DAYS = 14
 

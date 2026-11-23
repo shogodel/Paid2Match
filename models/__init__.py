@@ -23,7 +23,12 @@ from .admin_settings import AdminSettings
 from .dispute import Dispute
 from .bounty_payment_agreement import BountyPaymentAgreement
 from .audit_log import AuditLog
-from .post import Post, Like, Comment, Share
+from .post import Post, Like, Comment, Share, Bookmark
+from .space import Space, SpaceMembership, SEEDED_SPACES, seed_spaces
+from .poll import (
+    Poll, PollOption, PollVote, POLL_MAX_OPTIONS, POLL_MIN_OPTIONS,
+    POLL_OPTION_MAX_LENGTH, create_poll, parse_poll_options,
+)
 from .follow import Follow
 from .notification import Notification
 from .referral import Referral, KarmaEvent
@@ -38,6 +43,7 @@ from .subscription import ProSubscription
 from .linked_account import LinkedAccount
 from .endorsement import Endorsement, Pledge
 from .post_view import PostView, SearchAppearance
+from .staged_reward import StageRewardEvent
 
 __all__ = [
     'User',
@@ -54,6 +60,19 @@ __all__ = [
     'Like',
     'Comment',
     'Share',
+    'Bookmark',
+    'Space',
+    'SpaceMembership',
+    'SEEDED_SPACES',
+    'seed_spaces',
+    'Poll',
+    'PollOption',
+    'PollVote',
+    'POLL_MAX_OPTIONS',
+    'POLL_MIN_OPTIONS',
+    'POLL_OPTION_MAX_LENGTH',
+    'create_poll',
+    'parse_poll_options',
     'Follow',
     'Notification',
     'Referral',
@@ -77,6 +96,7 @@ __all__ = [
     'Pledge',
     'PostView',
     'SearchAppearance',
+    'StageRewardEvent',
     'generate_uuid',
     'utc_now',
 ]

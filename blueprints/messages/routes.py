@@ -99,9 +99,15 @@ def reply(message_id):
     
     content = request.form.get('content')
     
+    # Phase 3: a reply stays in the thread — the referral context
+    # (bounty + pitch) is copied from the original message, so a
+    # referral conversation answered from the inbox still shows on
+    # the referral detail page.
     reply_msg = Message(
         sender_id=current_user.id,
         recipient_id=original.sender_id,
+        bounty_id=original.bounty_id,
+        pitch_id=original.pitch_id,
         content=content
     )
     db.session.add(reply_msg)

@@ -1,70 +1,31 @@
 {% extends "base.html" %}
 {% from 'partials/maple_leaf.html' import leaf %}
+{% from 'partials/icon.html' import icon %}
+{% from 'partials/logo_mark.html' import logo_mark %}
 
 {% block title %}{{ _('Home') }} - Paid2Match{% endblock %}
 
 {% block content %}
-<!-- HERO -->
-<section class="hero-ca">
+<!-- HERO — the headline owns the page; the mark is 72–96px, not a tile. -->
+<section class="hero">
     <div class="container py-5 text-center">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Paid2Match" class="hero-logo mb-3">
-        <p class="hero-eyebrow">{{ leaf(16) }} {{ _('Proudly Canadian') }}</p>
+        <div class="mb-3" style="color: var(--p2m-primary);">{{ logo_mark(84, 'hero', 'hero-mark') }}</div>
+        <p class="hero-eyebrow">{{ _('The referral network for hiring') }}</p>
         <h1 class="hero-title">{{ _('Hiring is human. Keep it that way.') }}</h1>
-        <p class="hero-fr">&laquo; {{ _('Des humains qui recommandent des humains.') }} &raquo;</p>
-        <p class="lead hero-sub mx-auto">{{ _('Real people vouching for real people — no algorithms deciding your future. The referral network where humans hire humans, from Canada to the world.') }}</p>
+        <p class="lead hero-sub mx-auto">{{ _('Real people vouching for real people — no algorithms deciding your future. The referral network where humans hire humans, everywhere.') }}</p>
         <div class="d-flex gap-3 justify-content-center flex-wrap">
             <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ _('Join the network') }}</a>
-            <a href="{{ url_for('social.feed') }}" class="btn btn-outline-teal btn-lg">{{ _('Explore the Feed') }}</a>
-        </div>
-        <p class="hero-made mt-4 mb-0">{{ leaf(14) }} {{ _('Proudly Canadian, open to the world') }}</p>
-    </div>
-</section>
-
-<!-- STATS -->
-<section class="container py-4">
-    <div class="row g-3 text-center">
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold text-canada-red">{{ total_users }}</div>
-                    <small class="text-muted">{{ _('Total Users') }}</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold text-teal">{{ total_bounties }}</div>
-                    <small class="text-muted">{{ _('Total Opportunities') }}</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold text-canada-red">
-                        {% if total_rewards > 0 %}
-                            ${{ "{:,.0f}".format(total_rewards) }}
-                        {% else %}
-                            $0
-                        {% endif %}
-                    </div>
-                    <small class="text-muted">{{ _('Total Paid Out') }}</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="fs-2 fw-bold text-teal">{{ successful_matches }}</div>
-                    <small class="text-muted">{{ _('Successful Matches') }}</small>
-                </div>
-            </div>
+            <a href="{{ url_for('social.feed') }}" class="btn btn-outline-secondary btn-lg">{{ _('Explore the Feed') }}</a>
         </div>
     </div>
 </section>
 
-<!-- FRESH FROM THE NETWORK -->
+<!-- FRESH FROM THE NETWORK — the social layer leads; hiring is a
+     section below, not the headline. Uses the same post-card component
+     as the feed, so visitors see exactly what joining gets them.
+     (The old stats scoreboard — "3 users / 0 opportunities / $0 paid /
+     0 matches" in the loudest typography — is gone: an empty network
+     is not a selling point.) -->
 <section class="section-alt">
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-1">
@@ -73,42 +34,17 @@
         </div>
         <p class="text-muted">{{ _('What people are posting right now.') }}</p>
         {% if recent_posts %}
-        <div class="row g-4">
+        <div class="row g-3">
             {% for post in recent_posts %}
             <div class="col-md-6">
-                <div class="card h-100 post-preview-card">
-                    <div class="card-body">
-                        <div class="d-flex gap-2 align-items-center flex-wrap mb-2">
-                            <a href="{{ url_for('profile.public_profile', user_id=post.author_id) }}" class="fw-bold text-decoration-none">{{ post.author.full_name }}</a>
-                            <span class="badge bg-secondary">{{ post.type_label }}</span>
-                            {% if post.is_bumped %}
-                            <span class="badge bg-warning text-dark">{{ _('Bumped') }}</span>
-                            {% endif %}
-                            {% if post.is_boosted %}
-                            <span class="badge bg-danger">{{ _('Boosted') }}</span>
-                            {% endif %}
-                            <small class="text-muted ms-auto">{{ post.created_at.strftime('%b %d, %Y') if post.created_at }}</small>
-                        </div>
-                        {% if post.bounty %}
-                        <h5 class="mt-1 mb-1">
-                            <a href="{{ url_for('bounties.detail', id=post.bounty.id) }}" class="text-decoration-none">{{ post.bounty.title }}</a>
-                        </h5>
-                        {% endif %}
-                        <p class="card-text">{{ post.body[:180] }}{% if post.body|length > 180 %}&hellip;{% endif %}</p>
-                        <div class="d-flex gap-3 align-items-center">
-                            <span class="text-muted small"><i class="fas fa-heart"></i> {{ post.like_count }}</span>
-                            <span class="text-muted small"><i class="fas fa-comment"></i> {{ post.comment_count }}</span>
-                            <span class="text-muted small"><i class="fas fa-eye"></i> {{ post.view_count or 0 }}</span>
-                            <a href="{{ url_for('social.post_detail', post_id=post.id) }}" class="btn btn-sm btn-link p-0 ms-auto">{{ _('View post') }}</a>
-                        </div>
-                    </div>
-                </div>
+                {% set share = None %}
+                {% include 'social/_post_card.html' %}
             </div>
             {% endfor %}
         </div>
         {% else %}
         <div class="empty-state">
-            <div class="empty-state-icon"><i class="fas fa-comments"></i></div>
+            <div class="empty-state-icon">{{ icon('messages-square', 28) }}</div>
             <h5>{{ _('The network is just waking up') }}</h5>
             <p class="text-muted mb-3">{{ _('No posts yet — be the first to say hello, share a win, or ask the network for help.') }}</p>
             <a href="{{ url_for('auth.register') }}" class="btn btn-primary">{{ _('Be the first to post') }}</a>
@@ -130,8 +66,7 @@
                     <div class="helper-rank rank-{{ loop.index }}">{{ loop.index }}</div>
                     <h5 class="card-title"><a href="{{ url_for('profile.public_profile', user_id=profile.user_id) }}" class="text-decoration-none">{{ profile.display_name or profile.user.full_name }}</a></h5>
                     <p class="text-muted small mb-2">{{ profile.headline or '' }}</p>
-                    <span class="badge bg-success">{{ profile.karma or 0 }} karma</span>
-                    <span class="badge bg-info">{{ _('Helped') }} {{ profile.helped_count or 0 }}</span>
+                    <p class="text-muted small mb-0">{{ profile.karma or 0 }} {{ _('karma') }} &middot; {{ _('Helped') }} {{ profile.helped_count or 0 }}</p>
                 </div>
             </div>
         </div>
@@ -139,7 +74,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <div class="empty-state-icon"><i class="fas fa-hands-helping"></i></div>
+        <div class="empty-state-icon">{{ icon('users', 28) }}</div>
         <h5>{{ _('No helpers yet') }}</h5>
         <p class="text-muted mb-3">{{ _('Nobody has completed a referral so far — complete the first one and take the top spot.') }}</p>
         <a href="{{ url_for('bounties.board') }}" class="btn btn-primary">{{ _('Browse referral needs') }}</a>
@@ -171,7 +106,7 @@
                         <h5 class="card-title">{{ bounty.title }}</h5>
                         <p class="card-text text-muted small">{{ bounty.description[:100] }}...</p>
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold {% if bounty.reward_amount and bounty.reward_amount > 0 %}text-success{% else %}text-muted{% endif %}">
+                            <span class="fw-bold {% if bounty.reward_amount and bounty.reward_amount > 0 %}text-brand{% else %}text-muted{% endif %}">
                                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
                                     ${{ "{:,.0f}".format(bounty.reward_amount) }}
                                 {% else %}
@@ -195,7 +130,7 @@
         </div>
         {% else %}
         <div class="empty-state">
-            <div class="empty-state-icon"><i class="fas fa-briefcase"></i></div>
+            <div class="empty-state-icon">{{ icon('briefcase', 28) }}</div>
             <h5>{{ _('No referral needs yet') }}</h5>
             <p class="text-muted mb-3">{{ _('Nobody is looking for a referral right now — post the first need and let the network find your person.') }}</p>
             <a href="{{ url_for('bounties.post') }}" class="btn btn-primary">{{ _('Post the first need') }}</a>
@@ -204,10 +139,11 @@
     </div>
 </section>
 
-<!-- HUMAN-REVIEWED HIRING PLEDGE -->
+<!-- HUMAN-REVIEWED HIRING PLEDGE — the leaf is a 24px ornament now;
+     the pledge copy is the headline, the leaf is the signature. -->
 <section class="pledge-band">
     <div class="container py-5 text-center">
-        <div class="mb-3">{{ leaf(44, '#ffffff') }}</div>
+        <div class="mb-3">{{ leaf(24, '#ffffff') }}</div>
         <h2 class="text-white">{{ _('The human-reviewed hiring pledge') }}</h2>
         <p class="pledge-band-text mx-auto">{{ _('Every employer on this register promises two things: no AI screening of candidates, and a human response to every referral within 5 business days. If a pledger stops answering, their pledge shows as suspended.') }}</p>
         <a href="{{ url_for('social.pledges') }}" class="btn btn-outline-light btn-lg">{{ _('See who pledged') }}</a>

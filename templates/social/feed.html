@@ -1,84 +1,171 @@
 {% extends "base.html" %}
-{% block title %}Feed - Paid2Match{% endblock %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('Feed') }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="mb-0">Feed</h2>
-                <a href="{{ url_for('social.new_post') }}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> New post
+    <div class="feed-layout">
+        <!-- Left rail: mini profile card. -->
+        <aside class="feed-rail">
+            {% set my_profile = current_user.profiles.first() %}
+            <div class="rail-card text-center">
+                <a href="{{ url_for('profile.view') }}">
+                    {% if my_profile and my_profile.avatar_url %}
+                    <img src="{{ my_profile.avatar_url }}" alt="" class="avatar avatar-48 mb-2">
+                    {% else %}
+                    <span class="avatar-placeholder avatar-48 mb-2" aria-hidden="true">{{ (current_user.full_name or 'P')[0] | upper }}</span>
+                    {% endif %}
                 </a>
+                <h6 class="mb-0"><a href="{{ url_for('profile.view') }}" class="text-decoration-none">{{ my_profile.display_name if my_profile and my_profile.display_name else current_user.full_name }}</a></h6>
+                {% if my_profile and my_profile.headline %}
+                <p class="text-muted small mb-2">{{ my_profile.headline }}</p>
+                {% endif %}
+                {% if my_profile %}
+                <p class="text-muted small mb-2">{{ my_profile.karma or 0 }} {{ _('karma') }} &middot; {{ _('Helped') }} {{ my_profile.helped_count or 0 }}</p>
+                {% if my_profile.completion_percentage < 100 %}
+                <div class="progress mb-1">
+                    <div class="progress-bar" role="progressbar" style="width: {{ my_profile.completion_percentage }}%" aria-valuenow="{{ my_profile.completion_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <a href="{{ url_for('profile.edit') }}" class="btn btn-sm btn-link p-0">{{ _('Complete your profile') }} ({{ my_profile.completion_percentage }}%)</a>
+                {% endif %}
+                {% endif %}
             </div>
+        </aside>
+
+        <!-- Centre feed. -->
+        <div class="feed-centre">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">{{ _('Feed') }}</h2>
+            </div>
+
+            {% if show_onboarding %}
+            {% include 'social/_onboarding.html' %}
+            {% endif %}
+
+            {% include 'social/_composer.html' %}
 
             <ul class="nav nav-tabs mb-3">
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if tab == 'following' }}" href="{{ url_for('social.feed', tab='following') }}">Following</a>
+                    <a class="nav-link {{ 'active' if tab == 'following' }}" href="{{ url_for('social.feed', tab='following', flair=flair) }}">{{ _('Following') }}</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if tab == 'discover' }}" href="{{ url_for('social.feed', tab='discover') }}">Discover</a>
+                    <a class="nav-link {{ 'active' if tab == 'latest' }}" href="{{ url_for('social.feed', tab='latest', flair=flair) }}">{{ _('Latest') }}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if tab == 'discover' }}" href="{{ url_for('social.feed', tab='discover', flair=flair) }}">{{ _('Top') }}</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if tab == 'trending' }}" href="{{ url_for('social.feed', tab='trending', flair=flair) }}">{{ _('Trending') }}</a>
                 </li>
             </ul>
 
+            <div class="flair-row" role="group" aria-label="{{ _('Filter by type') }}">
+                <a class="flair-chip {{ 'is-active' if not flair }}" href="{{ url_for('social.feed', tab=tab) }}">{{ _('All') }}</a>
+                {% for key, label in flair_labels.items() %}
+                <a class="flair-chip {{ 'is-active' if flair == key }}" href="{{ url_for('social.feed', tab=tab, flair=key) }}">{{ label }}</a>
+                {% endfor %}
+            </div>
+
             {% if tab == 'following' %}
-            <p class="text-muted small">Chronological, from people you follow. Nothing hidden, no algorithm.</p>
-            {% else %}
+            <p class="text-muted small">{{ _('Chronological, from people you follow. Nothing hidden, no algorithm.') }}</p>
+            {% elif tab == 'latest' %}
+            <p class="text-muted small">{{ _('Chronological, from the whole network. Nothing hidden, no algorithm.') }}</p>
+            {% elif tab == 'discover' %}
             <div class="alert alert-info small">
-                <strong>How Discover ranks posts:</strong> {{ discover_rules }}
+                <strong>{{ _('How Top ranks posts:') }}</strong> {{ discover_rules }}
+            </div>
+            {% elif tab == 'trending' %}
+            <div class="alert alert-info small">
+                <strong>{{ _('How Trending ranks posts:') }}</strong> {{ trending_rules }}
             </div>
             {% endif %}
 
-            {% if feed['items'] %}
-                {% for item in feed['items'] %}
-                    {% set post = item.post %}
-                    {% set share = item.share %}
-                    {% include 'social/_post_card.html' %}
-                {% endfor %}
-            {% else %}
-                <div class="alert alert-light text-center">
-                    {% if tab == 'following' %}
-                    Nothing here yet — follow some people, or be the first to post.
-                    {% else %}
-                    Nothing to discover yet — check back once people start posting.
-                    {% endif %}
-                </div>
-            {% endif %}
+            <button type="button" id="new-posts-pill" class="new-posts-pill" data-new-count-url="{{ url_for('social.feed_new_count') }}" data-since="{{ feed_since or '' }}">
+                {{ icon('arrow-up', 16) }} <span id="new-posts-count">0</span> {{ _('new posts') }}
+            </button>
+
+            <div id="feed-list">
+                {% if feed['items'] %}
+                    {% for item in feed['items'] %}
+                        {% set post = item.post %}
+                        {% set share = item.share %}
+                        {% include 'social/_post_card.html' %}
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-light text-center">
+                        {% if tab == 'following' %}
+                        {{ _('Nothing here yet — follow some people, or be the first to post.') }}
+                        {% elif tab == 'latest' %}
+                        {{ _('Nothing posted yet — be the first to post.') }}
+                        {% elif tab == 'trending' %}
+                        {{ _('Nothing trending yet — posts with the most likes, comments and shares in the last 7 days will show up here.') }}
+                        {% else %}
+                        {{ _('Nothing to discover yet — check back once people start posting.') }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
 
             {% if feed.pages > 1 %}
             <nav>
                 <ul class="pagination">
                     {% if feed.has_prev %}
-                    <li class="page-item"><a class="page-link" href="{{ url_for('social.feed', tab=tab, page=feed.page - 1) }}">Previous</a></li>
+                    <li class="page-item"><a class="page-link" href="{{ url_for('social.feed', tab=tab, flair=flair, page=feed.page - 1) }}">{{ _('Previous') }}</a></li>
                     {% endif %}
-                    <li class="page-item disabled"><span class="page-link">Page {{ feed.page }} of {{ feed.pages }}</span></li>
+                    <li class="page-item disabled"><span class="page-link">{{ _('Page') }} {{ feed.page }} {{ _('of') }} {{ feed.pages }}</span></li>
                     {% if feed.has_next %}
-                    <li class="page-item"><a class="page-link" href="{{ url_for('social.feed', tab=tab, page=feed.page + 1) }}">Next</a></li>
+                    <li class="page-item"><a class="page-link" href="{{ url_for('social.feed', tab=tab, flair=flair, page=feed.page + 1) }}">{{ _('Next') }}</a></li>
                     {% endif %}
                 </ul>
             </nav>
             {% endif %}
         </div>
 
-        <div class="col-lg-4">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5>People who refer in your area</h5>
-                    {% if suggested %}
-                        {% for user in suggested %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <a href="{{ url_for('profile.public_profile', user_id=user.id) }}">{{ user.full_name }}</a>
-                            <form method="POST" action="{{ url_for('social.follow', user_id=user.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-primary">Follow</button>
-                            </form>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-muted small mb-0">Add a location to your profile and we'll suggest people near you.</p>
-                    {% endif %}
-                    <a href="{{ url_for('social.people') }}" class="btn btn-sm btn-link p-0 mt-2">Browse all people</a>
-                </div>
+        <!-- Right rail: people, helpers, pledge. -->
+        <aside class="feed-rail">
+            <div class="rail-card">
+                <h5>{{ _('People to follow') }}</h5>
+                {% if suggested %}
+                    {% for user in suggested %}
+                    {% set s_profile = user.profiles.first() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                        <a href="{{ url_for('profile.public_profile', user_id=user.id) }}" class="d-flex align-items-center gap-2 text-decoration-none text-truncate">
+                            {% if s_profile and s_profile.avatar_url %}
+                            <img src="{{ s_profile.avatar_url }}" alt="" class="avatar avatar-32">
+                            {% else %}
+                            <span class="avatar-placeholder avatar-32" aria-hidden="true">{{ user.full_name[0] | upper }}</span>
+                            {% endif %}
+                            <span class="text-truncate">{{ s_profile.display_name if s_profile and s_profile.display_name else user.full_name }}</span>
+                        </a>
+                        <button type="button" class="btn btn-follow btn-primary btn-sm flex-shrink-0" data-follow-url="{{ url_for('social.follow', user_id=user.id) }}" data-unfollow-url="{{ url_for('social.unfollow', user_id=user.id) }}" data-following="0">
+                            <span class="label-follow">{{ _('Follow') }}</span><span class="label-following">{{ _('Following') }}</span><span class="label-unfollow">{{ _('Unfollow') }}</span>
+                        </button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted small mb-0">{{ _('No suggestions right now — as the network grows, people in your spaces and area will show up here.') }}</p>
+                {% endif %}
+                <a href="{{ url_for('social.people') }}" class="btn btn-sm btn-link p-0 mt-2">{{ _('Browse all people') }}</a>
             </div>
-        </div>
+
+            {% if top_helpers %}
+            <div class="rail-card">
+                <h5>{{ _('Top Helpers') }}</h5>
+                {% for profile in top_helpers %}
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="helper-rank rank-{{ loop.index }}" style="width: 28px; height: 28px; font-size: 0.875rem; margin: 0;">{{ loop.index }}</span>
+                    <a href="{{ url_for('profile.public_profile', user_id=profile.user_id) }}" class="text-decoration-none text-truncate">{{ profile.display_name or profile.user.full_name }}</a>
+                    <span class="text-muted small ms-auto flex-shrink-0">{{ profile.karma or 0 }} karma</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="rail-card">
+                <h5>{{ icon('shield-check', 18) }} {{ _('Human-reviewed hiring') }}</h5>
+                <p class="text-muted small mb-2">{{ _('Employers on the register promise: no AI screening, and a human response to every referral within 5 business days.') }}</p>
+                <a href="{{ url_for('social.pledges') }}" class="btn btn-sm btn-outline-primary">{{ _('See who pledged') }}</a>
+            </div>
+        </aside>
     </div>
 </div>
 {% endblock %}

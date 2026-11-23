@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block title %}My analytics - Paid2Match{% endblock %}
+{% block title %}{{ _('My analytics') }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <h2>My analytics</h2>
-    <p class="text-muted">The basics, free for everyone — what happened with your posts, your profile, and your referrals.</p>
+    <h2>{{ _('My analytics') }}</h2>
+    <p class="text-muted">{{ _('The basics, free for everyone — what happened with your posts, your profile, and your referrals.') }}</p>
 
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body text-center">
-                    <h5>Trust level</h5>
-                    <div class="fs-3">{{ trust_level }}</div>
+                    <h5>{{ _('Trust level') }}</h5>
+                    <div class="fs-3">{{ trust_level|level_label }}</div>
                     <div class="text-muted">Score {{ trust_score }}/100</div>
-                    {% if top_helper %}<span class="badge bg-warning text-dark mt-2">Top Helper</span>{% endif %}
+                    {% if top_helper %}<span class="badge bg-warning text-dark mt-2">{{ _('Top Helper') }}</span>{% endif %}
                     <div class="text-start small text-muted mt-3">
                         <div>Identity: {{ trust_breakdown.identity }}/20</div>
                         <div>Transactions: {{ trust_breakdown.transactions }}/40</div>
@@ -27,9 +27,9 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body text-center">
-                    <h5>Karma</h5>
+                    <h5>{{ _('Karma') }}</h5>
                     <div class="fs-3">{{ analytics.karma }}</div>
-                    <div class="text-muted">Helped {{ analytics.helped }} people</div>
+                    <div class="text-muted">{{ _('Helped') }} {{ analytics.helped }} {{ _('people') }}</div>
                     {% if analytics.recent_karma %}
                     <div class="text-start small mt-3">
                         {% for event in analytics.recent_karma[:5] %}
@@ -43,10 +43,10 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body text-center">
-                    <h5>Audience</h5>
-                    <div class="fs-3">{{ analytics.followers }} followers</div>
-                    <div class="text-muted">{{ analytics.following }} following &middot; {{ analytics.new_followers_7d }} new this week</div>
-                    <div class="mt-2">Profile views (7 days): <strong>{{ analytics.profile_views_7d }}</strong></div>
+                    <h5>{{ _('Audience') }}</h5>
+                    <div class="fs-3">{{ analytics.followers }} {{ _('followers') }}</div>
+                    <div class="text-muted">{{ analytics.following }} {{ _('following') }} &middot; {{ analytics.new_followers_7d }} {{ _('new this week') }}</div>
+                    <div class="mt-2">{{ _('Profile views (7 days):') }} <strong>{{ analytics.profile_views_7d }}</strong></div>
                 </div>
             </div>
         </div>
@@ -56,32 +56,32 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5>Referrals</h5>
-                    <div>Made: <strong>{{ analytics.referrals.made }}</strong></div>
-                    <div>Accepted: <strong>{{ analytics.referrals.accepted }}</strong></div>
-                    <div>Completed: <strong>{{ analytics.referrals.completed }}</strong> ({{ analytics.referrals.completed_paid }} paid, {{ analytics.referrals.completed_free }} free)</div>
+                    <h5>{{ _('Referrals') }}</h5>
+                    <div>{{ _('Made:') }} <strong>{{ analytics.referrals.made }}</strong></div>
+                    <div>{{ _('Accepted:') }} <strong>{{ analytics.referrals.accepted }}</strong></div>
+                    <div>{{ _('Completed:') }} <strong>{{ analytics.referrals.completed }}</strong> ({{ analytics.referrals.completed_paid }} {{ _('paid') }}, {{ analytics.referrals.completed_free }} {{ _('free') }})</div>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5>Earnings</h5>
-                    <div>Pending: <strong>${{ "%.2f"|format(analytics.earnings.pending) }}</strong></div>
-                    <div>Paid out: <strong>${{ "%.2f"|format(analytics.earnings.paid_out) }}</strong></div>
-                    <div>Lifetime: <strong>${{ "%.2f"|format(analytics.earnings.lifetime) }}</strong></div>
-                    <div class="text-muted small mt-1">Payouts are manual (Interac) until automated payouts launch.</div>
+                    <h5>{{ _('Earnings') }}</h5>
+                    <div>{{ _('Pending:') }} <strong>${{ "%.2f"|format(analytics.earnings.pending) }}</strong></div>
+                    <div>{{ _('Paid out:') }} <strong>${{ "%.2f"|format(analytics.earnings.paid_out) }}</strong></div>
+                    <div>{{ _('Lifetime:') }} <strong>${{ "%.2f"|format(analytics.earnings.lifetime) }}</strong></div>
+                    <div class="text-muted small mt-1">{{ _('Payouts are manual (Interac) until automated payouts launch.') }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <h4>Your posts</h4>
-    <p class="text-muted">Totals: {{ analytics.totals.views }} views, {{ analytics.totals.likes }} likes, {{ analytics.totals.comments }} comments, {{ analytics.totals.shares }} shares.</p>
+    <h4>{{ _('Your posts') }}</h4>
+    <p class="text-muted">{{ _('Totals:') }} {{ analytics.totals.views }} {{ _('views') }}, {{ analytics.totals.likes }} {{ _('likes') }}, {{ analytics.totals.comments }} {{ _('comments') }}, {{ analytics.totals.shares }} {{ _('shares') }}.</p>
     {% if analytics.post_rows %}
     <table class="table">
         <thead>
-            <tr><th>Post</th><th>Views</th><th>Likes</th><th>Comments</th><th>Shares</th></tr>
+            <tr><th>{{ _('Post') }}</th><th>{{ _('Views') }}</th><th>{{ _('Likes') }}</th><th>{{ _('Comments') }}</th><th>{{ _('Shares') }}</th></tr>
         </thead>
         <tbody>
             {% for row in analytics.post_rows %}
@@ -96,21 +96,21 @@
         </tbody>
     </table>
     {% else %}
-    <p class="text-muted">You haven't posted yet.</p>
+    <p class="text-muted">{{ _("You haven't posted yet.") }}</p>
     {% endif %}
 
     {% if is_pro and pro_analytics %}
     <hr class="my-4">
     <div class="d-flex justify-content-between align-items-center">
-        <h4>Pro analytics <span class="badge bg-warning text-dark">Pro</span></h4>
-        <a href="{{ url_for('social.analytics_export') }}" class="btn btn-sm btn-outline-primary">Download CSV</a>
+        <h4>{{ _('Pro analytics') }} <span class="badge bg-warning text-dark">{{ _('Pro') }}</span></h4>
+        <a href="{{ url_for('social.analytics_export') }}" class="btn btn-sm btn-outline-primary">{{ _('Download CSV') }}</a>
     </div>
 
-    <h5 class="mt-3">Your posts — reach &amp; engagement</h5>
-    <p class="text-muted small">Members reached = unique viewers (anonymous session views are an estimate). Benchmarks: typical 1%, strong 3%, exceptional 5%.</p>
+    <h5 class="mt-3">{{ _('Your posts — reach & engagement') }}</h5>
+    <p class="text-muted small">{{ _('Members reached = unique viewers (anonymous session views are an estimate). Benchmarks: typical 1%, strong 3%, exceptional 5%.') }}</p>
     {% if pro_analytics.post_rows %}
     <table class="table table-sm">
-        <thead><tr><th>Post</th><th>Views</th><th>Reached</th><th>Engagement rate</th><th>Likes</th><th>Comments</th><th>Shares</th></tr></thead>
+        <thead><tr><th>{{ _('Post') }}</th><th>{{ _('Views') }}</th><th>{{ _('Reached') }}</th><th>{{ _('Engagement rate') }}</th><th>{{ _('Likes') }}</th><th>{{ _('Comments') }}</th><th>{{ _('Shares') }}</th></tr></thead>
         <tbody>
         {% for row in pro_analytics.post_rows %}
         <tr>
@@ -124,9 +124,9 @@
         </tr>
         {% if row.bump_performance %}
         <tr class="table-light"><td colspan="7" class="small">
-            Bump/boost performance:
+            {{ _('Bump/boost performance:') }}
             {% for perf in row.bump_performance %}
-            {{ perf.kind|title }} ({{ perf.source }}) {{ perf.started_at.strftime('%b %d') if perf.started_at }}: +{{ perf.views }} views, +{{ perf.likes }} likes, +{{ perf.comments }} comments, {{ perf.referrals }} referrals{{ '; ' if not loop.last }}
+            {{ perf.kind|title }} ({{ perf.source }}) {{ perf.started_at.strftime('%b %d') if perf.started_at }}: +{{ perf.views }} {{ _('views') }}, +{{ perf.likes }} {{ _('likes') }}, +{{ perf.comments }} {{ _('comments') }}, {{ perf.referrals }} {{ _('referrals') }}{{ '; ' if not loop.last }}
             {% endfor %}
         </td></tr>
         {% endif %}
@@ -134,7 +134,7 @@
         </tbody>
     </table>
     {% else %}
-    <p class="text-muted">You haven't posted yet.</p>
+    <p class="text-muted">{{ _("You haven't posted yet.") }}</p>
     {% endif %}
 
     <div class="row mb-4">
@@ -143,14 +143,14 @@
                 <div class="card-body">
                     <h5>Profile views — last 90 days: {{ pro_analytics.profile_views.total_90d }}</h5>
                     {% if pro_analytics.profile_views.named_viewers %}
-                    <p class="small mb-1">Viewers who opted in to show their name:</p>
+                    <p class="small mb-1">{{ _('Viewers who opted in to show their name:') }}</p>
                     <ul class="small mb-0">
                         {% for name in pro_analytics.profile_views.named_viewers[:10] %}
                         <li>{{ name }}</li>
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-muted small mb-0">No viewer opted in to show their name yet. Viewer names are private by default.</p>
+                    <p class="text-muted small mb-0">{{ _('No viewer opted in to show their name yet. Viewer names are private by default.') }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -160,20 +160,20 @@
                 <div class="card-body">
                     <h5>Search appearances: {{ pro_analytics.search.total_90d }}</h5>
                     {% if pro_analytics.search.top_queries %}
-                    <p class="small mb-1">Top searches you appeared in:</p>
+                    <p class="small mb-1">{{ _('Top searches you appeared in:') }}</p>
                     <ul class="small mb-0">
                         {% for query, count in pro_analytics.search.top_queries[:5] %}
                         <li>"{{ query }}" — {{ count }}×</li>
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-muted small mb-0">You haven't appeared in any filtered people search yet.</p>
+                    <p class="text-muted small mb-0">{{ _("You haven't appeared in any filtered people search yet.") }}</p>
                     {% endif %}
-                    <h5 class="mt-3">Best time to post</h5>
+                    <h5 class="mt-3">{{ _('Best time to post') }}</h5>
                     {% if pro_analytics.best_time %}
-                    <p class="small mb-0">{{ "%02d"|format(pro_analytics.best_time.hour) }}:00 UTC — {{ pro_analytics.best_time.engagements }} engagements at that hour. (Engagement times, not logins — we don't track when people are online.)</p>
+                    <p class="small mb-0">{{ "%02d"|format(pro_analytics.best_time.hour) }}:00 UTC — {{ pro_analytics.best_time.engagements }} {{ _("engagements at that hour.") }} {{ _("(Engagement times, not logins — we don't track when people are online.)") }}</p>
                     {% else %}
-                    <p class="text-muted small mb-0">Not enough engagement yet.</p>
+                    <p class="text-muted small mb-0">{{ _('Not enough engagement yet.') }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -184,8 +184,8 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5>Audience demographics ({{ pro_analytics.demographics.total }} followers)</h5>
-                    <h6 class="small">By location</h6>
+                    <h5>{{ _('Audience demographics') }} ({{ pro_analytics.demographics.total }} {{ _('followers') }})</h5>
+                    <h6 class="small">{{ _('By location') }}</h6>
                     {% if pro_analytics.demographics.by_location %}
                     <ul class="small mb-2">
                         {% for location, count in pro_analytics.demographics.by_location %}
@@ -193,9 +193,9 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-muted small">No location data from followers yet.</p>
+                    <p class="text-muted small">{{ _('No location data from followers yet.') }}</p>
                     {% endif %}
-                    <h6 class="small">By role type</h6>
+                    <h6 class="small">{{ _('By role type') }}</h6>
                     {% if pro_analytics.demographics.by_role_type %}
                     <ul class="small mb-0">
                         {% for role, count in pro_analytics.demographics.by_role_type %}
@@ -203,7 +203,7 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-muted small mb-0">No role data yet.</p>
+                    <p class="text-muted small mb-0">{{ _('No role data yet.') }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -211,14 +211,14 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5>Referral funnel</h5>
-                    <div>Need views: <strong>{{ pro_analytics.funnel.totals.views }}</strong></div>
-                    <div>Referrals made: <strong>{{ pro_analytics.funnel.totals.referrals }}</strong></div>
-                    <div>Confirmed: <strong>{{ pro_analytics.funnel.totals.confirms }}</strong></div>
-                    <div>Paid: <strong>{{ pro_analytics.funnel.totals.paid }}</strong></div>
+                    <h5>{{ _('Referral funnel') }}</h5>
+                    <div>{{ _('Need views:') }} <strong>{{ pro_analytics.funnel.totals.views }}</strong></div>
+                    <div>{{ _('Referrals made:') }} <strong>{{ pro_analytics.funnel.totals.referrals }}</strong></div>
+                    <div>{{ _('Confirmed:') }} <strong>{{ pro_analytics.funnel.totals.confirms }}</strong></div>
+                    <div>{{ _('Paid:') }} <strong>{{ pro_analytics.funnel.totals.paid }}</strong></div>
                     {% if pro_analytics.funnel.rows %}
                     <table class="table table-sm mt-2 mb-0">
-                        <thead><tr><th>Need</th><th>Views</th><th>Referrals</th><th>Confirmed</th><th>Paid</th></tr></thead>
+                        <thead><tr><th>{{ _('Need') }}</th><th>{{ _('Views') }}</th><th>{{ _('Referrals') }}</th><th>{{ _('Confirmed') }}</th><th>{{ _('Paid') }}</th></tr></thead>
                         <tbody>
                         {% for row in pro_analytics.funnel.rows %}
                         <tr>
@@ -240,9 +240,9 @@
     <hr class="my-4">
     <div class="card">
         <div class="card-body">
-            <h4>Pro analytics <span class="badge bg-warning text-dark">Pro</span></h4>
-            <p class="text-muted mb-2">Members reached, engagement rate with benchmarks, 90-day profile views with viewer names, search appearances, audience demographics, referral funnel, bump performance, and CSV export.</p>
-            <a href="{{ url_for('payments.pro_page') }}" class="btn btn-primary">Get Pro — $9/month</a>
+            <h4>{{ _('Pro analytics') }} <span class="badge bg-warning text-dark">{{ _('Pro') }}</span></h4>
+            <p class="text-muted mb-2">{{ _('Members reached, engagement rate with benchmarks, 90-day profile views with viewer names, search appearances, audience demographics, referral funnel, bump performance, and CSV export.') }}</p>
+            <a href="{{ url_for('payments.pro_page') }}" class="btn btn-primary">{{ _('Get Pro — $9/month') }}</a>
         </div>
     </div>
     {% endif %}

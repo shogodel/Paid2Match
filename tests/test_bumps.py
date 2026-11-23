@@ -265,7 +265,8 @@ class TestBumpFeed:
         login_as(client, second_user.email, 'SecondPass123!')
         resp = client.get('/social/feed')
         assert resp.status_code == 200
-        assert b'Bumped' in resp.data
+        # Phase 3: bumped/boosted posts say "Promoted", never disguised.
+        assert b'Promoted' in resp.data
         assert b'bumped' in resp.data  # "posted … · bumped …"
 
     def test_bump_cap_one_in_five(self, app, sample_user):
@@ -317,7 +318,8 @@ class TestBumpFeed:
         login_as(client, second_user.email, 'SecondPass123!')
         resp = client.get('/social/feed')
         assert resp.status_code == 200
-        assert b'Boosted' in resp.data
+        # Phase 3: bumped/boosted posts say "Promoted", never disguised.
+        assert b'Promoted' in resp.data
 
 
 # ---------------------------------------------------------------------------

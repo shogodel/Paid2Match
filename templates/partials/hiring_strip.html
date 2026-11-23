@@ -1,0 +1,26 @@
+{# "We're hiring" strip (Phase 3, X Hiring pattern): shown on a
+   profile when the user has open referral needs. Expects open_needs
+   (up to 3 open Bounties, newest first) and strip_user_id (the
+   profile owner's id, for the "View all" link to the board filtered
+   to their needs). #}
+{% from 'partials/icon.html' import icon %}
+{% if open_needs %}
+<div class="hiring-strip">
+    <div class="hiring-strip-inner">
+        <span class="hiring-strip-label">{{ icon('briefcase', 16) }} {{ _("We're hiring") }}</span>
+        <ul class="hiring-strip-list">
+            {% for need in open_needs %}
+            <li>
+                <a href="{{ url_for('bounties.detail', id=need.id) }}">{{ need.title }}</a>
+                {% if need.is_free or need.is_free_bounty %}
+                <span class="badge bg-secondary ms-1">{{ _('Free need') }}</span>
+                {% elif need.reward_amount %}
+                <span class="bounty-reward ms-1">${{ "{:,.0f}".format(need.reward_amount) }}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('bounties.board', poster=strip_user_id) }}" class="hiring-strip-all">{{ _('View all') }}</a>
+    </div>
+</div>
+{% endif %}

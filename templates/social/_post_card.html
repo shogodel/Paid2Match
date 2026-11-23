@@ -1,102 +1,172 @@
-{# Shared post card. Expects: post, liked_ids, shared_ids, share_form, and
-   optionally share (a Share row — renders as an attributed reshare).
-   M3: author_levels (dict of user_id -> trust level) adds the trust badge
-   and bump/boost labels. #}
-<div class="card mb-3">
-    <div class="card-body">
+{# Shared post card — used by the feed, the homepage preview, the post
+   detail page, and the composer (server-rendered on create).
+   Expects: post, liked_ids, shared_ids, share_form, author_levels,
+   author_profiles, and optionally share (a Share row — renders as an
+   attributed reshare). Interactions are AJAX with optimistic updates
+   (see main.js); no full page reloads. #}
+{% from 'partials/icon.html' import icon %}
+{% set saved_ids = saved_ids | default([]) %}
+{% set poll_votes = poll_votes | default({}) %}
+{% set author_profile = author_profiles.get(post.author_id) if author_profiles else None %}
+{% set author_name = author_profile.display_name if author_profile and author_profile.display_name else post.author.full_name %}
+<article class="post-card" data-post-id="{{ post.id }}">
+    <div class="post-card-body">
         {% if share %}
-        <div class="text-muted small mb-2">
-            <i class="fas fa-retweet"></i>
+        <div class="post-reshare">
+            {{ icon('refresh-cw', 14) }}
             <a href="{{ url_for('profile.public_profile', user_id=share.sharer.id) }}">{{ share.sharer.full_name }}</a>
-            shared this
-            {% if share.comment %} — "{{ share.comment }}"{% endif %}
+            {{ _('shared this') }}
+            {% if share.comment %} — &ldquo;{{ share.comment }}&rdquo;{% endif %}
         </div>
         {% endif %}
-        <div class="d-flex align-items-start gap-2">
-            <div class="flex-grow-1">
-                <div class="d-flex gap-2 flex-wrap align-items-center">
-                    <a href="{{ url_for('profile.public_profile', user_id=post.author.id) }}" class="fw-bold text-decoration-none">{{ post.author.full_name }}</a>
+
+        <div class="post-header">
+            <a href="{{ url_for('profile.public_profile', user_id=post.author.id) }}" aria-label="{{ author_name }}">
+                {% if author_profile and author_profile.avatar_url %}
+                <img src="{{ author_profile.avatar_url }}" alt="" class="avatar avatar-40">
+                {% else %}
+                <span class="avatar-placeholder avatar-40" aria-hidden="true">{{ author_name[0] | upper }}</span>
+                {% endif %}
+            </a>
+            <div class="post-header-main">
+                <div>
+                    <a href="{{ url_for('profile.public_profile', user_id=post.author.id) }}" class="post-author-name">{{ author_name }}</a>
                     {% if author_levels and author_levels.get(post.author_id) %}
-                    <span class="badge bg-primary" title="Trust level">{{ author_levels.get(post.author_id) }}</span>
-                    {% endif %}
-                    <span class="badge bg-secondary">{{ post.type_label }}</span>
-                    {% if post.bounty %}
-                    <span class="badge bg-info text-dark" title="Vertical">{{ post.bounty.type_label }}{% if post.bounty.category_label %} · {{ post.bounty.category_label }}{% endif %}</span>
-                    {% endif %}
-                    {% if post.post_type == 'need_free' %}
-                    <span class="badge bg-success">Community referral — no bounty</span>
-                    {% endif %}
-                    {% if post.bounty and post.bounty.reward_amount and post.bounty.reward_amount > 0 %}
-                    <span class="badge bg-success">${{ "{:,.0f}".format(post.bounty.reward_amount) }} bounty</span>
-                    {% endif %}
-                    {% if post.is_bumped %}
-                    <span class="badge bg-warning text-dark" title="Bumped — this post was pushed back to the top of the feed for 24h">Bumped</span>
-                    {% endif %}
-                    {% if post.is_boosted %}
-                    <span class="badge bg-danger" title="Boosted — the author paid for extra Discover visibility">Boosted</span>
-                    {% endif %}
-                    <small class="text-muted">{{ post.created_at.strftime('%b %d, %Y %I:%M %p') }}{% if post.bumped_at %} · bumped {{ post.bumped_at.strftime('%b %d %I:%M %p') }}{% endif %}</small>
-                </div>
-                {% if post.bounty %}
-                <h5 class="mt-2 mb-1">
-                    <a href="{{ url_for('bounties.detail', id=post.bounty.id, share_id=share.id) if share else url_for('bounties.detail', id=post.bounty.id) }}" class="text-decoration-none">{{ post.bounty.title }}</a>
-                </h5>
-                {% endif %}
-                <p class="mb-2">{{ post.body }}</p>
-                {% if post.photo_url %}
-                <img src="{{ post.photo_url }}" alt="Post photo" class="img-fluid rounded mb-2" style="max-height: 400px;">
-                {% endif %}
-                {% if post.bounty and post.bounty.payment_status == 'unsecured' and post.bounty.reward_amount and post.bounty.reward_amount > 0 %}
-                <div class="alert alert-warning py-1 px-2 small mb-2">
-                    Payment pending — referrals open once the poster secures payment.
-                </div>
-                {% endif %}
-                <div class="d-flex gap-2 flex-wrap align-items-center">
-                    <form method="POST" action="{{ url_for('social.like_post', post_id=post.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm {{ 'btn-primary' if post.id in liked_ids else 'btn-outline-primary' }}">
-                            <i class="fas fa-heart"></i> {{ post.like_count }}
-                        </button>
-                    </form>
-                    <a href="{{ url_for('social.post_detail', post_id=post.id) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-comment"></i> {{ post.comment_count }}
-                    </a>
-                    <button type="button" class="btn btn-sm {{ 'btn-success' if post.id in shared_ids else 'btn-outline-secondary' }}" data-bs-toggle="collapse" data-bs-target="#share-{{ post.id }}">
-                        <i class="fas fa-retweet"></i> {{ post.share_count }}
-                    </button>
-                    {% if post.bounty and post.bounty.status == 'open' and post.bounty.is_publicly_visible and current_user.is_authenticated and current_user.id != post.bounty.poster_id %}
-                    <a href="{{ url_for('referrals.new_referral', bounty_id=post.bounty.id, share_id=share.id) if share else url_for('referrals.new_referral', bounty_id=post.bounty.id) }}" class="btn btn-sm btn-success">
-                        <i class="fas fa-user-plus"></i> Refer someone
-                    </a>
-                    {% endif %}
-                    {% if current_user.is_authenticated and current_user.id == post.author_id and not post.is_need %}
-                    <a href="{{ url_for('social.convert_post', post_id=post.id) }}" class="btn btn-sm btn-outline-warning">
-                        Turn into a referral
-                    </a>
-                    {% endif %}
-                    {% if current_user.is_authenticated and current_user.id == post.author_id %}
-                    <a href="{{ url_for('social.bump_post', post_id=post.id) }}" class="btn btn-sm btn-outline-info">
-                        <i class="fas fa-arrow-up"></i> Bump / boost
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('social.post_detail', post_id=post.id) }}" class="btn btn-sm btn-link text-muted">
-                        <i class="fas fa-eye"></i> {{ post.view_count or 0 }}
-                    </a>
-                    {% if current_user.is_authenticated and current_user.id != post.author_id %}
-                    <a href="{{ url_for('social.report', target_type='post', target_id=post.id) }}" class="btn btn-sm btn-link text-muted" title="Report">
-                        <i class="fas fa-flag"></i>
-                    </a>
+                    <span class="post-trust-badge" title="{{ _('Trust level') }}">{{ icon('badge-check', 16) }}{{ author_levels.get(post.author_id)|level_label }}</span>
                     {% endif %}
                 </div>
-                <div class="collapse mt-2" id="share-{{ post.id }}">
-                    <form method="POST" action="{{ url_for('social.share_post', post_id=post.id) }}">
-                        {{ share_form.hidden_tag() }}
-                        <div class="input-group">
-                            {{ share_form.comment(class="form-control", placeholder="Add a comment (optional)") }}
-                            <button type="submit" class="btn btn-outline-success">Share</button>
-                        </div>
-                    </form>
+                <div class="post-meta">
+                    {% if author_profile and author_profile.headline %}{{ author_profile.headline }} &middot; {% endif %}
+                    {% if author_profile and author_profile.location %}{{ author_profile.location }} &middot; {% endif %}
+                    <span title="{{ post.created_at.strftime('%b %d, %Y %I:%M %p') if post.created_at }}">{{ post.created_at | relativetime }}</span>{% if post.is_bumped %} &middot; {{ _('bumped') }} {{ post.bumped_at | relativetime }}{% endif %}
                 </div>
             </div>
+            <div class="post-overflow dropdown">
+                <button type="button" class="nav-icon-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ _('More options') }}">
+                    {{ icon('ellipsis', 20) }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button type="button" class="dropdown-item post-copy-link" data-copy-link="{{ url_for('social.post_detail', post_id=post.id, _external=True) }}">{{ icon('link', 16) }} {{ _('Copy link') }}</button></li>
+                    {% if current_user.is_authenticated and current_user.id == post.author_id %}
+                    <li><a class="dropdown-item" href="{{ url_for('social.edit_post', post_id=post.id) }}">{{ icon('pencil', 16) }} {{ _('Edit') }}</a></li>
+                    {% if not post.is_need %}
+                    <li><a class="dropdown-item" href="{{ url_for('social.convert_post', post_id=post.id) }}">{{ icon('briefcase', 16) }} {{ _('Turn into a referral') }}</a></li>
+                    {% endif %}
+                    <li><a class="dropdown-item" href="{{ url_for('social.bump_post', post_id=post.id) }}">{{ icon('arrow-up', 16) }} {{ _('Bump / boost') }}</a></li>
+                    <li><button type="button" class="dropdown-item text-danger post-delete-btn" data-delete-url="{{ url_for('social.delete_post', post_id=post.id) }}">{{ icon('trash-2', 16) }} {{ _('Delete') }}</button></li>
+                    {% elif current_user.is_authenticated %}
+                    <li><a class="dropdown-item" href="{{ url_for('social.report', target_type='post', target_id=post.id) }}">{{ icon('flag', 16) }} {{ _('Report') }}</a></li>
+                    <li><button type="button" class="dropdown-item post-mute-btn" data-mute-url="{{ url_for('social.block_user', user_id=post.author_id) }}?kind=mute" data-author-name="{{ author_name }}">{{ icon('volume-x', 16) }} {{ _('Mute author') }}</button></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="post-chips">
+            <span class="post-type-chip {{ 'chip-need' if post.is_need else ('chip-win' if post.post_type == 'win' else ('chip-ask' if post.post_type == 'ask' else '')) }}">{{ post.type_label }}</span>
+            {% if post.space %}
+            <a href="{{ url_for('social.space_detail', slug=post.space.slug) }}" class="post-type-chip chip-space">{{ icon('layers', 12) }} {{ post.space.name }}</a>
+            {% endif %}
+            {% if post.bounty %}
+            <span class="post-type-chip">{{ post.bounty.type_label }}{% if post.bounty.category_label %} &middot; {{ post.bounty.category_label }}{% endif %}</span>
+            {% endif %}
+            {% if post.post_type == 'need_free' %}
+            <span class="post-type-chip">{{ _('Community referral — no bounty') }}</span>
+            {% endif %}
+            {% if post.is_bumped %}
+            <span class="post-type-chip chip-bumped" title="{{ _('Promoted — the author paid to push this post back to the top of the feed for 24 hours (a bump)') }}">{{ _('Promoted') }}</span>
+            {% endif %}
+            {% if post.is_boosted %}
+            <span class="post-type-chip chip-boosted" title="{{ _('Promoted — the author paid for extra Discover visibility (a boost)') }}">{{ _('Promoted') }}</span>
+            {% endif %}
+        </div>
+
+        <p class="post-body" data-clamp>{{ post.body | mention_links }}</p>
+        <button type="button" class="post-see-more" hidden>{{ _('See more') }}</button>
+
+        {% include 'social/_poll.html' %}
+
+        {% if post.photo_url %}
+        <img src="{{ post.photo_url }}" alt="{{ _('Post photo') }}" class="post-photo">
+        {% endif %}
+
+        {% if post.bounty %}
+        <div class="bounty-nested">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                <a href="{{ url_for('bounties.detail', id=post.bounty.id, share_id=share.id) if share else url_for('bounties.detail', id=post.bounty.id) }}" class="bounty-nested-title">{{ post.bounty.title }}</a>
+                {% if post.bounty.reward_amount and post.bounty.reward_amount > 0 %}
+                <span class="bounty-nested-reward">${{ "{:,.0f}".format(post.bounty.reward_amount) }}</span>
+                {% elif post.bounty.is_free_bounty %}
+                <span class="bounty-nested-reward">{{ _('Free') }}</span>
+                {% endif %}
+            </div>
+            {% if post.bounty.location %}
+            <div class="text-muted small mt-1">{{ icon('map-pin', 14) }} {{ post.bounty.location }}</div>
+            {% endif %}
+            {% if has_active_pledge(post.bounty.poster_id) %}
+            <div class="mt-1"><span class="badge bg-primary" title="{{ _('Pledged human-reviewed hiring — no AI screening, human response within 5 business days') }}">{{ icon('shield-check', 12) }} {{ _('Pledged') }}</span></div>
+            {% endif %}
+            {% set bounty = post.bounty %}
+            {% set compact = true %}
+            {% include 'partials/stage_rewards.html' %}
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+                <a href="{{ url_for('bounties.detail', id=post.bounty.id, share_id=share.id) if share else url_for('bounties.detail', id=post.bounty.id) }}" class="btn btn-sm btn-outline-primary">{{ _('View opportunity') }}</a>
+                {% if post.bounty.status == 'open' and post.bounty.is_publicly_visible and current_user.is_authenticated and current_user.id != post.bounty.poster_id %}
+                <a href="{{ url_for('referrals.new_referral', bounty_id=post.bounty.id, share_id=share.id) if share else url_for('referrals.new_referral', bounty_id=post.bounty.id) }}" class="btn btn-sm btn-primary">{{ _('Refer someone') }}</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if post.bounty and post.bounty.payment_status == 'unsecured' and post.bounty.reward_amount and post.bounty.reward_amount > 0 %}
+        <div class="alert alert-warning py-1 px-2 small mb-2">
+            {{ _('Payment pending — referrals open once the poster secures payment.') }}
+        </div>
+        {% endif %}
+
+        <div class="post-counts">
+            <span data-like-count>{{ ngettext('%(num)s like', '%(num)s likes', post.like_count) }}</span>
+            <span data-comment-count>{{ ngettext('%(num)s comment', '%(num)s comments', post.comment_count) }}</span>
+            <span>{{ ngettext('%(num)s view', '%(num)s views', post.view_count or 0) }}</span>
+        </div>
+
+        <div class="post-actions">
+            <button type="button" class="post-action post-like-btn {{ 'is-active' if post.id in liked_ids }}" data-like-url="{{ url_for('social.like_post', post_id=post.id) }}" data-liked="{{ '1' if post.id in liked_ids else '0' }}" aria-label="{{ _('Like') }}">
+                {{ icon('heart', 18) }} <span class="action-label">{{ _('Like') }}</span> <span class="action-count">{{ post.like_count }}</span>
+            </button>
+            <button type="button" class="post-action post-comment-btn" data-comments-url="{{ url_for('social.post_comments', post_id=post.id) }}" data-detail-url="{{ url_for('social.post_detail', post_id=post.id) }}" aria-label="{{ _('Comment') }}">
+                {{ icon('message-circle', 18) }} <span class="action-label">{{ _('Comment') }}</span> <span class="action-count">{{ post.comment_count }}</span>
+            </button>
+            <button type="button" class="post-action post-share-btn {{ 'is-active' if post.id in shared_ids }}" data-bs-toggle="collapse" data-bs-target="#share-{{ post.id }}" aria-expanded="false" aria-label="{{ _('Share') }}">
+                {{ icon('share-2', 18) }} <span class="action-label">{{ _('Share') }}</span> <span class="action-count">{{ post.share_count }}</span>
+            </button>
+            <button type="button" class="post-action post-save-btn {{ 'is-active' if post.id in saved_ids }}" data-save-url="{{ url_for('social.save_post', post_id=post.id) }}" data-saved="{{ '1' if post.id in saved_ids else '0' }}" aria-label="{{ _('Save') }}">
+                {{ icon('bookmark', 18) }} <span class="action-label">{{ _('Save') }}</span>
+            </button>
+        </div>
+
+        <div class="collapse mt-2" id="share-{{ post.id }}">
+            <form class="post-share-form" data-share-url="{{ url_for('social.share_post', post_id=post.id) }}">
+                {{ share_form.hidden_tag() }}
+                <div class="input-group">
+                    {{ share_form.comment(class="form-control", placeholder=_("Add a comment (optional)")) }}
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Share') }}</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="post-comments-inline" id="comments-{{ post.id }}">
+            <div class="post-comments-list"></div>
+            {% if current_user.is_authenticated %}
+            <form class="post-comment-form d-flex gap-2 align-items-start mt-1" data-comment-url="{{ url_for('social.comment_post', post_id=post.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="body" class="form-control form-control-sm" placeholder="{{ _('Write a comment...') }}" required maxlength="1000" autocomplete="off">
+                <button type="submit" class="btn btn-sm btn-primary flex-shrink-0">{{ _('Post') }}</button>
+            </form>
+            {% else %}
+            <p class="small text-muted mb-0"><a href="{{ url_for('auth.login') }}">{{ _('Log in') }}</a> {{ _('to comment.') }}</p>
+            {% endif %}
+            <a href="{{ url_for('social.post_detail', post_id=post.id) }}" class="btn btn-sm btn-link p-0 mt-2 post-view-thread">{{ _('View all comments') }}</a>
         </div>
     </div>
-</div>
+</article>

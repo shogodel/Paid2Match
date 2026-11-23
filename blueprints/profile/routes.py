@@ -2,6 +2,7 @@
 import os
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
+from sqlalchemy import desc
 from werkzeug.utils import secure_filename
 from extensions import db, get_or_404
 from models.user import User
@@ -11,6 +12,7 @@ from models.follow import Follow
 from models.pitch import Pitch
 from models.match import Match
 from models.dispute import Dispute
+from models.post import Post
 from models.endorsement import Pledge
 from models.linked_account import (
     OAUTH_PLATFORMS,
@@ -164,6 +166,41 @@ def view():
         user_id=current_user.id, status='pending'
     ).first()
     open_breaches = [b for b in sla_breaches(current_user.id) if b['open']]
+    # Phase 1 profile header: tappable stats, trust row, and a Posts
+    # tab rendered with the shared post-card component.
+    from blueprints.social.forms import ShareForm
+    from blueprints.social.routes import (
+        _author_levels, _author_profiles, _liked_and_shared_ids,
+        _poll_votes, _saved_ids,
+    )
+    followers_count = Follow.query.filter_by(
+        followed_id=current_user.id).count()
+    following_count = Follow.query.filter_by(
+        follower_id=current_user.id).count()
+    posts = Post.query.filter_by(
+        author_id=current_user.id, is_hidden=False
+    ).order_by(desc(Post.created_at)).limit(20).all()
+    liked_ids, shared_ids = _liked_and_shared_ids([p.id for p in posts])
+    saved_ids = _saved_ids([p.id for p in posts])
+    poll_votes = _poll_votes([p.id for p in posts])
+    pledge = Pledge.query.filter_by(user_id=current_user.id).first()
+    # Phase 3 trust visibility: vouches (endorsements + endorser
+    # avatars), the verification tier badge, and portable reputation
+    # metrics — all surfaced from existing data.
+    from utils.reputation import reputation_metrics
+    from utils.verification_tiers import verification_tier
+    endorsements = endorsements_for(current_user.id)
+    endorser_ids = {e.endorser_id for e in endorsements}
+    endorser_profiles = {
+        p.user_id: p
+        for p in Profile.query.filter(
+            Profile.user_id.in_(endorser_ids)
+        ).all()
+    } if endorser_ids else {}
+    # Phase 3 hiring strip: the user's open referral needs (max 3).
+    open_needs = Bounty.query.filter_by(
+        poster_id=current_user.id, status='open'
+    ).order_by(desc(Bounty.created_at)).limit(3).all()
 
     return render_template('profile/view.html',
                         profile=profile,
@@ -175,7 +212,26 @@ def view():
                         trust_level=level,
                         trust_score=trust_score,
                         verification_request=verification_request,
-                        open_breaches=open_breaches)
+                        open_breaches=open_breaches,
+                        followers_count=followers_count,
+                        following_count=following_count,
+                        posts=posts,
+                        liked_ids=liked_ids,
+                        shared_ids=shared_ids,
+                        saved_ids=saved_ids,
+                        poll_votes=poll_votes,
+                        author_levels=_author_levels(posts),
+                        author_profiles=_author_profiles(posts),
+                        share_form=ShareForm(),
+                        pledge=pledge,
+                        endorsements=endorsements,
+                        endorser_profiles=endorser_profiles,
+                        verification_tier=verification_tier(current_user),
+                        reputation_metrics=reputation_metrics(
+                            current_user.id),
+                        open_needs=open_needs,
+                        verified_linked_count=verified_linked_count(
+                            current_user.id))
 
 
 @profile_bp.route('/verify-request', methods=['POST'])
@@ -242,6 +298,33 @@ def public_profile(user_id):
     linked_accounts = visible_linked_accounts(user_id, viewer_id)
     verified_elsewhere = verified_linked_count(user_id) >= 2
     pledge = Pledge.query.filter_by(user_id=user_id, status='active').first()
+    # Phase 3 trust visibility: endorser avatars for the vouch graph,
+    # the verification tier badge, and portable reputation metrics.
+    from utils.reputation import reputation_metrics
+    from utils.verification_tiers import verification_tier
+    endorser_ids = {e.endorser_id for e in endorsements}
+    endorser_profiles = {
+        p.user_id: p
+        for p in Profile.query.filter(
+            Profile.user_id.in_(endorser_ids)
+        ).all()
+    } if endorser_ids else {}
+    # Phase 3 hiring strip: the user's open referral needs (max 3).
+    open_needs = Bounty.query.filter_by(
+        poster_id=user_id, status='open'
+    ).order_by(desc(Bounty.created_at)).limit(3).all()
+    # Phase 1: the Posts tab renders the shared post-card component.
+    from blueprints.social.forms import ShareForm
+    from blueprints.social.routes import (
+        _author_levels, _author_profiles, _liked_and_shared_ids,
+        _poll_votes, _saved_ids,
+    )
+    posts = Post.query.filter_by(
+        author_id=user_id, is_hidden=False
+    ).order_by(desc(Post.created_at)).limit(20).all()
+    liked_ids, shared_ids = _liked_and_shared_ids([p.id for p in posts])
+    saved_ids = _saved_ids([p.id for p in posts])
+    poll_votes = _poll_votes([p.id for p in posts])
 
     return render_template('profile/public.html',
                         user=user, profile=profile,
@@ -258,10 +341,22 @@ def public_profile(user_id):
                         ratings_avg=ratings_avg,
                         ratings_count=ratings_count,
                         endorsements=endorsements,
+                        endorser_profiles=endorser_profiles,
+                        verification_tier=verification_tier(user),
+                        reputation_metrics=reputation_metrics(user_id),
+                        open_needs=open_needs,
                         linked_accounts=linked_accounts,
                         verified_elsewhere=verified_elsewhere,
                         pledge=pledge,
-                        endorse_form=EndorseForm())
+                        endorse_form=EndorseForm(),
+                        posts=posts,
+                        liked_ids=liked_ids,
+                        shared_ids=shared_ids,
+                        saved_ids=saved_ids,
+                        poll_votes=poll_votes,
+                        author_levels=_author_levels(posts),
+                        author_profiles=_author_profiles(posts),
+                        share_form=ShareForm())
 
 
 # ---------------------------------------------------------------------------

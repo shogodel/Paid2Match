@@ -32,6 +32,9 @@ class Notification(db.Model):
         # linked-account decisions, pledge revocation.
         'dispute_resolved', 'endorsement',
         'linked_verified', 'linked_rejected', 'pledge_revoked',
+        # Phase 2: @mentions, and new posts in a space you follow
+        # (members with notification level 'all' only).
+        'mention', 'space_post',
     ]
     # Types that also send an email to the recipient.
     EMAIL_TYPES = {

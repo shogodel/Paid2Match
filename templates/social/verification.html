@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('Verification') }} — {{ _('Paid2Match') }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-3">{{ _('Verification') }}</h2>
+            <p class="text-muted">{{ _('One badge, three tiers. Verification is free, and every tier is built from things you already do on Paid2Match — there is no phone check and no paid upgrade.') }}</p>
+
+            {% if my_tier %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-1">{{ _('Your verification') }}</h5>
+                    {% if my_tier[0] > 0 %}
+                    <p class="mb-1">
+                        {% set tier_info = my_tier %}
+                        {% include 'partials/verification_badge.html' %}
+                        <span class="text-muted small ms-1">{{ _('Tier %(tier)s of 3', tier=my_tier[0]) }}</span>
+                    </p>
+                    {% else %}
+                    <p class="mb-1"><span class="text-muted">{{ _('Not verified yet') }}</span></p>
+                    {% endif %}
+                    {% if next_step %}
+                    <p class="mb-0"><strong>{{ _('Your next step:') }}</strong> {{ next_step }}</p>
+                    {% else %}
+                    <p class="mb-0 text-muted">{{ _('You are fully verified — nothing left to do.') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="verification-tiers">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>{{ icon('mail', 18) }} {{ _('Tier 1 — Email verified') }}</h5>
+                        <p class="mb-1">{{ _('You confirmed the email address on your account. This is the first step for every member.') }}</p>
+                        <p class="text-muted small mb-0">{{ _('How to get it: click the confirmation link we sent when you signed up. Lost it? Ask for a new one from your account settings.') }}</p>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>{{ icon('badge-check', 18) }} {{ _('Tier 2 — Verified') }}</h5>
+                        <p class="mb-1">{{ _('On top of email, at least one of these is true: you linked a social account (LinkedIn or GitHub) and we verified it, an admin verified your profile, or you passed the Stripe identity check.') }}</p>
+                        <p class="text-muted small mb-0">{{ _('How to get it: link an account from your profile, or request admin verification from your profile page.') }}</p>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>{{ icon('shield-check', 18) }} {{ _('Tier 3 — Fully verified') }}</h5>
+                        <p class="mb-1">{{ _('Everything in Tier 2, plus the Stripe identity check (KYC) — the same check that lets you receive payouts.') }}</p>
+                        <p class="text-muted small mb-0">{{ _('How to get it: complete the identity check from your payout settings. It also unlocks receiving referral rewards.') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-muted small">{{ _('Verification says who you are, not how good you are. Trust — the score next to your name — is earned separately, by referring people well and answering referrals on time.') }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

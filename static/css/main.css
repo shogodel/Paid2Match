@@ -1,33 +1,127 @@
-/* Main styles - consolidated.
-   Canadian brand system: Canada red is the primary accent / CTA colour,
-   the logo's teal is the structural dark colour, white is the base.
-   The platform is global; the brand is proudly Canadian. */
-:root {
-    --canada-red: #D80621;
-    --canada-red-dark: #A80418;
-    --logo-teal: #155A69;
-    --teal-dark: #0E3F4A;
-    --teal-darker: #0A2E36;
-    --gold: #D0A92C;
-    --primary-color: #D80621;
-    --primary-dark: #A80418;
-    --secondary-color: #155A69;
-    --dark-color: #0E3F4A;
-    --light-color: #f8f9fa;
-    --text-dark: #1D3557;
-    --text-muted: #6C757D;
-    --bg-light: #F8F9FA;
-    --border-color: #DEE2E6;
-    --success: #10B981;
-    --danger: #EF4444;
-    --warning: #F59E0B;
-    /* Bootstrap 5.3 brand overrides — retire the default blue. */
-    --bs-primary: #D80621;
-    --bs-primary-rgb: 216, 6, 33;
-    --bs-link-color: #155A69;
-    --bs-link-color-rgb: 21, 90, 105;
-    --bs-link-hover-color: #0E3F4A;
-    --bs-link-hover-color-rgb: 14, 63, 74;
+/* Paid2Match — design system (Phase 1, 2026-11-22).
+   "Warm Human" palette (plan §3.1): terracotta primary, warm gold
+   accent, warm paper / warm near-black surfaces. One theme mechanism
+   only: Bootstrap 5.3 native color modes via data-bs-theme on <html>,
+   driven by the p2m-theme localStorage key (see main.js). All custom
+   CSS consumes the --p2m-* tokens below — no raw hex for backgrounds,
+   text, or borders outside the token definitions, or dark mode breaks.
+   Shadows are warm-tinted; radius scale: cards 16px, buttons 10px,
+   pills full. Motion tokens in §12. */
+
+:root,
+[data-bs-theme="light"] {
+    color-scheme: light;
+    /* -- Warm Human tokens (light) -- */
+    --p2m-primary: #D9481C;
+    --p2m-primary-hover: #B93A14;
+    --p2m-primary-soft: #FDEEE8;
+    --p2m-primary-rgb: 217, 72, 28;
+    /* Text/icons on a primary-filled surface: white on the light-mode
+       terracotta, dark ink on the lighter dark-mode terracotta (white
+       on #F26B4A fails contrast). */
+    --p2m-on-primary: #FFFFFF;
+    --p2m-accent: #D9A441;
+    --p2m-accent-soft: #FBF3E2;
+    --p2m-secondary: #3E5C50;
+    --p2m-bg: #FAF7F4;
+    --p2m-surface: #FFFFFF;
+    --p2m-surface-raised: #F3EFEA;
+    --p2m-border: #E8E0D8;
+    --p2m-text: #201A17;
+    --p2m-text-secondary: #6E6259;
+    --p2m-text-muted: #9A8D83;
+    --p2m-success: #15803D;
+    --p2m-success-soft: #E8F7EC;
+    --p2m-warning: #B45309;
+    --p2m-warning-soft: #FFF7E6;
+    --p2m-error: #DC2626;
+    --p2m-error-soft: #FDECEC;
+    --p2m-info: #0369A1;
+    --p2m-info-soft: #E8F3FA;
+    --p2m-focus-ring: rgba(217, 72, 28, 0.25);
+    --p2m-footer-bg: #241F1B;
+    --p2m-footer-text: rgba(255, 255, 255, 0.82);
+    --p2m-footer-muted: rgba(255, 255, 255, 0.55);
+    --p2m-shadow-1: 0 1px 2px rgba(32, 26, 23, 0.05), 0 1px 3px rgba(32, 26, 23, 0.06);
+    --p2m-shadow-2: 0 4px 12px rgba(32, 26, 23, 0.08), 0 2px 4px rgba(32, 26, 23, 0.05);
+    --p2m-shadow-3: 0 8px 24px rgba(32, 26, 23, 0.12), 0 2px 8px rgba(32, 26, 23, 0.08);
+    --p2m-shadow-4: 0 16px 48px rgba(32, 26, 23, 0.18), 0 4px 16px rgba(32, 26, 23, 0.10);
+    /* -- Bridge into Bootstrap so its components follow the palette -- */
+    --bs-body-bg: var(--p2m-bg);
+    --bs-body-color: var(--p2m-text);
+    --bs-border-color: var(--p2m-border);
+    --bs-secondary-color: var(--p2m-text-secondary);
+    --bs-tertiary-color: var(--p2m-text-muted);
+    --bs-primary: var(--p2m-primary);
+    --bs-primary-rgb: var(--p2m-primary-rgb);
+    --bs-link-color: var(--p2m-primary);
+    --bs-link-color-rgb: var(--p2m-primary-rgb);
+    --bs-link-hover-color: var(--p2m-primary-hover);
+    --bs-link-hover-color-rgb: 185, 58, 20;
+    --bs-success: var(--p2m-success);
+    --bs-success-rgb: 21, 128, 61;
+    --bs-warning: var(--p2m-warning);
+    --bs-warning-rgb: 180, 83, 9;
+    --bs-danger: var(--p2m-error);
+    --bs-danger-rgb: 220, 38, 38;
+    --bs-info: var(--p2m-info);
+    --bs-info-rgb: 3, 105, 161;
+}
+
+[data-bs-theme="dark"] {
+    color-scheme: dark;
+    /* -- Warm Human tokens (dark) -- */
+    --p2m-primary: #F26B4A;
+    --p2m-primary-hover: #D9481C;
+    --p2m-primary-soft: rgba(242, 107, 74, 0.14);
+    --p2m-primary-rgb: 242, 107, 74;
+    --p2m-on-primary: #221410;
+    --p2m-accent: #E4B95C;
+    --p2m-accent-soft: rgba(228, 185, 92, 0.14);
+    --p2m-secondary: #7FA393;
+    --p2m-bg: #171412;
+    --p2m-surface: #221E1B;
+    --p2m-surface-raised: #2C2723;
+    --p2m-border: #3A332E;
+    --p2m-text: #F2EDE8;
+    --p2m-text-secondary: #B4A99E;
+    --p2m-text-muted: #857A70;
+    --p2m-success: #4ADE80;
+    --p2m-success-soft: rgba(74, 222, 128, 0.12);
+    --p2m-warning: #FBBF24;
+    --p2m-warning-soft: rgba(251, 191, 36, 0.12);
+    --p2m-error: #F87171;
+    --p2m-error-soft: rgba(248, 113, 113, 0.12);
+    --p2m-info: #38BDF8;
+    --p2m-info-soft: rgba(56, 189, 248, 0.12);
+    --p2m-focus-ring: rgba(242, 107, 74, 0.35);
+    --p2m-footer-bg: #120F0D;
+    --p2m-footer-text: rgba(255, 255, 255, 0.82);
+    --p2m-footer-muted: rgba(255, 255, 255, 0.55);
+    --p2m-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --p2m-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.25);
+    --p2m-shadow-3: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.30);
+    --p2m-shadow-4: 0 16px 48px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
+    /* -- Bootstrap bridges (dark) -- */
+    --bs-body-bg: var(--p2m-bg);
+    --bs-body-color: var(--p2m-text);
+    --bs-border-color: var(--p2m-border);
+    --bs-secondary-color: var(--p2m-text-secondary);
+    --bs-tertiary-color: var(--p2m-text-muted);
+    --bs-primary: var(--p2m-primary);
+    --bs-primary-rgb: var(--p2m-primary-rgb);
+    --bs-link-color: var(--p2m-primary);
+    --bs-link-color-rgb: var(--p2m-primary-rgb);
+    --bs-link-hover-color: #FF8A6B;
+    --bs-link-hover-color-rgb: 255, 138, 107;
+    --bs-success: var(--p2m-success);
+    --bs-success-rgb: 74, 222, 128;
+    --bs-warning: var(--p2m-warning);
+    --bs-warning-rgb: 251, 191, 36;
+    --bs-danger: var(--p2m-error);
+    --bs-danger-rgb: 248, 113, 113;
+    --bs-info: var(--p2m-info);
+    --bs-info-rgb: 56, 189, 248;
 }
 
 * {
@@ -36,10 +130,17 @@
     box-sizing: border-box;
 }
 
+/* No horizontal scrolling, ever: closed dropdown menus stay in the layout
+   (display:block + visibility:hidden, so the fade/rise transition can run),
+   and their boxes would otherwise inflate the page's scroll width and stretch
+   the fixed mobile tab bar. `clip` (unlike `hidden`) creates no scroll
+   container, so position:sticky elements keep working. */
+html, body { overflow-x: clip; }
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: var(--text-dark);
-    background-color: var(--bg-light);
+    color: var(--p2m-text);
+    background-color: var(--p2m-bg);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -53,7 +154,36 @@ body {
 
 main { flex: 1; }
 
-/* FORM INPUTS - CRITICAL: Always visible and readable */
+/* Type scale (plan §3.2): display 40/44, H1 32/36, H2 24/30, H3 18/24,
+   body 15/24, small 13/20, caption 12/16. */
+h1 { font-size: 2rem; line-height: 2.25rem; font-weight: 700; }
+h2 { font-size: 1.5rem; line-height: 1.875rem; font-weight: 700; }
+h3 { font-size: 1.125rem; line-height: 1.5rem; font-weight: 600; }
+body { font-size: 0.9375rem; line-height: 1.5rem; }
+
+.text-brand { color: var(--p2m-primary) !important; }
+.text-accent { color: var(--p2m-accent) !important; }
+
+/* Lucide icons (inline SVG via the icon() macro): decorative by default,
+   sized by the macro's width/height attributes. Stroke icons inherit the
+   current text colour through the <use> shadow tree. */
+.lucide-icon {
+    vertical-align: -3px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Maple leaf mark — sits on the text baseline. Only two leaves survive
+   on the site: the 12px footer leaf and the 24px pledge-band ornament. */
+.maple-leaf { vertical-align: -2px; flex: none; }
+
+/* ---------------- Forms ----------------
+   Inputs stay readable in both themes: token-driven, not hardcoded
+   #FFFFFF / #333333 (those produced white boxes in dark mode). */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -64,13 +194,25 @@ input[type="search"],
 textarea,
 select,
 .form-control {
-    color: #333333 !important;
-    background-color: #FFFFFF !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 6px !important;
+    color: var(--p2m-text) !important;
+    background-color: var(--p2m-surface) !important;
+    border: 1px solid var(--p2m-border) !important;
+    border-radius: 10px !important;
     padding: 0.625rem 0.75rem !important;
     font-size: 1rem !important;
     width: 100% !important;
+}
+
+/* Inside an input-group the control must share the row with its button:
+   the 100% width above would wrap the button onto its own line. */
+.input-group > .form-control {
+    width: 1% !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+.input-group > .btn {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
 }
 
 input[type="text"]:focus,
@@ -83,15 +225,13 @@ input[type="search"]:focus,
 textarea:focus,
 select:focus,
 .form-control:focus {
-    border-color: var(--primary-color) !important;
+    border-color: var(--p2m-primary) !important;
     outline: none !important;
-    box-shadow: 0 0 0 3px rgba(216, 6, 33, 0.15) !important;
+    box-shadow: 0 0 0 3px var(--p2m-focus-ring) !important;
 }
 
-/* PASSWORD FIELDS - VISIBLE TEXT */
+/* Password fields — visible text, disc masking. */
 input[type="password"] {
-    color: #333333 !important;
-    background-color: #FFFFFF !important;
     -webkit-text-security: disc !important;
     text-security: disc !important;
     letter-spacing: 2px !important;
@@ -103,272 +243,1034 @@ input[type="password"]::placeholder {
     text-security: none !important;
 }
 
-body.dark-mode input[type="password"],
-.dark-mode input[type="password"] {
-    color: #CCCCCC !important;
-    background-color: #2D3748 !important;
-}
-
 /* Placeholder styling */
 ::placeholder {
-    color: #999999 !important;
+    color: var(--p2m-text-muted) !important;
     opacity: 1 !important;
 }
 
 .form-label {
     font-weight: 500;
     margin-bottom: 0.375rem;
-    color: var(--text-dark);
+    color: var(--p2m-text);
 }
 
-.invalid-feedback { color: var(--danger); font-size: 0.875rem; }
+.invalid-feedback { color: var(--p2m-error); font-size: 0.875rem; }
 
-/* Navbar — dark teal to match the logo's background, so the square
-   logo tile sits seamlessly in the bar. */
-.navbar {
-    background-color: #FFFFFF;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    padding: 0.75rem 0;
+
+/* ---------------- Navbar ----------------
+   Light surface bar (no more dark teal slab — the transparent logo
+   unblocked it). Sticky. 32px mark + live-text wordmark. */
+.navbar-p2m {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background-color: var(--p2m-surface);
+    border-bottom: 1px solid var(--p2m-border);
+    box-shadow: var(--p2m-shadow-1);
+    padding: 0.5rem 0;
 }
 
-.navbar-ca {
-    background-color: var(--teal-dark);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-}
-
-.brand-logo {
-    width: 38px;
-    height: 38px;
-    border-radius: 9px;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
-    object-fit: cover;
-}
-
-.navbar-brand {
+.navbar-p2m .navbar-brand {
     font-weight: 700;
-    font-size: 1.25rem;
-    color: var(--primary-color) !important;
+    font-size: 1.1875rem;
+    letter-spacing: -0.02em;
+    color: var(--p2m-text) !important;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     text-decoration: none !important;
+    padding: 0;
 }
 
-.navbar-ca .navbar-brand { color: #FFFFFF !important; }
-.navbar-ca .navbar-brand:hover { color: rgba(255,255,255,0.85) !important; }
-.navbar-brand:hover { color: var(--primary-dark) !important; }
+.navbar-p2m .navbar-brand:hover { color: var(--p2m-text) !important; }
 
-.nav-link {
-    color: var(--text-dark) !important;
+.brand-mark {
+    width: 32px;
+    height: 32px;
+    flex: none;
+}
+
+.brand-wordmark .brand-2 { color: var(--p2m-primary); }
+
+.navbar-p2m .brand-mark { color: var(--p2m-primary); }
+
+/* Theme toggle: the sun shows in dark mode, the moon in light mode
+   (the icon previews what you switch TO). Pure CSS — no JS swap. */
+.theme-icon-sun { display: none; }
+[data-bs-theme="dark"] .theme-icon-sun { display: inline; }
+[data-bs-theme="dark"] .theme-icon-moon { display: none; }
+
+/* Appearance menu: the check shows only on the current choice. */
+.theme-check { visibility: hidden; color: var(--p2m-primary); }
+.theme-check.is-current { visibility: visible; }
+
+.navbar-p2m .nav-link {
+    color: var(--p2m-text-secondary) !important;
     font-weight: 500;
-    padding: 0.5rem 1rem !important;
-    border-radius: 6px;
-    transition: all 0.2s;
+    font-size: 0.9375rem;
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    transition: color 120ms ease-out, background-color 120ms ease-out;
 }
 
-.navbar-ca .nav-link { color: rgba(255,255,255,0.88) !important; }
-
-.nav-link:hover {
-    background-color: var(--bg-light);
-    color: var(--primary-color) !important;
+.navbar-p2m .nav-link:hover,
+.navbar-p2m .nav-link.active {
+    background-color: var(--p2m-surface-raised);
+    color: var(--p2m-text) !important;
 }
 
-.navbar-ca .nav-link:hover {
-    background-color: rgba(255,255,255,0.12);
-    color: #FFFFFF !important;
+.navbar-p2m .nav-link.active { color: var(--p2m-primary) !important; }
+
+/* Icon-only round buttons in the nav (bell, messages, theme, globe). */
+.nav-icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--p2m-text-secondary);
+    text-decoration: none;
+    transition: background-color 120ms ease-out, color 120ms ease-out;
 }
 
-.navbar-ca .dropdown-menu { border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+.nav-icon-btn:hover,
+.nav-icon-btn:focus-visible {
+    background-color: var(--p2m-surface-raised);
+    color: var(--p2m-text);
+}
 
-/* Maple leaf mark — sits on the text baseline. */
-.maple-leaf { vertical-align: -2px; flex: none; }
+.nav-icon-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--p2m-focus-ring);
+}
 
-.text-canada-red { color: var(--canada-red) !important; }
-.text-teal { color: var(--logo-teal) !important; }
+/* Notification count badge: primary, 10px, caps at 99+. */
+.nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background-color: var(--p2m-primary);
+    color: var(--p2m-on-primary);
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    border: 2px solid var(--p2m-surface);
+}
 
-.btn-outline-teal {
-    color: var(--logo-teal);
-    border: 2px solid var(--logo-teal);
-    background-color: transparent;
+.nav-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--p2m-border);
+    background: var(--p2m-surface-raised);
+}
+
+.nav-avatar-btn {
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+}
+
+.nav-avatar-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--p2m-focus-ring);
+}
+
+.navbar-p2m .dropdown-menu {
+    border: 1px solid var(--p2m-border);
+    border-radius: 12px;
+    box-shadow: var(--p2m-shadow-3);
+    background-color: var(--p2m-surface);
+    padding: 0.5rem;
+    min-width: 220px;
+}
+
+.navbar-p2m .dropdown-item {
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+    color: var(--p2m-text);
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.navbar-p2m .dropdown-item:hover,
+.navbar-p2m .dropdown-item:focus {
+    background-color: var(--p2m-surface-raised);
+    color: var(--p2m-text);
+}
+
+.navbar-p2m .dropdown-item.active,
+.navbar-p2m .dropdown-item:active {
+    background-color: var(--p2m-primary-soft);
+    color: var(--p2m-primary);
+}
+
+.navbar-p2m .dropdown-divider { border-color: var(--p2m-border); }
+
+.navbar-p2m .dropdown-header {
+    font-size: 0.75rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--p2m-text-muted);
+    padding: 0.5rem 0.75rem 0.25rem;
 }
-.btn-outline-teal:hover {
-    color: #FFFFFF;
-    background-color: var(--logo-teal);
-    border-color: var(--logo-teal);
+
+.navbar-toggler {
+    border: 1px solid var(--p2m-border);
+    padding: 0.25rem 0.5rem;
+    color: var(--p2m-text);
 }
+.navbar-toggler:focus { box-shadow: 0 0 0 3px var(--p2m-focus-ring); }
+.navbar-p2m .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23201A17' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+[data-bs-theme="dark"] .navbar-p2m .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23F2EDE8' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* ---------------- Mobile bottom tab bar ----------------
+   The primary mobile navigation (Feed / Discover / Post / Notifications /
+   Profile). Replaces the hamburger on small screens. */
+.bottom-tabbar {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .bottom-tabbar {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1030;
+        height: 60px;
+        padding-bottom: env(safe-area-inset-bottom);
+        background-color: var(--p2m-surface);
+        border-top: 1px solid var(--p2m-border);
+        box-shadow: 0 -2px 12px rgba(32, 26, 23, 0.08);
+    }
+
+    body { padding-bottom: 60px; }
+
+    .bottom-tabbar .tab-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: var(--p2m-text-muted);
+        text-decoration: none;
+        font-size: 0.625rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        position: relative;
+        min-height: 44px;
+    }
+
+    .bottom-tabbar .tab-item.active { color: var(--p2m-primary); }
+
+    .bottom-tabbar .tab-item .tab-badge {
+        position: absolute;
+        top: 6px;
+        right: calc(50% - 20px);
+        min-width: 16px;
+        height: 16px;
+        padding: 0 3px;
+        border-radius: 999px;
+        background-color: var(--p2m-primary);
+        color: var(--p2m-on-primary);
+        font-size: 0.5625rem;
+        font-weight: 700;
+        line-height: 16px;
+        text-align: center;
+    }
+
+    .bottom-tabbar .tab-post {
+        color: var(--p2m-primary);
+    }
+
+    .bottom-tabbar .tab-post .tab-post-btn {
+        width: 44px;
+        height: 44px;
+        margin-top: -22px;
+        border-radius: 50%;
+        background-color: var(--p2m-primary);
+        color: var(--p2m-on-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--p2m-shadow-3);
+        border: 3px solid var(--p2m-surface);
+    }
+}
+
+/* ---------------- Buttons ---------------- */
+.btn {
+    border-radius: 10px;
+    font-weight: 600;
+    transition: background-color 120ms ease-out, border-color 120ms ease-out,
+        color 120ms ease-out, transform 80ms ease-out, box-shadow 120ms ease-out;
+}
+
+.btn:active { transform: scale(0.98); }
 
 .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background-color: var(--p2m-primary);
+    border-color: var(--p2m-primary);
+    color: var(--p2m-on-primary);
 }
 
-.btn-primary:hover {
-    background-color: var(--primary-dark);
-    border-color: var(--primary-dark);
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--p2m-primary-hover);
+    border-color: var(--p2m-primary-hover);
+    color: var(--p2m-on-primary);
+}
+
+.btn-primary:focus-visible {
+    box-shadow: 0 0 0 3px var(--p2m-focus-ring);
 }
 
 /* Bootstrap 5.3 compiles button-variant colours as static hex, so the
    --bs-primary override above does not reach them — override explicitly. */
 .btn-outline-primary {
-    color: var(--canada-red);
-    border-color: var(--canada-red);
+    color: var(--p2m-primary);
+    border-color: var(--p2m-primary);
 }
 
 .btn-outline-primary:hover,
 .btn-outline-primary:focus,
 .btn-outline-primary:active {
-    color: #FFFFFF;
-    background-color: var(--canada-red);
-    border-color: var(--canada-red);
+    color: var(--p2m-on-primary);
+    background-color: var(--p2m-primary);
+    border-color: var(--p2m-primary);
+}
+
+.btn-outline-secondary {
+    color: var(--p2m-text-secondary);
+    border-color: var(--p2m-border);
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:active {
+    color: var(--p2m-text);
+    background-color: var(--p2m-surface-raised);
+    border-color: var(--p2m-border);
 }
 
 /* Other Bootstrap components with hardcoded #0d6efd in 5.3. */
 .form-check-input:checked {
-    background-color: var(--canada-red);
-    border-color: var(--canada-red);
+    background-color: var(--p2m-primary);
+    border-color: var(--p2m-primary);
 }
 .form-check-input:focus {
-    border-color: var(--canada-red);
-    box-shadow: 0 0 0 0.25rem rgba(216, 6, 33, 0.25);
+    border-color: var(--p2m-primary);
+    box-shadow: 0 0 0 0.25rem var(--p2m-focus-ring);
 }
-.nav-pills { --bs-nav-pills-link-active-bg: var(--canada-red); }
+.nav-pills { --bs-nav-pills-link-active-bg: var(--p2m-primary); }
 .list-group-item.active {
-    background-color: var(--canada-red);
-    border-color: var(--canada-red);
+    background-color: var(--p2m-primary);
+    border-color: var(--p2m-primary);
 }
 
+/* Follow pills: Follow (primary solid) -> Following (outline) -> hover
+   reveals Unfollow (error colour on hover only). Phase 3 motion: the
+   three labels are stacked in one grid cell and cross-fade (150ms),
+   so the button keeps the widest label's width and never shifts
+   layout when the state changes. JS only toggles the state class. */
+.btn-follow {
+    border-radius: 999px;
+    min-height: 32px;
+    padding: 0.25rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: inline-grid;
+    align-items: center;
+    justify-items: center;
+}
+
+.btn-follow > span {
+    grid-area: 1 / 1;
+    opacity: 0;
+    transition: opacity 150ms var(--motion-ease-in-out);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.btn-follow .label-follow { opacity: 1; }
+
+.btn-follow.is-following .label-follow { opacity: 0; }
+.btn-follow.is-following .label-following { opacity: 1; }
+
+.btn-follow.is-following {
+    background-color: transparent;
+    border: 1px solid var(--p2m-border);
+    color: var(--p2m-text-secondary);
+}
+
+@media (hover: hover) {
+    .btn-follow.is-following:hover {
+        border-color: var(--p2m-error);
+        color: var(--p2m-error);
+        background-color: var(--p2m-error-soft);
+    }
+    .btn-follow.is-following:hover .label-following { opacity: 0; }
+    .btn-follow.is-following:hover .label-unfollow { opacity: 1; }
+}
+
+/* ---------------- Cards ---------------- */
 .card {
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    background-color: var(--p2m-surface);
+    border: 1px solid var(--p2m-border);
+    border-radius: 16px;
+    box-shadow: var(--p2m-shadow-1);
 }
 
-/* Highlighted bounty */
+.card-header,
+.card-footer { border-color: var(--p2m-border); }
+
+/* Highlighted bounty — token-based wash so it works in dark mode too. */
 .bounty-highlighted {
-    background-color: #fff9e6 !important;
-    border-color: #ffc107 !important;
+    background-color: var(--p2m-warning-soft) !important;
+    border-color: var(--p2m-warning) !important;
 }
 
-.border-2 {
-    border-width: 2px !important;
-}
+.border-2 { border-width: 2px !important; }
 
-/* Avatar circle */
-.avatar-circle, .rounded-circle {
+/* ---------------- Alerts ----------------
+   Token-based so dark mode doesn't get light washes. Alerts are
+   dismissible by the user — they no longer auto-vanish after 5s. */
+.alert { border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.alert-success { background-color: var(--p2m-success-soft); border-color: var(--p2m-success); color: var(--p2m-text); }
+.alert-danger { background-color: var(--p2m-error-soft); border-color: var(--p2m-error); color: var(--p2m-text); }
+.alert-warning { background-color: var(--p2m-warning-soft); border-color: var(--p2m-warning); color: var(--p2m-text); }
+.alert-info { background-color: var(--p2m-info-soft); border-color: var(--p2m-info); color: var(--p2m-text); }
+.alert-light { background-color: var(--p2m-surface-raised); border-color: var(--p2m-border); color: var(--p2m-text-secondary); }
+
+/* ---------------- Avatars ---------------- */
+.avatar-circle, .rounded-circle { object-fit: cover; }
+
+.avatar {
+    border-radius: 50%;
     object-fit: cover;
+    flex: none;
+    background: var(--p2m-surface-raised);
 }
+
+.avatar-40 { width: 40px; height: 40px; }
+.avatar-32 { width: 32px; height: 32px; }
+.avatar-48 { width: 48px; height: 48px; }
 
 .avatar-placeholder {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--logo-teal), var(--teal-dark));
-    color: white;
+    background: var(--p2m-primary-soft);
+    color: var(--p2m-primary);
     font-weight: 600;
-}
-
-.avatar-placeholder-lg {
-    font-size: 3rem;
-}
-
-.avatar-placeholder-md {
-    font-size: 2rem;
-}
-
-/* Profile Page Styles - Better than LinkedIn */
-.profile-header {
-    background: linear-gradient(135deg, var(--logo-teal) 0%, var(--teal-dark) 100%);
-    color: white;
-    padding: 3rem 0 2rem;
-    margin-bottom: -3rem;
-    position: relative;
-    z-index: 1;
-}
-
-.profile-header-content {
-    display: flex;
-    align-items: flex-end;
-    gap: 2rem;
-}
-
-.profile-avatar-wrapper {
-    position: relative;
-    margin-bottom: -2.5rem;
-}
-
-.profile-avatar {
-    width: 150px;
-    height: 150px;
     border-radius: 50%;
-    border: 4px solid white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    background: white;
-    overflow: hidden;
+    flex: none;
+}
+
+.avatar-placeholder-lg { font-size: 3rem; }
+.avatar-placeholder-md { font-size: 2rem; }
+
+/* ---------------- Feed layout ----------------
+   Desktop 3-column (max ~1120px): left rail ~240px, centre feed
+   ~600-640px, right rail ~300px. Below 992px the rails collapse. */
+.feed-layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 640px) 300px;
+    gap: 1.25rem;
+    max-width: 1120px;
     margin: 0 auto;
+    align-items: start;
 }
 
-.profile-avatar img {
-    width: 150px;
-    height: 150px;
-    object-fit: cover;
+.feed-rail { position: sticky; top: 76px; }
+.feed-rail .rail-card { margin-bottom: 1rem; }
+
+.feed-centre { min-width: 0; }
+
+.rail-card {
+    background-color: var(--p2m-surface);
+    border: 1px solid var(--p2m-border);
+    border-radius: 16px;
+    box-shadow: var(--p2m-shadow-1);
+    padding: 1rem;
 }
 
-.profile-avatar-placeholder {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    border: 4px solid white;
-    background: rgba(255,255,255,0.2);
+.rail-card h5, .rail-card h6 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+@media (max-width: 991.98px) {
+    .feed-layout { grid-template-columns: minmax(0, 640px); justify-content: center; }
+    .feed-rail { display: none; }
+}
+
+/* ---------------- Composer ----------------
+   Collapsed: avatar + pill. Click expands inline (no page navigation). */
+.composer-card {
+    background-color: var(--p2m-surface);
+    border: 1px solid var(--p2m-border);
+    border-radius: 16px;
+    box-shadow: var(--p2m-shadow-1);
+    padding: 0.875rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.composer-collapsed {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 3.5rem;
-    color: white;
-    margin: 0 auto;
+    gap: 0.75rem;
+    cursor: pointer;
 }
 
-.profile-info {
-    padding-bottom: 1rem;
+.composer-pill {
+    flex: 1;
+    text-align: left;
+    border: 1px solid var(--p2m-border);
+    background-color: var(--p2m-surface-raised);
+    color: var(--p2m-text-muted);
+    border-radius: 999px;
+    padding: 0.625rem 1rem;
+    font-size: 0.9375rem;
+    transition: background-color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.composer-pill:hover { border-color: var(--p2m-primary); }
+
+.composer-expanded { display: none; }
+.composer-card.is-expanded .composer-collapsed { display: none; }
+.composer-card.is-expanded .composer-expanded { display: block; }
+
+.composer-expanded .composer-textarea {
+    border: none !important;
+    background: transparent !important;
+    resize: none;
+    min-height: 72px;
+    padding: 0.25rem 0 !important;
+    font-size: 0.9375rem !important;
+}
+
+.composer-expanded .composer-textarea:focus { box-shadow: none !important; }
+
+.composer-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.composer-chip {
+    border: 1px solid var(--p2m-border);
+    background: transparent;
+    color: var(--p2m-text-secondary);
+    border-radius: 999px;
+    padding: 0.3125rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    cursor: pointer;
+    transition: all 120ms ease-out;
+}
+
+.composer-chip:hover { border-color: var(--p2m-primary); color: var(--p2m-primary); }
+
+.composer-chip.is-active {
+    background-color: var(--p2m-primary-soft);
+    border-color: var(--p2m-primary);
+    color: var(--p2m-primary);
+}
+
+.composer-bounty-fields {
+    display: none;
+    background-color: var(--p2m-surface-raised);
+    border: 1px solid var(--p2m-border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.composer-bounty-fields.is-visible { display: block; }
+
+.composer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border-top: 1px solid var(--p2m-border);
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.composer-attach-list {
+    display: none;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--p2m-border);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+}
+
+.composer-attach-list.is-visible { display: block; }
+
+.composer-attach-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.625rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--p2m-border);
+    color: var(--p2m-text);
+    font-size: 0.875rem;
+}
+
+.composer-attach-item:last-child { border-bottom: none; }
+.composer-attach-item:hover { background-color: var(--p2m-surface-raised); }
+
+/* ---------------- Post cards ---------------- */
+.post-card {
+    background-color: var(--p2m-surface);
+    border: 1px solid var(--p2m-border);
+    border-radius: 16px;
+    box-shadow: var(--p2m-shadow-1);
+    margin-bottom: 0.875rem;
+    transition: box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+
+@media (hover: hover) {
+    .post-card:hover {
+        box-shadow: var(--p2m-shadow-2);
+        transform: translateY(-2px);
+    }
+}
+
+.post-card-body { padding: 1rem 1rem 0.75rem; }
+
+.post-reshare {
+    font-size: 0.8125rem;
+    color: var(--p2m-text-muted);
+    margin-bottom: 0.625rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.post-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+}
+
+.post-header-main { flex: 1; min-width: 0; }
+
+.post-author-name {
+    font-weight: 600;
+    color: var(--p2m-text);
+    text-decoration: none;
+}
+
+.post-author-name:hover { color: var(--p2m-primary); }
+
+.post-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--p2m-secondary);
+    vertical-align: 1px;
+}
+
+.post-meta {
+    font-size: 0.8125rem;
+    color: var(--p2m-text-muted);
+}
+
+.post-chips {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+    margin: 0.5rem 0 0.25rem;
+}
+
+.post-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    background-color: var(--p2m-surface-raised);
+    color: var(--p2m-text-secondary);
+}
+
+.post-type-chip.chip-need { background-color: var(--p2m-primary-soft); color: var(--p2m-primary); }
+.post-type-chip.chip-win { background-color: var(--p2m-accent-soft); color: var(--p2m-warning); }
+.post-type-chip.chip-ask { background-color: var(--p2m-info-soft); color: var(--p2m-info); }
+.post-type-chip.chip-bumped { background-color: var(--p2m-accent-soft); color: var(--p2m-warning); }
+.post-type-chip.chip-boosted { background-color: var(--p2m-primary-soft); color: var(--p2m-primary); }
+
+.post-body {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--p2m-text);
+    white-space: pre-line;
+    overflow-wrap: break-word;
+    margin: 0.5rem 0;
+}
+
+.post-body.is-clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.post-see-more {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--p2m-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.post-photo {
+    max-height: 400px;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    margin: 0.5rem 0;
+}
+
+/* Nested bounty card inside a post. */
+.bounty-nested {
+    border: 1px solid var(--p2m-border);
+    border-radius: 12px;
+    padding: 0.75rem 0.875rem;
+    margin: 0.5rem 0;
+    background-color: var(--p2m-surface-raised);
+}
+
+.bounty-nested-title {
+    font-weight: 600;
+    color: var(--p2m-text);
+    text-decoration: none;
+}
+
+.bounty-nested-title:hover { color: var(--p2m-primary); }
+
+.bounty-nested-reward {
+    font-weight: 700;
+    color: var(--p2m-primary);
+}
+
+.post-counts {
+    display: flex;
+    gap: 0.875rem;
+    font-size: 0.8125rem;
+    color: var(--p2m-text-muted);
+    padding: 0.5rem 0;
+}
+
+.post-actions {
+    display: flex;
+    border-top: 1px solid var(--p2m-border);
+    padding-top: 0.375rem;
+}
+
+.post-action {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--p2m-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+.post-action:hover {
+    background-color: var(--p2m-surface-raised);
+    color: var(--p2m-primary);
+}
+
+.post-action.is-active { color: var(--p2m-primary); }
+.post-action.is-active .lucide-icon { fill: var(--p2m-primary); stroke: var(--p2m-primary); }
+
+.post-action .action-count { font-weight: 600; }
+
+.post-overflow .dropdown-menu {
+    border: 1px solid var(--p2m-border);
+    border-radius: 12px;
+    box-shadow: var(--p2m-shadow-3);
+    background-color: var(--p2m-surface);
+    padding: 0.5rem;
+    min-width: 200px;
+}
+
+.post-overflow .dropdown-item {
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--p2m-text);
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.post-overflow .dropdown-item:hover { background-color: var(--p2m-surface-raised); }
+.post-overflow .dropdown-item.text-danger:hover { background-color: var(--p2m-error-soft); }
+
+/* Inline comment box under a post card. */
+.post-comments-inline { display: none; border-top: 1px solid var(--p2m-border); padding-top: 0.75rem; margin-top: 0.25rem; }
+.post-comments-inline.is-visible { display: block; }
+
+.post-comment-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 0.625rem;
+}
+
+.post-comment-body {
+    flex: 1;
+    background-color: var(--p2m-surface-raised);
+    border-radius: 12px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* "New posts" pill — floats above the feed when posts arrive above
+   the viewport; clicking scrolls to top. Never auto-inserts content. */
+.new-posts-pill {
+    display: none;
+    position: fixed;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1020;
+    border: 1px solid var(--p2m-border);
+    background-color: var(--p2m-surface);
+    color: var(--p2m-primary);
+    box-shadow: var(--p2m-shadow-3);
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.new-posts-pill.is-visible { display: inline-flex; align-items: center; gap: 0.375rem; }
+
+/* ---------------- Profile header ----------------
+   Cover band (soft primary gradient, 120-160px) + 120px avatar with
+   surface ring. Replaces the old teal slab. */
+.profile-cover-band {
+    height: 140px;
+    background: linear-gradient(135deg, var(--p2m-primary-soft) 0%, var(--p2m-surface-raised) 60%, var(--p2m-accent-soft) 100%);
+    border-bottom: 1px solid var(--p2m-border);
+}
+
+[data-bs-theme="dark"] .profile-cover-band {
+    background: linear-gradient(135deg, rgba(242, 107, 74, 0.22) 0%, var(--p2m-surface-raised) 60%, rgba(228, 185, 92, 0.16) 100%);
+}
+
+.profile-header-new {
+    background-color: var(--p2m-surface);
+    border-bottom: 1px solid var(--p2m-border);
+}
+
+.profile-header-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 15px 1rem;
+}
+
+.profile-avatar-lg {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid var(--p2m-surface);
+    box-shadow: var(--p2m-shadow-2);
+    object-fit: cover;
+    background: var(--p2m-surface-raised);
+    margin-top: -60px;
+    position: relative;
+}
+
+.profile-avatar-lg.placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--p2m-text-muted);
 }
 
 .profile-name {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.125rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .profile-headline {
-    font-size: 1.125rem;
-    opacity: 0.9;
-    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: var(--p2m-text-secondary);
+    margin-bottom: 0.375rem;
 }
 
-.profile-location {
-    font-size: 0.9rem;
-    opacity: 0.8;
+.profile-meta-line {
+    font-size: 0.875rem;
+    color: var(--p2m-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.profile-body {
-    padding-top: 4rem;
+.profile-meta-line a { color: var(--p2m-text-muted); text-decoration: none; }
+.profile-meta-line a:hover { color: var(--p2m-primary); }
+
+.profile-stats-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.875rem;
 }
 
+.profile-stat {
+    color: var(--p2m-text-secondary);
+    text-decoration: none;
+    font-size: 0.9375rem;
+}
+
+.profile-stat:hover { color: var(--p2m-primary); }
+.profile-stat strong { color: var(--p2m-text); font-weight: 700; }
+
+.profile-trust-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--p2m-text-secondary);
+}
+
+.profile-trust-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+}
+
+.profile-trust-item .lucide-icon { color: var(--p2m-secondary); }
+
+/* Profile tabs (Posts / Referrals / About) — sticky under the nav. */
+.profile-tabs {
+    position: sticky;
+    top: 57px;
+    z-index: 100;
+    background-color: var(--p2m-surface);
+    border-bottom: 1px solid var(--p2m-border);
+}
+
+.profile-tabs .nav-tabs {
+    border-bottom: none;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.profile-tabs .nav-link {
+    border: none !important;
+    color: var(--p2m-text-secondary) !important;
+    font-weight: 600;
+    padding: 0.75rem 1rem !important;
+    border-radius: 0;
+    position: relative;
+}
+
+.profile-tabs .nav-link:hover { color: var(--p2m-text) !important; background: none; }
+
+.profile-tabs .nav-link.active {
+    color: var(--p2m-primary) !important;
+    background: none !important;
+}
+
+.profile-tabs .nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background-color: var(--p2m-primary);
+}
+
+/* Legacy profile building blocks, tokenized (still used by
+   profile/edit.html, profile/setup.html, and the tab panes). */
 .profile-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    background: var(--p2m-surface);
+    border-radius: 16px;
+    box-shadow: var(--p2m-shadow-1);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--p2m-border);
 }
 
 .profile-card-title {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--p2m-text);
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--primary-color);
+    border-bottom: 1px solid var(--p2m-border);
 }
 
 .profile-stats {
@@ -380,61 +1282,52 @@ body.dark-mode input[type="password"],
 
 .stat-item {
     padding: 1rem 0.5rem;
-    border-radius: 8px;
-    background: var(--bg-light);
-    transition: all 0.2s;
+    border-radius: 12px;
+    background: var(--p2m-surface-raised);
+    transition: background-color 120ms ease-out, transform 150ms ease-out;
 }
 
 .stat-item:hover {
-    background: var(--primary-color);
-    color: white;
+    background: var(--p2m-primary-soft);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-.stat-number {
-    font-size: 1.5rem;
-    font-weight: 700;
-    display: block;
-}
-
-.stat-label {
-    font-size: 0.85rem;
-    opacity: 0.8;
-}
+.stat-number { font-size: 1.5rem; font-weight: 700; display: block; }
+.stat-label { font-size: 0.85rem; color: var(--p2m-text-secondary); }
 
 .profile-completion {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-left: 4px solid var(--primary-color);
+    background: var(--p2m-surface-raised);
+    border-left: 4px solid var(--p2m-primary);
 }
 
 .progress {
     height: 10px;
     border-radius: 5px;
-    background-color: #e9ecef;
+    background-color: var(--p2m-surface-raised);
     overflow: hidden;
 }
 
 .progress-bar {
-    background: linear-gradient(90deg, var(--logo-teal), var(--teal-dark));
-    transition: width 0.6s ease;
+    background: linear-gradient(90deg, var(--p2m-primary), var(--p2m-accent));
+    transition: width 0.4s ease-out;
 }
 
 .skill-badge {
     display: inline-block;
     padding: 0.375rem 0.75rem;
-    background: linear-gradient(135deg, var(--logo-teal), var(--teal-dark));
-    color: white;
-    border-radius: 20px;
+    background: var(--p2m-surface-raised);
+    color: var(--p2m-text-secondary);
+    border: 1px solid var(--p2m-border);
+    border-radius: 999px;
     font-size: 0.875rem;
     font-weight: 500;
     margin: 0.25rem;
-    transition: all 0.2s;
+    transition: transform 150ms ease-out, box-shadow 150ms ease-out;
 }
 
 .skill-badge:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(21, 90, 105, 0.3);
+    box-shadow: var(--p2m-shadow-2);
 }
 
 .gamification-badge {
@@ -442,175 +1335,99 @@ body.dark-mode input[type="password"],
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #ffd700, #ffed4e);
-    color: #333;
+    background: var(--p2m-accent-soft);
+    border: 1px solid var(--p2m-accent);
+    color: var(--p2m-text);
     border-radius: 8px;
     font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--p2m-shadow-1);
 }
 
 .tip-item {
     padding: 0.75rem;
-    background: #fff3cd;
-    border-left: 3px solid #ffc107;
+    background: var(--p2m-warning-soft);
+    border-left: 3px solid var(--p2m-warning);
     border-radius: 4px;
     margin-bottom: 0.5rem;
 }
 
 .tip-item.high {
-    background: #f8d7da;
-    border-left-color: #dc3545;
+    background: var(--p2m-error-soft);
+    border-left-color: var(--p2m-error);
 }
 
 .tip-item.medium {
-    background: #fff3cd;
-    border-left-color: #ffc107;
+    background: var(--p2m-warning-soft);
+    border-left-color: var(--p2m-warning);
 }
 
-.profile-actions {
+.profile-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.profile-actions .btn { border-radius: 999px; padding: 0.5rem 1.25rem; font-weight: 500; }
+
+/* Legacy header classes (kept for templates not yet migrated). */
+.profile-header {
+    background: linear-gradient(135deg, var(--p2m-primary-soft), var(--p2m-surface-raised));
+    color: var(--p2m-text);
+    padding: 3rem 0 2rem;
+    margin-bottom: -3rem;
+    position: relative;
+    z-index: 1;
+}
+
+.profile-header-content { display: flex; align-items: flex-end; gap: 2rem; }
+.profile-avatar-wrapper { position: relative; margin-bottom: -2.5rem; }
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid var(--p2m-surface);
+    box-shadow: var(--p2m-shadow-2);
+    background: var(--p2m-surface);
+    overflow: hidden;
+    margin: 0 auto;
+}
+.profile-avatar img { width: 150px; height: 150px; object-fit: cover; }
+.profile-avatar-placeholder {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid var(--p2m-surface);
+    background: var(--p2m-surface-raised);
     display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    color: var(--p2m-text-muted);
+    margin: 0 auto;
 }
-
-.profile-actions .btn {
-    border-radius: 20px;
-    padding: 0.5rem 1.25rem;
-    font-weight: 500;
-}
-
-/* Public Profile */
+.profile-info { padding-bottom: 1rem; }
+.profile-location { font-size: 0.9rem; color: var(--p2m-text-secondary); }
+.profile-body { padding-top: 4rem; }
 .public-profile-header {
-    background: linear-gradient(135deg, var(--logo-teal) 0%, var(--teal-dark) 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--p2m-primary-soft), var(--p2m-surface-raised));
+    color: var(--p2m-text);
     padding: 3rem 0;
     margin-bottom: 2rem;
 }
-
 .public-profile-stats {
-    background: white;
-    border-radius: 12px;
+    background: var(--p2m-surface);
+    border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: var(--p2m-shadow-1);
+    border: 1px solid var(--p2m-border);
 }
 
-/* Card image */
-.card-img-cover {
-    height: 150px;
-    object-fit: cover;
+/* ---------------- Homepage ---------------- */
+
+/* Hero: warm paper, logo-led but headline-owned (72-96px mark). */
+.hero {
+    background: var(--p2m-bg);
+    border-bottom: 1px solid var(--p2m-border);
 }
 
-/* Flash Messages */
-.alert { border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
-.alert-success { background-color: #D1FAE5; border-color: var(--success); color: #065F46; }
-.alert-danger { background-color: #FEE2E2; border-color: var(--danger); color: #991B1B; }
-.alert-warning { background-color: #FEF3C7; border-color: var(--warning); color: #92400E; }
-.alert-info { background-color: #DBEAFE; border-color: #3B82F6; color: #1E40AF; }
-
-/* Footer — dark teal, same family as the navbar. */
-.footer {
-    background-color: var(--teal-dark);
-    color: #FFFFFF;
-    padding: 3rem 0 1.5rem;
-    margin-top: auto;
-}
-
-.footer-logo {
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    vertical-align: -7px;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.25);
-    object-fit: cover;
-}
-
-.footer-canada { font-weight: 600; color: #FFFFFF; }
-
-.footer a { color: rgba(255,255,255,0.8); text-decoration: none; }
-.footer a:hover { color: #FFFFFF; }
-.footer-title { font-weight: 600; margin-bottom: 1rem; color: #FFFFFF; }
-.footer-links { list-style: none; padding: 0; }
-.footer-links li { margin-bottom: 0.5rem; }
-.footer-bottom {
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 1.5rem;
-    margin-top: 2rem;
-    text-align: center;
-    color: rgba(255,255,255,0.6);
-    font-size: 0.875rem;
-}
-
-/* Responsive */
-@media (max-width: 991px) {
-    .navbar-collapse {
-        background-color: var(--teal-darker);
-        padding: 1rem;
-        border-radius: 0 0 8px 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-top: 0.5rem;
-    }
-
-    .navbar-nav .nav-link {
-        padding: 0.75rem 0.5rem !important;
-        border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-
-    .navbar-nav .nav-item:last-child .nav-link {
-        border-bottom: none;
-    }
-
-    .dropdown-menu {
-        border: none;
-        background-color: #f8f9fa;
-        padding-left: 1rem;
-    }
-}
-
-/* Mobile Responsive from base.html */
-@media (max-width: 991px) {
-    .navbar-collapse {
-        background-color: var(--teal-darker);
-        padding: 1rem;
-        border-radius: 0 0 8px 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-top: 0.5rem;
-    }
-    .navbar-nav .nav-link {
-        padding: 0.75rem 0.5rem !important;
-        border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-    .navbar-nav .nav-item:last-child .nav-link {
-        border-bottom: none;
-    }
-    .dropdown-menu {
-        border: none;
-        background-color: #f8f9fa;
-        padding-left: 1rem;
-    }
-}
-/* Ensure navbar toggler is visible on the dark bar */
-.navbar-toggler {
-    border: 2px solid rgba(255,255,255,0.6);
-    padding: 0.25rem 0.5rem;
-}
-.navbar-toggler:focus {
-    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
-}
-
-/* ================= Homepage — Canadian social front page ================= */
-
-/* Hero: white, logo-led, red eyebrow + teal secondary actions. */
-.hero-ca {
-    background: #FFFFFF;
-    border-bottom: 3px solid var(--canada-red);
-}
-
-.hero-logo {
-    width: 150px;
-    height: 150px;
-    border-radius: 22px;
-    box-shadow: 0 8px 24px rgba(14, 63, 74, 0.25);
-    object-fit: cover;
+.hero-mark {
+    width: 84px;
+    height: 84px;
 }
 
 .hero-eyebrow {
@@ -618,66 +1435,52 @@ body.dark-mode input[type="password"],
     letter-spacing: 0.14em;
     text-transform: uppercase;
     font-size: 0.85rem;
-    color: var(--canada-red);
+    color: var(--p2m-primary);
     margin-bottom: 0.75rem;
 }
 
 .hero-title {
     font-weight: 800;
     font-size: 2.5rem;
-    line-height: 1.15;
-    color: var(--teal-dark);
+    line-height: 1.1;
+    color: var(--p2m-text);
 }
 
-.hero-fr {
-    font-style: italic;
-    color: var(--logo-teal);
-    font-size: 1.15rem;
-    margin-bottom: 0.75rem;
+.hero-sub { max-width: 640px; color: var(--p2m-text-secondary); }
+
+/* Section furniture. Section titles carry hierarchy with weight +
+   spacing now — the 3px red underline bar is gone (a 2019 pattern). */
+.section-alt {
+    background: var(--p2m-surface);
+    border-top: 1px solid var(--p2m-border);
+    border-bottom: 1px solid var(--p2m-border);
 }
-
-.hero-sub { max-width: 640px; color: var(--text-muted); }
-
-.hero-made {
-    font-weight: 600;
-    color: var(--teal-dark);
-}
-
-/* Section furniture. */
-.section-alt { background: #FFFFFF; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
 
 .section-title {
     font-weight: 700;
-    color: var(--teal-dark);
-    padding-bottom: 0.5rem;
-    border-bottom: 3px solid var(--canada-red);
-    display: inline-block;
+    color: var(--p2m-text);
     margin-bottom: 0.5rem;
-}
-
-.stat-card { border-top: 3px solid var(--canada-red); }
-.row > div:nth-child(even) .stat-card { border-top-color: var(--logo-teal); }
-
-/* Post preview cards. */
-.post-preview-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.post-preview-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(14, 63, 74, 0.12);
 }
 
 /* Empty states — every homepage section stays intentional with no data. */
 .empty-state {
     text-align: center;
     padding: 2.5rem 1.5rem;
-    border: 2px dashed var(--border-color);
-    border-radius: 12px;
-    background: #FFFFFF;
+    border: 2px dashed var(--p2m-border);
+    border-radius: 16px;
+    background: var(--p2m-surface);
 }
 
 .empty-state-icon {
-    font-size: 2rem;
-    color: var(--logo-teal);
-    margin-bottom: 0.75rem;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    background-color: var(--p2m-primary-soft);
+    color: var(--p2m-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Top helpers — rank medallion. */
@@ -691,18 +1494,19 @@ body.dark-mode input[type="password"],
     justify-content: center;
     font-weight: 800;
     font-size: 1.25rem;
-    color: #FFFFFF;
-    background: var(--logo-teal);
+    color: var(--p2m-surface);
+    background: var(--p2m-secondary);
 }
-.helper-card .rank-1 { background: var(--gold); color: #3a2f00; }
-.helper-card .rank-2 { background: #9AA5B1; }
-.helper-card .rank-3 { background: #B08D57; }
+.helper-card .rank-1 { background: var(--p2m-accent); color: #3A2F00; }
+.helper-card .rank-2 { background: #9AA5B1; color: #22302A; }
+.helper-card .rank-3 { background: #B08D57; color: #33270A; }
 
-/* Pledge band — dark teal, white leaf. */
-.pledge-band { background: linear-gradient(135deg, var(--logo-teal) 0%, var(--teal-dark) 100%); }
-.pledge-band-text { max-width: 640px; color: rgba(255,255,255,0.88); font-size: 1.1rem; }
+/* Pledge band — deep warm ink in both modes (a brand moment, not a
+   surface). The 24px white leaf is a quiet section ornament. */
+.pledge-band { background: linear-gradient(135deg, #2C1A14 0%, #1B1210 100%); }
+.pledge-band-text { max-width: 640px; color: rgba(255, 255, 255, 0.88); font-size: 1.1rem; }
 
-/* How it works — red numbered circles. */
+/* How it works — primary numbered circles. */
 .how-step { margin-bottom: 0.5rem; }
 .how-num {
     display: inline-flex;
@@ -711,14 +1515,846 @@ body.dark-mode input[type="password"],
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: var(--canada-red);
-    color: #FFFFFF;
+    background: var(--p2m-primary);
+    color: var(--p2m-on-primary);
     font-weight: 800;
     font-size: 1.25rem;
 }
 
+/* ---------------- Footer ----------------
+   Deep warm ink in both modes. One small muted leaf + "Made in Canada"
+   in the footer-bottom line — the only footer leaf left. */
+.footer {
+    background-color: var(--p2m-footer-bg);
+    color: var(--p2m-footer-text);
+    padding: 3rem 0 1.5rem;
+    margin-top: auto;
+}
+
+.footer-mark { width: 24px; height: 24px; vertical-align: -5px; }
+
+.footer-wordmark {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #FFFFFF;
+}
+
+.footer-wordmark .brand-2 { color: var(--p2m-primary); }
+
+.footer-origin {
+    font-size: 0.875rem;
+    color: var(--p2m-footer-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.footer a { color: var(--p2m-footer-text); text-decoration: none; }
+.footer a:hover { color: #FFFFFF; }
+.footer-title { font-weight: 600; margin-bottom: 1rem; color: #FFFFFF; }
+.footer-links { list-style: none; padding: 0; }
+.footer-links li { margin-bottom: 0.5rem; }
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1.5rem;
+    margin-top: 2rem;
+    text-align: center;
+    color: var(--p2m-footer-muted);
+    font-size: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+/* Card image */
+.card-img-cover { height: 150px; object-fit: cover; }
+
+/* ---------------- Motion ----------------
+   Subtle, fast, respectful: motion confirms an action, never decorates.
+   Everything under 300ms. Hover states are wrapped in (hover: hover)
+   where they change layout-adjacent state. */
+:root {
+    --motion-fast: 120ms;
+    --motion-base: 180ms;
+    --motion-slow: 250ms;
+    --motion-ease-out: cubic-bezier(0.2, 0, 0, 1);
+    --motion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes like-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+
+.post-action.pop .lucide-icon { animation: like-pop 180ms var(--motion-pop); }
+
+@keyframes skeleton-shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, var(--p2m-surface-raised) 25%, var(--p2m-border) 50%, var(--p2m-surface-raised) 75%);
+    background-size: 200px 100%;
+    animation: skeleton-shimmer 1.4s linear infinite;
+    border-radius: 8px;
+    color: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 991px) {
+    .navbar-p2m .navbar-collapse {
+        background-color: var(--p2m-surface);
+        padding: 1rem;
+        border-radius: 0 0 12px 12px;
+        border: 1px solid var(--p2m-border);
+        border-top: none;
+        box-shadow: var(--p2m-shadow-3);
+        margin-top: 0.5rem;
+    }
+
+    .navbar-p2m .navbar-nav .nav-link {
+        padding: 0.75rem 0.5rem !important;
+        border-bottom: 1px solid var(--p2m-border);
+    }
+
+    .navbar-p2m .navbar-nav .nav-item:last-child .nav-link { border-bottom: none; }
+
+    .profile-cover-band { height: 120px; }
+    .profile-avatar-lg { width: 96px; height: 96px; margin-top: -48px; }
+    .profile-name { font-size: 1.5rem; }
+}
+
+@media (max-width: 767.98px) {
+    /* The bottom tab bar is the mobile nav; the top bar keeps only the
+       brand + theme toggle + avatar. Hide the collapsed menu's nav links
+       duplicates by keeping the hamburger for overflow only. */
+    .profile-tabs { top: 56px; }
+    .post-action .action-label { display: none; }
+    .post-action { min-height: 44px; }
+}
+
 @media (max-width: 576px) {
     .hero-title { font-size: 1.9rem; }
-    .hero-logo { width: 120px; height: 120px; }
-    .hero-ca .btn-lg { width: 100%; }
+    .hero-mark { width: 72px; height: 72px; }
+    .hero .btn-lg { width: 100%; }
+    .profile-stats-row { gap: 1rem; }
+}
+
+/* ---------------- Phase 2: spaces, flair, polls, onboarding, save ---------------- */
+
+/* Topic spaces. */
+.space-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: var(--p2m-primary-soft);
+    color: var(--p2m-primary);
+}
+.space-icon-lg { width: 56px; height: 56px; border-radius: 16px; }
+.space-card { transition: box-shadow 150ms ease, transform 150ms ease; }
+@media (hover: hover) {
+    .space-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--p2m-shadow-2);
+    }
+}
+.chip-space {
+    color: var(--p2m-secondary);
+    text-decoration: none;
+}
+.chip-space:hover { color: var(--p2m-primary); }
+.composer-space-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+.composer-space-row .form-select { max-width: 260px; }
+
+/* Flair filter chips on the feed. */
+.flair-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 1rem;
+}
+.flair-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--p2m-border);
+    background: var(--p2m-surface);
+    color: var(--p2m-text-secondary);
+    font-size: 0.8125rem;
+    text-decoration: none;
+}
+.flair-chip:hover { color: var(--p2m-text); border-color: var(--p2m-primary); }
+.flair-chip.is-active {
+    background: var(--p2m-primary);
+    border-color: var(--p2m-primary);
+    color: #fff;
+}
+
+/* Polls (Blind-style): options as buttons before voting, bars after. */
+.post-poll {
+    border: 1px solid var(--p2m-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0;
+    background: var(--p2m-surface-raised);
+}
+.poll-option-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.375rem;
+    border-radius: 8px;
+    border: 1px solid var(--p2m-border);
+    background: var(--p2m-surface);
+    color: var(--p2m-text);
+    font-size: 0.9375rem;
+}
+.poll-option-btn:last-of-type { margin-bottom: 0; }
+@media (hover: hover) {
+    .poll-option-btn:hover { border-color: var(--p2m-primary); }
+}
+.poll-result { margin-bottom: 0.5rem; }
+.poll-result:last-child { margin-bottom: 0; }
+.poll-result-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.125rem;
+}
+.poll-result-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--p2m-border);
+    overflow: hidden;
+}
+.poll-result-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--p2m-primary);
+}
+.poll-result.is-voted .poll-result-fill { background: var(--p2m-secondary); }
+.poll-total { font-size: 0.8125rem; color: var(--p2m-text-muted); margin-top: 0.5rem; }
+.composer-poll-area { margin: 0.5rem 0; }
+.composer-poll-area textarea { resize: vertical; }
+
+/* Onboarding checklist (LinkedIn-style 3-step card). */
+.onboarding-card {
+    border: 1px solid var(--p2m-border);
+    border-radius: 16px;
+    background: var(--p2m-surface);
+    box-shadow: var(--p2m-shadow-1);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.onboarding-step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+.onboarding-step + .onboarding-step { border-top: 1px solid var(--p2m-border); }
+.onboarding-step-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--p2m-text-muted);
+}
+.onboarding-step.is-done .onboarding-step-icon { color: var(--p2m-secondary); }
+.onboarding-step.is-done .onboarding-step-label {
+    color: var(--p2m-text-muted);
+    text-decoration: line-through;
+}
+.onboarding-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid var(--p2m-border);
+    color: var(--p2m-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+/* @mentions render as profile links in post bodies. */
+.mention-link {
+    color: var(--p2m-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+.mention-link:hover { text-decoration: underline; }
+
+/* ---------------- Phase 3: staged rewards, brand reward colour ----------------
+   Rewards are brand terracotta, never Bootstrap green (green means
+   success, not money). */
+
+/* Reward amounts, everywhere: board cards, detail pages, staged rows. */
+.bounty-reward {
+    color: var(--p2m-primary);
+    font-weight: 700;
+}
+
+/* Staged rewards (Paraform model — display only). */
+.stage-rewards-compact {
+    font-size: 0.8125rem;
+    color: var(--p2m-text-secondary);
+    margin: 0.375rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: baseline;
+}
+
+.stage-rewards-label { font-weight: 600; color: var(--p2m-text); }
+
+.stage-rewards-item { white-space: nowrap; }
+
+.stage-rewards-sep { color: var(--p2m-text-muted); }
+
+.stage-rewards-full .stage-rewards-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid var(--p2m-border);
+}
+
+.stage-rewards-full .stage-rewards-row:last-child { border-bottom: none; }
+
+/* ---------------- Phase 3: notifications panel + page ---------------- */
+
+.notification-panel {
+    width: 380px;
+    max-width: calc(100vw - 2rem);
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: var(--p2m-shadow-3);
+}
+
+.notification-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--p2m-border);
+}
+
+.notification-panel-body {
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.notification-panel-footer {
+    display: block;
+    text-align: center;
+    padding: 0.625rem 1rem;
+    border-top: 1px solid var(--p2m-border);
+    color: var(--p2m-primary);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.notification-panel-footer:hover { text-decoration: underline; }
+
+.notification-group-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--p2m-text-muted);
+    padding: 0.5rem 1rem 0.25rem;
+}
+
+.notification-item {
+    position: relative;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.625rem 1rem 0.625rem 1.25rem;
+    color: var(--p2m-text);
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    .notification-item:hover { background: var(--p2m-surface-muted); }
+}
+
+.notification-item.is-unread { background: var(--p2m-surface-muted); }
+
+.notification-dot {
+    position: absolute;
+    left: 0.4375rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--p2m-primary);
+}
+
+.notification-item-icon { flex-shrink: 0; }
+
+.notification-type-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--p2m-surface-muted);
+    color: var(--p2m-text-secondary);
+}
+
+.notification-type-icon-end {
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    color: var(--p2m-text-muted);
+    flex-shrink: 0;
+}
+
+.notification-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
+.notification-item-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.35;
+}
+
+.notification-item.is-unread .notification-item-title { color: var(--p2m-text); }
+
+.notification-item-body {
+    font-size: 0.8125rem;
+    color: var(--p2m-text-secondary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.notification-item-time {
+    font-size: 0.75rem;
+    color: var(--p2m-text-muted);
+}
+
+.notification-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.notification-empty { color: var(--p2m-text-muted); }
+
+/* Skeleton notification rows (panel refresh while fetching). */
+.skeleton-notification {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    align-items: flex-start;
+}
+
+.skeleton-line {
+    height: 12px;
+    margin-bottom: 6px;
+}
+
+/* ---------------- Phase 3: nav-centre search ---------------- */
+
+.nav-search {
+    position: relative;
+    align-items: center;
+    flex: 0 1 340px;
+    min-width: 200px;
+}
+
+.nav-search .lucide-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--p2m-text-muted);
+    pointer-events: none;
+}
+
+.nav-search-input {
+    padding-left: 2.375rem;
+    border-radius: 999px;
+    background: var(--p2m-surface-muted);
+    border-color: var(--p2m-border);
+}
+
+.nav-search-input:focus {
+    background: var(--p2m-surface);
+    border-color: var(--p2m-primary);
+    box-shadow: 0 0 0 0.2rem rgba(217, 72, 28, 0.15);
+}
+
+/* ---------------- Phase 3: trust visibility ---------------- */
+
+/* One clickable verification badge (tiers 1–3). Tier 3 gets the
+   primary tint; tiers 1–2 stay neutral. Never animated (trust
+   badges are in the motion rules' never-animate list). */
+.verification-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--p2m-text-secondary);
+    background: var(--p2m-surface-muted);
+    border: 1px solid var(--p2m-border);
+    border-radius: 999px;
+    padding: 0.125rem 0.625rem;
+    text-decoration: none;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+@media (hover: hover) {
+    .verification-badge:hover {
+        color: var(--p2m-text);
+        text-decoration: none;
+    }
+}
+
+.verification-badge-tier-3 {
+    color: var(--p2m-primary);
+    border-color: var(--p2m-primary);
+}
+
+/* Portable reputation metrics (one line, only where data exists). */
+.reputation-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-top: 0.5rem;
+}
+
+.reputation-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--p2m-text-secondary);
+    white-space: nowrap;
+}
+
+/* Vouch rows (Peerlist model): avatar + name + skill. */
+.vouch-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--p2m-border);
+}
+
+.vouch-row:last-of-type { border-bottom: none; }
+
+.vouch-main { min-width: 0; }
+
+/* Board card poster line. */
+.bounty-poster-line .reputation-metrics { margin-top: 0.25rem; }
+
+/* ---------------- Phase 3: hiring layer ---------------- */
+
+/* "We're hiring" strip on profiles with open needs. */
+.hiring-strip {
+    background: var(--p2m-surface-muted);
+    border-bottom: 1px solid var(--p2m-border);
+}
+
+.hiring-strip-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0.625rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.hiring-strip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-weight: 700;
+    color: var(--p2m-primary);
+    white-space: nowrap;
+}
+
+.hiring-strip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 0.5rem 1.25rem;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+}
+
+.hiring-strip-list a {
+    color: var(--p2m-text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+@media (hover: hover) {
+    .hiring-strip-list a:hover { color: var(--p2m-primary); }
+}
+
+.hiring-strip-all {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--p2m-primary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* One thread per referral: plain message rows, mine tinted. */
+.referral-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.referral-thread-message {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--p2m-border);
+    border-radius: 8px;
+}
+
+.referral-thread-message.is-mine {
+    background: var(--p2m-surface-muted);
+    border-color: var(--p2m-border);
+}
+
+/* ---------------- Phase 3: motion pass (plan §3.5) ----------------
+   Durations: like-pop 180ms + save-settle 180ms (already defined
+   above for the like), follow cross-fade 150ms (see .btn-follow),
+   card hover lift 150ms (already defined), dropdowns 160ms, modals
+   220ms in / 160ms out, toasts 250ms, composer expand 200ms,
+   skeleton shimmer 1.4s loop (already defined), tab indicator
+   180ms. NEVER animated: page transitions, text/prices/rewards/
+   counts (except the like-count increment), layout shifts, the logo,
+   the maple leaf, trust badges; no infinite loops except the
+   skeleton shimmer. The prefers-reduced-motion block above collapses
+   all of these to ~0ms — state still changes, just instantly. */
+
+/* Save fill + tiny rotate-settle (JS adds .settle, like .pop). */
+@keyframes save-settle {
+    0% { transform: rotate(-8deg) scale(1.15); }
+    100% { transform: rotate(0deg) scale(1); }
+}
+
+.post-action.settle .lucide-icon { animation: save-settle 180ms var(--motion-pop); }
+
+/* Dropdowns fade + rise (160ms). Bootstrap hides menus with
+   display:none, which can't transition — so menus stay display:block
+   and hide via visibility/opacity instead. Menus are absolutely
+   positioned, so the hidden ones take no layout space. */
+.dropdown-menu {
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+    transition: opacity 160ms var(--motion-ease-out),
+        transform 160ms var(--motion-ease-out),
+        visibility 0s linear 160ms;
+    pointer-events: none;
+}
+
+.dropdown-menu.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition: opacity 160ms var(--motion-ease-out),
+        transform 160ms var(--motion-ease-out);
+    pointer-events: auto;
+}
+
+/* Modals: 220ms in, 160ms out (the :not(.show) rule shortens the
+   exit — Bootstrap removes .show before the closing transition). */
+.modal.fade .modal-dialog {
+    transition: transform 220ms var(--motion-ease-out);
+}
+
+.modal.fade:not(.show) .modal-dialog {
+    transition-duration: 160ms;
+}
+
+/* Toasts slide + fade in (250ms). */
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#p2m-toasts .alert { animation: toast-in 250ms var(--motion-ease-out); }
+
+/* Composer expand (200ms): the expanded form fades + rises in. */
+@keyframes composer-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.composer-card.is-expanded .composer-expanded {
+    animation: composer-in 200ms var(--motion-ease-out);
+}
+
+/* Tab indicator: a primary bar that slides under the active tab
+   (180ms). Positioned by JS (initTabIndicator in main.js). */
+.nav-tabs { position: relative; }
+
+.tab-indicator {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    background: var(--p2m-primary);
+    transition: transform 180ms var(--motion-ease-in-out),
+        width 180ms var(--motion-ease-in-out);
+    pointer-events: none;
+}
+
+/* ---------------- Phase 3: skeleton loaders ---------------- */
+
+.skeleton-post {
+    background: var(--p2m-surface);
+    border: 1px solid var(--p2m-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.skeleton-post-header {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.skeleton-profile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding: 1rem 0;
+}
+
+.skeleton-comment {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.5rem 0;
+    align-items: flex-start;
+}
+
+.skeleton-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skeleton-avatar-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skeleton-avatar-lg {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ---------------- Phase 3: bounty board cleanup ---------------- */
+
+.board-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.board-more-filters summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--p2m-primary);
+    font-size: 0.875rem;
+}
+
+.board-more-filters summary:hover { text-decoration: underline; }
+
+/* Sticky action card on bounty detail (desktop only). */
+@media (min-width: 992px) {
+    .bounty-detail-sidebar {
+        position: sticky;
+        top: 76px;
+    }
+}
+
+/* Sticky bottom CTA bar on bounty detail (mobile only). The bottom
+   tab bar also sits at the bottom — the CTA bar sits above it. */
+.bounty-sticky-cta {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 56px;
+    z-index: 1020;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.625rem 1rem;
+    background: var(--p2m-surface);
+    border-top: 1px solid var(--p2m-border);
+    box-shadow: 0 -4px 16px var(--p2m-shadow);
+}
+
+.bounty-sticky-cta-reward {
+    color: var(--p2m-primary);
+    font-weight: 700;
+    font-size: 1.125rem;
+    white-space: nowrap;
+}
+
+/* The sticky CTA bar (~56px) sits above the tab bar on mobile: the
+   detail page needs matching bottom padding or its last content
+   scrolls underneath the bar and can never be read. */
+@media (max-width: 991.98px) {
+    .bounty-detail-page { padding-bottom: 72px !important; }
 }

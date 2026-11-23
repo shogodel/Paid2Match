@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}File a dispute{% endblock %}
+{% block title %}{{ _('File a dispute') }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -8,30 +8,27 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0"><i class="fas fa-flag"></i> File a dispute</h4>
+                    <h4 class="mb-0"><i class="fas fa-flag"></i> {{ _('File a dispute') }}</h4>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">
-                        Something went wrong on
-                        <strong>{{ match.bounty.title }}</strong>? Describe it
-                        below — an admin will review the dispute and decide.
+                        {{ _('Something went wrong on') }}
+                        <strong>{{ match.bounty.title }}</strong>{{ _('? Describe it below — an admin will review the dispute and decide.') }}
                     </p>
                     <div class="alert alert-warning small">
                         <i class="fas fa-info-circle"></i>
-                        The other party will be notified that a dispute was
-                        opened. Losing a dispute costs 15 trust points, so
-                        only file when something genuinely went wrong.
+                        {{ _('The other party will be notified that a dispute was opened. Losing a dispute costs 15 trust points, so only file when something genuinely went wrong.') }}
                     </div>
                     <form method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
-                            <label class="form-label" for="reason">What happened?</label>
+                            <label class="form-label" for="reason">{{ _('What happened?') }}</label>
                             <textarea class="form-control" id="reason" name="reason" rows="5" required
                                       minlength="10"
-                                      placeholder="Describe the problem in as much detail as you can."></textarea>
+                                      placeholder="{{ _('Describe the problem in as much detail as you can.') }}"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-warning">File dispute</button>
-                        <a href="{{ url_for('bounties.confirmed_match', match_id=match.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-warning">{{ _('File dispute') }}</button>
+                        <a href="{{ url_for('bounties.confirmed_match', match_id=match.id) }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
                     </form>
                 </div>
             </div>

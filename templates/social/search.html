@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('Search') }} — {{ _('Paid2Match') }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-3">{{ _('Search') }}</h2>
+            <form method="GET" action="{{ url_for('social.search') }}" class="mb-4" role="search">
+                <div class="input-group">
+                    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="{{ _('Search people, posts, and opportunities…') }}" aria-label="{{ _('Search') }}" autofocus>
+                    <button type="submit" class="btn btn-primary">{{ icon('search', 18) }} <span class="d-none d-sm-inline">{{ _('Search') }}</span></button>
+                </div>
+            </form>
+
+            {% if not q %}
+            <p class="text-muted">{{ _('Type a name, a skill, a topic, or a job title — one box searches people, posts, and referral needs.') }}</p>
+            {% else %}
+            {% set any_results = people_results or post_results or bounty_results %}
+            {% if not any_results %}
+            <div class="text-center py-5">
+                {{ icon('search', 48) }}
+                <h4 class="mt-3">{{ _('Nothing found for "%(q)s"', q=q) }}</h4>
+                <p class="text-muted">{{ _('Try a different spelling, a shorter word, or browse the people directory and the bounty board.') }}</p>
+                <a href="{{ url_for('social.people') }}" class="btn btn-outline-primary me-2">{{ _('Browse people') }}</a>
+                <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-primary">{{ _('Browse opportunities') }}</a>
+            </div>
+            {% endif %}
+
+            {% if people_results %}
+            <h4 class="mt-4">{{ _('People') }}</h4>
+            {% for user in people_results %}
+            {% set profile = user.profiles.first() %}
+            <div class="card mb-2">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if profile and profile.avatar_url %}
+                        <img src="{{ profile.avatar_url }}" alt="" class="avatar avatar-40">
+                        {% else %}
+                        <span class="avatar-placeholder avatar-40" aria-hidden="true">{{ (profile.display_name or user.full_name)[0] | upper }}</span>
+                        {% endif %}
+                        <div>
+                            <a href="{{ url_for('profile.public_profile', user_id=user.id) }}" class="fw-bold text-decoration-none">{{ profile.display_name or user.full_name }}</a>
+                            {% set tier_info = verification_tiers.get(user.id) %}
+                            {% include 'partials/verification_badge.html' %}
+                            {% if profile %}
+                            <div class="text-muted small">
+                                {{ profile.headline or '' }}
+                                {% if profile.location %} &middot; {{ profile.location }}{% endif %}
+                                &middot; {{ _('Helped') }} {{ profile.helped_count or 0 }} &middot; {{ profile.karma or 0 }} {{ _('karma') }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if current_user.is_authenticated and current_user.id != user.id %}
+                    <button type="button" class="btn btn-follow btn-primary btn-sm {{ 'is-following' if user.id in following_ids }}" data-follow-url="{{ url_for('social.follow', user_id=user.id) }}" data-unfollow-url="{{ url_for('social.unfollow', user_id=user.id) }}" data-following="{{ '1' if user.id in following_ids else '0' }}">
+                        <span class="label-follow">{{ _('Follow') }}</span><span class="label-following">{{ _('Following') }}</span><span class="label-unfollow">{{ _('Unfollow') }}</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if post_results %}
+            <h4 class="mt-4">{{ _('Posts') }}</h4>
+            {% for post in post_results %}
+                {% set share = None %}
+                {% include 'social/_post_card.html' %}
+            {% endfor %}
+            {% endif %}
+
+            {% if bounty_results %}
+            <h4 class="mt-4">{{ _('Opportunities') }}</h4>
+            {% for bounty in bounty_results %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <h5 class="card-title mb-1"><a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="text-decoration-none">{{ bounty.title }}</a></h5>
+                    <p class="card-text text-muted small mb-2">{{ bounty.description[:140] }}{% if bounty.description|length > 140 %}…{% endif %}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>
+                            {% if bounty.is_free or bounty.is_free_bounty %}
+                            <span class="badge bg-secondary">{{ _('Free need') }}</span>
+                            {% elif bounty.reward_amount %}
+                            <span class="bounty-reward">${{ "{:,.0f}".format(bounty.reward_amount) }}</span>
+                            {% endif %}
+                            <span class="text-muted small ms-1">{{ bounty.bounty_type|replace('_', ' ')|title }}</span>
+                        </span>
+                        {% set compact = true %}
+                        {% include 'partials/stage_rewards.html' %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

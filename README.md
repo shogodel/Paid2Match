@@ -86,6 +86,26 @@ A recruitment-only talent marketplace connecting employers with recruiters and c
 
 See DEPLOYMENT.md for production setup instructions.
 
+## Translations (i18n)
+
+The UI is translated into French and Spanish (English is the source language).
+Strings are marked with `_()` in templates and `lazy_gettext` (aliased `_l`)
+in Python; `babel.cfg` lists the keywords pybabel extracts (including `_l`).
+
+Workflow after changing any user-facing string:
+
+```bash
+pybabel extract -F babel.cfg -o messages.pot .
+pybabel update -i messages.pot -d translations
+# edit translations/{fr,es}/LC_MESSAGES/messages.po
+pybabel compile -d translations
+```
+
+Commit the `.po` **and** the compiled `.mo` files. The Dockerfile also runs
+`pybabel compile` at image build, so a fresh build never ships stale
+translations. The language switcher (`/set-language/<lang>`) returns the user
+to the page they were on and persists the choice on the profile when logged in.
+
 ## License
 
 Private - All Rights Reserved

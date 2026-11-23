@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'partials/icon.html' import icon %}
 
 {% block title %}{{ _('All Opportunities') }} - Paid2Match{% endblock %}
 
@@ -10,69 +11,85 @@
             <p class="text-muted">{{ _('Find Your Next Opportunity') }}</p>
         </div>
         <div class="col-auto">
-            <div class="btn-group" role="group">
-                <a href="{{ url_for('bounties.board') }}" class="btn btn-outline-primary {{ 'active' if not request.args.get('urgent') }}">
-                    {{ _('All Opportunities') }}
-                </a>
-                <a href="{{ url_for('bounties.board', urgent='1') }}" class="btn btn-danger {{ 'active' if request.args.get('urgent') == '1' }}">
-                    <i class="fas fa-fire"></i> {{ _('Urgent') }}
-                </a>
-            </div>
+            <a href="{{ url_for('bounties.post') }}" class="btn btn-primary">{{ _('Post a need') }}</a>
         </div>
     </div>
-    
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <input type="hidden" name="urgent" value="{{ request.args.get('urgent', '') }}">
-                <div class="col-md-3">
-                    <label class="form-label">{{ _('Search') }}</label>
-                    <input type="text" name="q" class="form-control" value="{{ search_q or '' }}" placeholder="Keyword…">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">{{ _('Type') }}</label>
-                    <select name="bounty_type" class="form-select">
-                        <option value="">{{ _('All Opportunities') }}</option>
-                        <option value="recruitment" {% if bounty_type == 'recruitment' %}selected{% endif %}>{{ _('Recruitment') }}</option>
-                        <option value="services" {% if bounty_type == 'services' %}selected{% endif %}>{{ _('Services') }}</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">{{ _('Category') }}</label>
-                    <select name="category" class="form-select">
-                        <option value="">{{ _('All categories') }}</option>
-                        {% for vertical, cats in categories.items() %}
-                        <optgroup label="{{ vertical|title }}">
-                            {% for key, label in cats.items() %}
-                            <option value="{{ key }}" {% if category == key %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </optgroup>
+
+    {# Phase 3 board cleanup: a chip row replaces the 7-field filter
+       wall. Chips are links (one filter each, keyword kept); the
+       rest lives under "More filters". The backend filters are
+       unchanged, so old bookmarked filter URLs keep working. #}
+    <div class="board-chips mb-3" role="group" aria-label="{{ _('Filter opportunities') }}">
+        {% set chip_active = 'all' %}
+        {% if show_free %}{% set chip_active = 'free' %}
+        {% elif show_urgent %}{% set chip_active = 'urgent' %}
+        {% elif bounty_type == 'recruitment' %}{% set chip_active = 'recruitment' %}
+        {% elif bounty_type == 'services' %}{% set chip_active = 'services' %}
+        {% endif %}
+        <a href="{{ url_for('bounties.board', q=search_q) }}" class="flair-chip {{ 'is-active' if chip_active == 'all' }}">{{ _('All') }}</a>
+        <a href="{{ url_for('bounties.board', bounty_type='recruitment', q=search_q) }}" class="flair-chip {{ 'is-active' if chip_active == 'recruitment' }}">{{ _('Recruitment') }}</a>
+        <a href="{{ url_for('bounties.board', bounty_type='services', q=search_q) }}" class="flair-chip {{ 'is-active' if chip_active == 'services' }}">{{ _('Services') }}</a>
+        <a href="{{ url_for('bounties.board', free='1', q=search_q) }}" class="flair-chip {{ 'is-active' if chip_active == 'free' }}">{{ _('Free') }}</a>
+        <a href="{{ url_for('bounties.board', urgent='1', q=search_q) }}" class="flair-chip {{ 'is-active' if chip_active == 'urgent' }}">{{ _('Urgent') }}</a>
+    </div>
+
+    <form method="GET" class="mb-3" role="search">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" value="{{ search_q or '' }}" placeholder="{{ _('Search opportunities…') }}" aria-label="{{ _('Search opportunities') }}">
+            {% if bounty_type %}<input type="hidden" name="bounty_type" value="{{ bounty_type }}">{% endif %}
+            {% if show_free %}<input type="hidden" name="free" value="1">{% endif %}
+            {% if show_urgent %}<input type="hidden" name="urgent" value="1">{% endif %}
+            {% if poster_id %}<input type="hidden" name="poster" value="{{ poster_id }}">{% endif %}
+            <button type="submit" class="btn btn-primary">{{ icon('search', 18) }} <span class="d-none d-sm-inline">{{ _('Search') }}</span></button>
+        </div>
+    </form>
+
+    {% if poster_id %}
+    <p class="text-muted small">{{ _('Showing needs from one poster.') }} <a href="{{ url_for('bounties.board') }}">{{ _('Show all') }}</a></p>
+    {% endif %}
+
+    <details class="board-more-filters mb-4" {% if category or skill or location or min_reward or max_reward %}open{% endif %}>
+        <summary>{{ _('More filters') }}</summary>
+        <form method="GET" class="row g-3 mt-2">
+            <input type="hidden" name="q" value="{{ search_q or '' }}">
+            {% if bounty_type %}<input type="hidden" name="bounty_type" value="{{ bounty_type }}">{% endif %}
+            {% if show_free %}<input type="hidden" name="free" value="1">{% endif %}
+            {% if show_urgent %}<input type="hidden" name="urgent" value="1">{% endif %}
+            {% if poster_id %}<input type="hidden" name="poster" value="{{ poster_id }}">{% endif %}
+            <div class="col-md-3">
+                <label class="form-label">{{ _('Category') }}</label>
+                <select name="category" class="form-select">
+                    <option value="">{{ _('All categories') }}</option>
+                    {% for vertical, cats in categories.items() %}
+                    <optgroup label="{{ vertical|title }}">
+                        {% for key, label in cats.items() %}
+                        <option value="{{ key }}" {% if category == key %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">{{ _('Skill') }}</label>
-                    <input type="text" name="skill" class="form-control" value="{{ skill or '' }}" placeholder="e.g. Python">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">{{ _('Location') }}</label>
-                    <input type="text" name="location" class="form-control" value="{{ location or '' }}" placeholder="{{ _('Location') }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Min Reward</label>
-                    <input type="number" name="min_reward" class="form-control" value="{{ min_reward or '' }}" placeholder="$0">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Max Reward</label>
-                    <input type="number" name="max_reward" class="form-control" value="{{ max_reward or '' }}">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Filter</button>
-                </div>
-            </form>
-        </div>
-    </div>
+                    </optgroup>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{{ _('Skill') }}</label>
+                <input type="text" name="skill" class="form-control" value="{{ skill or '' }}" placeholder="{{ _('e.g. Python') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">{{ _('Location') }}</label>
+                <input type="text" name="location" class="form-control" value="{{ location or '' }}" placeholder="{{ _('Location') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{{ _('Min Reward') }}</label>
+                <input type="number" name="min_reward" class="form-control" value="{{ min_reward or '' }}" placeholder="$0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">{{ _('Max Reward') }}</label>
+                <input type="number" name="max_reward" class="form-control" value="{{ max_reward or '' }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">{{ _('Filter') }}</button>
+            </div>
+        </form>
+    </details>
     
     <!-- Results -->
     {% if bounties %}
@@ -91,23 +108,33 @@
                             {% for badge_info in bounty.upgrade_badges %}
                             <span class="badge {{ badge_info.badge_class }}">{{ badge_info.badge }}</span>
                             {% endfor %}
+                            {% if has_active_pledge(bounty.poster_id) %}
+                            <span class="badge bg-primary" title="{{ _('Pledged human-reviewed hiring — no AI screening, human response within 5 business days') }}">{{ icon('shield-check', 12) }} {{ _('Pledged') }}</span>
+                            {% endif %}
                             {% if bounty.payment_status == 'secured' %}
-                            <span class="badge bg-success"><i class="fas fa-check"></i> Secured</span>
+                            <span class="badge bg-success"><i class="fas fa-check"></i> {{ _('Secured') }}</span>
                             {% else %}
-                            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> Not Secured</span>
+                            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> {{ _('Not Secured') }}</span>
                             {% endif %}
                         </div>
                         <h5 class="card-title">{{ bounty.title }}</h5>
                         <p class="card-text text-muted">{{ bounty.description[:100] }}...</p>
+                        {% set compact = true %}
+                        {% include 'partials/stage_rewards.html' %}
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-success">${{ bounty.reward_amount or 'Free' }}</span>
+                            <span class="bounty-reward">{% if bounty.reward_amount %}${{ "{:,.0f}".format(bounty.reward_amount) }}{% else %}{{ _('Free') }}{% endif %}</span>
                             {% if bounty.location %}
                             <small class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ bounty.location }}</small>
                             {% endif %}
                         </div>
+                        <div class="bounty-poster-line mt-2">
+                            <a href="{{ url_for('profile.public_profile', user_id=bounty.poster_id) }}" class="text-decoration-none small">{{ bounty.poster.full_name }}</a>
+                            {% set metrics = poster_reputation(bounty.poster_id) %}
+                            {% include 'partials/reputation_metrics.html' %}
+                        </div>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-primary btn-sm">View Details</a>
+                        <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-primary btn-sm">{{ _('View Details') }}</a>
                     </div>
                 </div>
             </div>
@@ -119,7 +146,7 @@
         <nav class="mt-4">
             <ul class="pagination justify-content-center">
                 {% if pagination.has_prev %}
-                <li class="page-item"><a class="page-link" href="{{ url_for('bounties.board', page=pagination.prev_num) }}">Previous</a></li>
+                <li class="page-item"><a class="page-link" href="{{ url_for('bounties.board', page=pagination.prev_num) }}">{{ _('Previous') }}</a></li>
                 {% endif %}
                 {% for p in range(1, pagination.pages + 1) %}
                 <li class="page-item {% if p == pagination.page %}active{% endif %}">
@@ -127,7 +154,7 @@
                 </li>
                 {% endfor %}
                 {% if pagination.has_next %}
-                <li class="page-item"><a class="page-link" href="{{ url_for('bounties.board', page=pagination.next_num) }}">Next</a></li>
+                <li class="page-item"><a class="page-link" href="{{ url_for('bounties.board', page=pagination.next_num) }}">{{ _('Next') }}</a></li>
                 {% endif %}
             </ul>
         </nav>
@@ -135,8 +162,8 @@
     
     {% else %}
         <div class="text-center py-5">
-            <h3>No referral needs found</h3>
-            <p>Try adjusting your filters or check back later.</p>
+            <h3>{{ _('No referral needs found') }}</h3>
+            <p>{{ _('Try adjusting your filters or check back later.') }}</p>
         </div>
     {% endif %}
 </div>

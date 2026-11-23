@@ -1,0 +1,38 @@
+{# Blind poll on a post card. Expects: post (with .poll), poll_votes
+   ({post_id: voted option_id}). Results stay hidden until you vote —
+   or you are the author. Guests see the options and a login prompt. #}
+{% from 'partials/icon.html' import icon %}
+{% if post.poll %}
+{% set voted_option = poll_votes.get(post.id) if poll_votes else None %}
+{% set show_results = voted_option or (current_user.is_authenticated and current_user.id == post.author_id) %}
+<div class="post-poll" data-poll-id="{{ post.poll.id }}" data-vote-url="{{ url_for('social.vote_poll', poll_id=post.poll.id) }}">
+    {% if show_results %}
+    <div class="poll-results">
+        {% for r in post.poll.results() %}
+        <div class="poll-result {{ 'is-voted' if voted_option == r.id }}">
+            <div class="poll-result-head">
+                <span>{{ r.text }}{% if voted_option == r.id %} {{ icon('check', 14) }}{% endif %}</span>
+                <span>{{ r.percent }}% &middot; {{ r.votes }} {{ _('vote') if r.votes == 1 else _('votes') }}</span>
+            </div>
+            <div class="poll-result-bar"><div class="poll-result-fill" style="width: {{ r.percent }}%"></div></div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="poll-total">{{ post.poll.total_votes }} {{ _('vote') if post.poll.total_votes == 1 else _('votes') }}</div>
+    {% elif current_user.is_authenticated %}
+    <div class="poll-options">
+        {% for option in post.poll.options %}
+        <button type="button" class="poll-option-btn" data-option-id="{{ option.id }}">{{ option.text }}</button>
+        {% endfor %}
+    </div>
+    <div class="poll-total">{{ _('Vote to see the results.') }}</div>
+    {% else %}
+    <div class="poll-options">
+        {% for option in post.poll.options %}
+        <div class="poll-option-btn disabled" aria-disabled="true">{{ option.text }}</div>
+        {% endfor %}
+    </div>
+    <div class="poll-total"><a href="{{ url_for('auth.login') }}">{{ _('Log in') }}</a> {{ _('to vote and see the results.') }}</div>
+    {% endif %}
+</div>
+{% endif %}

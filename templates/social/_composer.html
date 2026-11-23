@@ -1,0 +1,97 @@
+{# In-feed composer — one composer, not two creation flows. Collapsed:
+   avatar + pill. Click expands inline: auto-growing textarea,
+   post-type chips (Discussion / Ask / Intro / Available / Referral
+   need), bounty fields for needs (Free vs Paid), and an "Attach
+   opportunity" picker that links one of your open bounties to a plain
+   post. Submits via AJAX to social.new_post; the server returns the
+   rendered card, which is prepended to the feed without a reload.
+   Expects: composer_form (PostForm), my_bounties (your open
+   bounties), spaces (topic spaces for the space picker). #}
+{% from 'partials/icon.html' import icon %}
+{% set my_profile = current_user.profiles.first() %}
+<div class="composer-card" id="composer">
+    <div class="composer-collapsed" id="composer-collapsed" role="button" tabindex="0" aria-label="{{ _('Write a post') }}">
+        {% if my_profile and my_profile.avatar_url %}
+        <img src="{{ my_profile.avatar_url }}" alt="" class="avatar avatar-40">
+        {% else %}
+        <span class="avatar-placeholder avatar-40" aria-hidden="true">{{ (current_user.full_name or 'P')[0] | upper }}</span>
+        {% endif %}
+        <span class="composer-pill">{{ _('Share a win, ask the network, or post a referral need…') }}</span>
+    </div>
+    <div class="composer-expanded">
+        <form id="composer-form" data-post-url="{{ url_for('social.new_post') }}" novalidate>
+            {{ composer_form.csrf_token }}
+            <input type="hidden" name="post_type" id="composer-post-type" value="update">
+            <input type="hidden" name="bounty_id" id="composer-bounty-id" value="">
+            <div class="composer-chips" role="group" aria-label="{{ _('Post type') }}">
+                <button type="button" class="composer-chip is-active" data-post-type="update">{{ icon('messages-square', 14) }} {{ _('Discussion') }}</button>
+                <button type="button" class="composer-chip" data-post-type="ask">{{ icon('info', 14) }} {{ _('Ask') }}</button>
+                <button type="button" class="composer-chip" data-post-type="intro">{{ icon('sparkles', 14) }} {{ _('Intro') }}</button>
+                <button type="button" class="composer-chip" data-post-type="available">{{ icon('user', 14) }} {{ _('Available') }}</button>
+                <button type="button" class="composer-chip" data-post-type="need">{{ icon('briefcase', 14) }} {{ _('Referral need') }}</button>
+            </div>
+            <div id="composer-need-kind" class="composer-chips" hidden>
+                <button type="button" class="composer-chip is-active" data-need-kind="free">{{ _('Free — community referral') }}</button>
+                <button type="button" class="composer-chip" data-need-kind="paid">{{ _('Paid — escrow a bounty') }}</button>
+            </div>
+            <textarea name="body" id="composer-body" class="composer-textarea" placeholder="{{ _('Share a win, ask the network, or post a referral need…') }}" maxlength="2000" rows="3" aria-label="{{ _('Post text') }}"></textarea>
+            {% if spaces %}
+            <div class="composer-space-row">
+                <label for="composer-space" class="small text-muted mb-0">{{ _('Post in a space') }}</label>
+                <select name="space_id" id="composer-space" class="form-select form-select-sm">
+                    <option value="">{{ _('General feed') }}</option>
+                    {% for space in spaces %}
+                    <option value="{{ space.id }}">{{ space.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="composer-bounty-fields" id="composer-bounty-fields">
+                <div class="mb-2">
+                    <input type="text" name="title" id="composer-title" class="form-control form-control-sm" placeholder="{{ _('Need title — at least 10 characters') }}" maxlength="200">
+                </div>
+                <div class="row g-2">
+                    <div class="col-6" id="composer-reward-wrap" hidden>
+                        <input type="number" name="reward_amount" id="composer-reward" class="form-control form-control-sm" placeholder="{{ _('Bounty ($) — $50 minimum') }}" min="50" max="100000" step="1">
+                    </div>
+                    <div class="col" id="composer-location-wrap">
+                        <input type="text" name="location" id="composer-location" class="form-control form-control-sm" placeholder="{{ _('Location (optional)') }}" maxlength="200">
+                    </div>
+                </div>
+            </div>
+            <div class="composer-poll-area" id="composer-poll-area" hidden>
+                <label for="composer-poll-options" class="small text-muted">{{ _('Poll — one option per line (2 to 6)') }}</label>
+                <textarea name="poll_options" id="composer-poll-options" class="form-control form-control-sm" rows="3" placeholder="{{ _('Yes') }}&#10;{{ _('No') }}&#10;{{ _('Maybe') }}" maxlength="700"></textarea>
+            </div>
+            {% if my_bounties %}
+            <div class="composer-attach-list" id="composer-attach-list">
+                {% for bounty in my_bounties %}
+                <button type="button" class="composer-attach-item" data-bounty-id="{{ bounty.id }}" data-bounty-title="{{ bounty.title }}">
+                    {{ icon('briefcase', 16) }}
+                    <span class="flex-grow-1 text-truncate">{{ bounty.title }}</span>
+                    {% if bounty.reward_amount and bounty.reward_amount > 0 %}
+                    <span class="bounty-nested-reward">${{ "{:,.0f}".format(bounty.reward_amount) }}</span>
+                    {% else %}
+                    <span class="text-muted small">{{ _('Free') }}</span>
+                    {% endif %}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="composer-actions">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="composer-poll-btn">{{ icon('chart-line', 14) }} {{ _('Add poll') }}</button>
+                    {% if my_bounties %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="composer-attach-btn">{{ icon('link', 14) }} {{ _('Attach opportunity') }}</button>
+                    <span id="composer-attached-label" class="small text-muted"></span>
+                    {% endif %}
+                    <span class="text-muted small">{{ _('Visible to the whole network') }}</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="composer-cancel">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-sm btn-primary" id="composer-submit" disabled>{{ _('Post') }}</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

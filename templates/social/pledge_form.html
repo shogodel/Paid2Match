@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Pledge human-reviewed hiring - Paid2Match{% endblock %}
+{% block title %}{{ _('Pledge human-reviewed hiring') }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <h2>Pledge human-reviewed hiring</h2>
+    <h2>{{ _('Pledge human-reviewed hiring') }}</h2>
     <div class="alert alert-info">
-        By pledging, your company promises: <strong>no AI screening</strong> of candidates, and a <strong>human response to every referral within 5 business days</strong>. Your company appears on the public register with its no-ghosting compliance — and if you stop answering, the pledge shows as suspended.
+        {{ _('By pledging, your company promises:') }} <strong>{{ _('no AI screening') }}</strong> {{ _('of candidates, and a') }} <strong>{{ _('human response to every referral within 5 business days') }}</strong>{{ _('. Your company appears on the public register with its no-ghosting compliance — and if you stop answering, the pledge shows as suspended.') }}
     </div>
     <form method="POST" action="{{ url_for('social.new_pledge') }}">
         {{ form.hidden_tag() }}

@@ -1,0 +1,29 @@
+{# Welcome checklist — shown on the feed until all three steps are
+   done or the user dismisses it (dismissal lasts the session).
+   Expects: onboarding_steps (utils/onboarding.py). #}
+{% from 'partials/icon.html' import icon %}
+<div class="onboarding-card" id="onboarding-card">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+            <h5 class="mb-1">{{ _('Welcome to Paid2Match') }}</h5>
+            <p class="text-muted small mb-2">{{ _('Three quick steps to get started.') }}</p>
+        </div>
+        <button type="button" class="btn-close onboarding-dismiss" data-dismiss-url="{{ url_for('social.dismiss_onboarding') }}" aria-label="{{ _('Dismiss') }}"></button>
+    </div>
+    {% for step in onboarding_steps %}
+    <div class="onboarding-step {{ 'is-done' if step.done }}">
+        {% if step.done %}
+        <span class="onboarding-step-icon">{{ icon('circle-check', 20) }}</span>
+        {% else %}
+        <span class="onboarding-step-num" aria-hidden="true">{{ loop.index }}</span>
+        {% endif %}
+        <div class="flex-grow-1">
+            <div class="onboarding-step-label fw-semibold">{{ step.label }}</div>
+            <div class="text-muted small">{{ step.hint }}</div>
+        </div>
+        {% if not step.done %}
+        <a href="{{ step.url }}" class="btn btn-sm btn-outline-primary flex-shrink-0">{{ _('Do it') }}</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
