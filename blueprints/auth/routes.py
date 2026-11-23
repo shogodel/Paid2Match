@@ -1,4 +1,5 @@
 """Authentication routes for Paid2Match."""
+import secrets
 from datetime import datetime, timezone
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
@@ -14,6 +15,13 @@ from utils.email import (
     send_verification_email, send_password_reset_email,
     confirm_confirmation_token, confirm_reset_token,
 )
+from utils.google_oauth import (
+    google_available,
+    google_authorize_url,
+    exchange_google_code,
+    fetch_google_userinfo,
+)
+from utils.linked_accounts import oauth_state_token
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -139,6 +147,113 @@ def register():
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html', form=form)
+
+
+@auth_bp.route('/google/login')
+def google_login():
+    """GET /auth/google/login - Start Google sign-in ("Continue with
+    Google"). Redirects to Google's authorize endpoint with a random
+    state token stored in the session."""
+    if current_user.is_authenticated:
+        return redirect(url_for('bounties.board'))
+
+    if not google_available():
+        flash('Google sign-in is not available right now — please log in with your email and password.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    state = oauth_state_token()
+    session['google_oauth_state'] = state
+    authorize_url = google_authorize_url(
+        url_for('auth.google_callback', _external=True), state
+    )
+    return redirect(authorize_url)
+
+
+@auth_bp.route('/google/callback')
+def google_callback():
+    """GET /auth/google/callback - Handle Google's redirect after
+    sign-in. Verifies the state token, exchanges the code for an access
+    token, reads the user's Google profile, then logs them into the
+    matching account (creating it, already verified, when there is none
+    — Google has already verified the email)."""
+    if current_user.is_authenticated:
+        return redirect(url_for('bounties.board'))
+
+    if request.args.get('error'):
+        flash('Google sign-in was cancelled or failed — please try again, or log in with your email.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    # One-time state check (CSRF): the token must match the one stored
+    # when the sign-in started.
+    expected_state = session.pop('google_oauth_state', None)
+    if not expected_state or request.args.get('state') != expected_state:
+        flash('That Google sign-in link is invalid or has expired — please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    code = request.args.get('code')
+    if not code:
+        flash('Google did not return a sign-in code — please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    redirect_uri = url_for('auth.google_callback', _external=True)
+    token, error = exchange_google_code(code, redirect_uri)
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('auth.login'))
+
+    userinfo, error = fetch_google_userinfo(token)
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('auth.login'))
+
+    email = (userinfo.get('email') or '').lower().strip()
+    if not email:
+        flash('Google did not share an email address for this account — please log in with your email instead.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    # Google tells us whether it verified the email; only a verified
+    # email skips our own confirmation step.
+    if userinfo.get('email_verified') is False:
+        flash('Google has not verified that email address — please log in with your email instead.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    now = datetime.now(timezone.utc)
+    user = User.query.filter_by(email=email).first()
+    if user:
+        if not user.is_active or user.is_deleted:
+            flash('This account has been deactivated.', 'danger')
+            return redirect(url_for('auth.login'))
+        created = False
+        # Google verified this email, so the account is verified now.
+        user.email_verified = True
+        user.email_verified_at = now
+    else:
+        created = True
+        full_name = (userinfo.get('name') or '').strip() or email.split('@')[0]
+        user = User(
+            email=email,
+            full_name=full_name[:120],
+            # No usable password: this account signs in with Google.
+            # A random value, hashed with werkzeug, so password login
+            # can never succeed for it (the reset flow still works if
+            # the user ever wants a password).
+            password_hash=generate_password_hash(secrets.token_urlsafe(48)),
+            role='user',
+            is_active=True,
+            email_verified=True,
+            email_verified_at=now,
+        )
+        db.session.add(user)
+
+    user.last_login = now
+    db.session.commit()
+
+    login_user(user, remember=True)
+    if created:
+        flash(f'Welcome to Paid2Match, {user.full_name}! Please complete your profile.', 'success')
+    else:
+        flash(f'Welcome back, {user.full_name}!', 'success')
+    return redirect(url_for('bounties.board'))
 
 
 @auth_bp.route('/confirm/<token>')

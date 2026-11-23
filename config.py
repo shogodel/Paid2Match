@@ -68,6 +68,13 @@ class Config:
     LINKEDIN_CLIENT_SECRET = os.getenv('LINKEDIN_CLIENT_SECRET')
     GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
     GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
+
+    # Google sign-in ("Continue with Google") — OAuth 2.0 client from
+    # Google Cloud Console (APIs & Services > Credentials). From the
+    # environment only — never hardcoded, never in the DB. When unset,
+    # the Google button is hidden and /auth/google/* redirects to login.
+    GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+    GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
     
     MAPBOX_ACCESS_TOKEN = os.getenv('MAPBOX_ACCESS_TOKEN')
     

@@ -2,6 +2,7 @@
 import os
 from flask import Flask, render_template, redirect, url_for, session, request
 from flask_login import current_user
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from extensions import db, login_manager, migrate, bcrypt, babel, mail, csrf, get_or_404
 from models import Profile
@@ -24,6 +25,14 @@ def create_app(config_name: str = None) -> Flask:
     # Load configuration
     from config import config_by_name
     app.config.from_object(config_by_name.get(config_name, config_by_name['development']))
+
+    # The app runs behind the SWAG reverse proxy, which terminates HTTPS
+    # and forwards X-Forwarded-Proto/Host. Trust one proxy hop so
+    # url_for(..., _external=True) builds https://paid2match.work/...
+    # URLs (Google rejects an http:// redirect_uri). Gunicorn is only
+    # reachable through the proxy, so these headers cannot be spoofed
+    # by outside clients.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
     # Initialize extensions
     db.init_app(app)

@@ -63,7 +63,16 @@
                         
                         {{ form.submit(class="btn btn-primary w-100 py-2") }}
                     </form>
-                    
+
+                    {% if config.get('GOOGLE_CLIENT_ID') and config.get('GOOGLE_CLIENT_SECRET') %}
+                    <div class="d-flex align-items-center my-3">
+                        <hr class="flex-grow-1">
+                        <span class="px-2 text-muted small">{{ _('or') }}</span>
+                        <hr class="flex-grow-1">
+                    </div>
+                    <a href="{{ url_for('auth.google_login') }}" class="btn btn-outline-secondary w-100 py-2">{{ _('Continue with Google') }}</a>
+                    {% endif %}
+
                     <p class="text-center mt-3 mb-0">
                         {{ _('Already have an account') }}? 
                         <a href="{{ url_for('auth.login') }}">{{ _('Login') }}</a>
