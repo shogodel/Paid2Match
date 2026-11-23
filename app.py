@@ -146,6 +146,18 @@ def create_app(config_name: str = None) -> Flask:
 
     app.jinja_env.filters['relativetime'] = _relative_time
 
+    # Warm Rainbow (2026-11-23): avatar placeholders rotate through 8
+    # warm tones so the feed feels full of people. The tone is a stable
+    # hash of the user id (md5, not Python's salted hash) so a user
+    # keeps their colour across restarts and servers. Returns 0-7.
+    import hashlib
+
+    def _avatar_tone(user_id):
+        digest = hashlib.md5(str(user_id or '').encode()).hexdigest()
+        return int(digest, 16) % 8
+
+    app.jinja_env.filters['avatar_tone'] = _avatar_tone
+
     # Phase 2: @mentions in post/comment text link to the profile.
     from utils.mentions import link_mentions
     app.jinja_env.filters['mention_links'] = link_mentions

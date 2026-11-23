@@ -38,7 +38,7 @@
                         {% if profile and profile.avatar_url %}
                         <img src="{{ profile.avatar_url }}" alt="" class="avatar avatar-40">
                         {% else %}
-                        <span class="avatar-placeholder avatar-40" aria-hidden="true">{{ (profile.display_name or user.full_name)[0] | upper }}</span>
+                        <span class="avatar-placeholder avatar-40 avatar-tone-{{ user.id|avatar_tone }}" aria-hidden="true">{{ (profile.display_name or user.full_name)[0] | upper }}</span>
                         {% endif %}
                         <div>
                             <a href="{{ url_for('profile.public_profile', user_id=user.id) }}" class="fw-bold text-decoration-none">{{ profile.display_name or user.full_name }}</a>

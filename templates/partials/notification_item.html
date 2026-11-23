@@ -12,7 +12,7 @@
         {% if actor_profile and actor_profile.avatar_url %}
         <img src="{{ actor_profile.avatar_url }}" alt="" class="avatar avatar-36">
         {% elif n.actor_id %}
-        <span class="avatar-placeholder avatar-36" aria-hidden="true">{{ (n.actor.full_name or 'P')[0] | upper }}</span>
+        <span class="avatar-placeholder avatar-36 avatar-tone-{{ n.actor.id|avatar_tone }}" aria-hidden="true">{{ (n.actor.full_name or 'P')[0] | upper }}</span>
         {% else %}
         <span class="notification-type-icon">{{ icon(notification_icon(n.type), 18) }}</span>
         {% endif %}

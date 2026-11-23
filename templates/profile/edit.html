@@ -9,7 +9,7 @@
                     {% if profile and profile.avatar_url %}
                         <img src="{{ profile.avatar_url }}" class="rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover;">
                     {% else %}
-                        <div class="profile-avatar-placeholder mx-auto mb-3" style="width: 100px; height: 100px;">
+                        <div class="profile-avatar-placeholder avatar-tone-{{ current_user.id|avatar_tone }} mx-auto mb-3" style="width: 100px; height: 100px;">
                             <i class="fas fa-user"></i>
                         </div>
                     {% endif %}

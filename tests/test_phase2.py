@@ -392,6 +392,67 @@ class TestFlairAndFeeds:
         assert 'A discussion post for flair.' in both
 
 
+# ------------------------------------------------------- Warm Rainbow
+# (2026-11-23): colour with a job — flair chips, avatar tones, space
+# accents — plus the traced handshake logo mark (sprite #p2m-mark).
+
+
+class TestWarmRainbow:
+    def test_avatar_tone_filter_deterministic_and_bounded(self, app):
+        tone = app.jinja_env.filters['avatar_tone']
+        assert tone('some-user-id') == tone('some-user-id')
+        assert tone(None) in range(8)
+        assert tone('') in range(8)
+        tones = {tone(f'user-{i}') for i in range(20)}
+        assert tones <= set(range(8))
+        # md5 mod 8 spreads: 20 ids must not collapse to one tone.
+        assert len(tones) >= 3
+
+    def test_feed_flair_chips_carry_flair_classes(
+            self, client, logged_in_user):
+        html = client.get('/social/feed').data.decode()
+        for flair in ('discussion', 'win', 'ask', 'need', 'available',
+                      'intro'):
+            assert f'flair-chip flair-{flair}' in html, flair
+
+    def test_post_card_type_chip_carries_flair_class(
+            self, app, client, logged_in_user, sample_user, second_user):
+        client.post(f'/social/follow/{second_user.id}')
+        _make_post(app, second_user.id, 'A question post for chip.',
+                   post_type='ask')
+        _make_post(app, second_user.id, 'A win post for chip.',
+                   post_type='win')
+        html = client.get('/social/feed?tab=latest').data.decode()
+        assert 'post-type-chip flair-ask' in html
+        assert 'post-type-chip flair-win' in html
+        # The old per-type classes are gone (replaced by flair-*).
+        assert 'chip-need' not in html
+        assert 'chip-win' not in html
+        assert 'chip-ask' not in html
+
+    def test_space_icons_carry_slug_classes(
+            self, app, client, logged_in_user):
+        with app.app_context():
+            seed_spaces()
+            db.session.commit()
+        html = client.get('/social/spaces').data.decode()
+        assert 'space-icon space-tech' in html
+        assert 'space-icon space-trades' in html
+        assert 'space-icon space-montreal' in html
+
+    def test_avatar_placeholder_carries_tone_class(
+            self, client, logged_in_user):
+        html = client.get('/social/feed').data.decode()
+        assert 'avatar-tone-' in html
+
+    def test_logo_mark_uses_traced_sprite(self, client):
+        html = client.get('/').data.decode()
+        assert '#p2m-mark' in html
+        assert 'brand-mark' in html
+        # The hand-drawn blob (mask-slits) is retired.
+        assert 'p2m-hand-gaps' not in html
+
+
 # ------------------------------------------------------------------- polls
 
 

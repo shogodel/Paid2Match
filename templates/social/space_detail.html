@@ -5,7 +5,7 @@
 <div class="container py-4">
     <div class="d-flex flex-wrap gap-3 align-items-start justify-content-between mb-3">
         <div class="d-flex gap-3 align-items-start">
-            <span class="space-icon space-icon-lg">{{ icon(space.icon or 'layers', 28) }}</span>
+            <span class="space-icon space-icon-lg space-{{ space.slug }}">{{ icon(space.icon or 'layers', 28) }}</span>
             <div>
                 <h2 class="mb-1">{{ space.name }}</h2>
                 {% if space.description %}

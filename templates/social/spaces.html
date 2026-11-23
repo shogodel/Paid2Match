@@ -14,7 +14,7 @@
             <div class="card h-100 space-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="space-icon">{{ icon(space.icon or 'layers', 22) }}</span>
+                        <span class="space-icon space-{{ space.slug }}">{{ icon(space.icon or 'layers', 22) }}</span>
                         <h5 class="card-title mb-0"><a href="{{ url_for('social.space_detail', slug=space.slug) }}" class="text-decoration-none">{{ space.name }}</a></h5>
                     </div>
                     {% if space.description %}

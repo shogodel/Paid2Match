@@ -25,7 +25,7 @@
                 {% if author_profile and author_profile.avatar_url %}
                 <img src="{{ author_profile.avatar_url }}" alt="" class="avatar avatar-40">
                 {% else %}
-                <span class="avatar-placeholder avatar-40" aria-hidden="true">{{ author_name[0] | upper }}</span>
+                <span class="avatar-placeholder avatar-40 avatar-tone-{{ post.author_id|avatar_tone }}" aria-hidden="true">{{ author_name[0] | upper }}</span>
                 {% endif %}
             </a>
             <div class="post-header-main">
@@ -63,9 +63,9 @@
         </div>
 
         <div class="post-chips">
-            <span class="post-type-chip {{ 'chip-need' if post.is_need else ('chip-win' if post.post_type == 'win' else ('chip-ask' if post.post_type == 'ask' else '')) }}">{{ post.type_label }}</span>
+            <span class="post-type-chip flair-{{ post.flair }}">{{ post.type_label }}</span>
             {% if post.space %}
-            <a href="{{ url_for('social.space_detail', slug=post.space.slug) }}" class="post-type-chip chip-space">{{ icon('layers', 12) }} {{ post.space.name }}</a>
+            <a href="{{ url_for('social.space_detail', slug=post.space.slug) }}" class="post-type-chip chip-space space-{{ post.space.slug }}">{{ icon('layers', 12) }} {{ post.space.name }}</a>
             {% endif %}
             {% if post.bounty %}
             <span class="post-type-chip">{{ post.bounty.type_label }}{% if post.bounty.category_label %} &middot; {{ post.bounty.category_label }}{% endif %}</span>

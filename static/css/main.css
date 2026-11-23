@@ -23,6 +23,24 @@
     --p2m-accent: #D9A441;
     --p2m-accent-soft: #FBF3E2;
     --p2m-secondary: #3E5C50;
+    --p2m-secondary-soft: #E4EDE7;
+    /* -- Warm Rainbow hues (2026-11-23): colour with a job. Each hue
+       has a solid (fills, active chips), a soft tint (chip
+       backgrounds) and, where the solid is too light to read as text
+       on its soft tint, an ink (chip text). Dark variants below. -- */
+    --p2m-rose: #C97B7B;
+    --p2m-rose-soft: #F7E7E7;
+    --p2m-rose-ink: #A85A5A;
+    --p2m-teal: #2E7D7B;
+    --p2m-teal-soft: #DDECEB;
+    --p2m-honey: #E8A838;
+    --p2m-honey-soft: #FBF0D3;
+    --p2m-honey-ink: #8A6D1A;
+    --p2m-plum: #8E5A7A;
+    --p2m-plum-soft: #F1E4EC;
+    --p2m-peach: #E8836B;
+    --p2m-peach-soft: #FDEAE3;
+    --p2m-peach-ink: #B35C3F;
     --p2m-bg: #FAF7F4;
     --p2m-surface: #FFFFFF;
     --p2m-surface-raised: #F3EFEA;
@@ -79,6 +97,22 @@
     --p2m-accent: #E4B95C;
     --p2m-accent-soft: rgba(228, 185, 92, 0.14);
     --p2m-secondary: #7FA393;
+    --p2m-secondary-soft: rgba(127, 163, 147, 0.14);
+    /* -- Warm Rainbow hues (dark): lighter solids read on dark
+       surfaces; softs are translucent tints of the same hue. -- */
+    --p2m-rose: #DE9A9A;
+    --p2m-rose-soft: rgba(222, 154, 154, 0.14);
+    --p2m-rose-ink: #E8B4B4;
+    --p2m-teal: #5FB3B0;
+    --p2m-teal-soft: rgba(95, 179, 176, 0.14);
+    --p2m-honey: #E8B95C;
+    --p2m-honey-soft: rgba(232, 185, 92, 0.14);
+    --p2m-honey-ink: #F0D089;
+    --p2m-plum: #C08AAC;
+    --p2m-plum-soft: rgba(192, 138, 172, 0.14);
+    --p2m-peach: #F0927A;
+    --p2m-peach-soft: rgba(240, 146, 122, 0.14);
+    --p2m-peach-ink: #F5B3A1;
     --p2m-bg: #171412;
     --p2m-surface: #221E1B;
     --p2m-surface-raised: #2C2723;
@@ -286,7 +320,7 @@ input[type="password"]::placeholder {
 .navbar-p2m .navbar-brand:hover { color: var(--p2m-text) !important; }
 
 .brand-mark {
-    width: 32px;
+    width: 64px;
     height: 32px;
     flex: none;
 }
@@ -938,9 +972,6 @@ input[type="password"]::placeholder {
     color: var(--p2m-text-secondary);
 }
 
-.post-type-chip.chip-need { background-color: var(--p2m-primary-soft); color: var(--p2m-primary); }
-.post-type-chip.chip-win { background-color: var(--p2m-accent-soft); color: var(--p2m-warning); }
-.post-type-chip.chip-ask { background-color: var(--p2m-info-soft); color: var(--p2m-info); }
 .post-type-chip.chip-bumped { background-color: var(--p2m-accent-soft); color: var(--p2m-warning); }
 .post-type-chip.chip-boosted { background-color: var(--p2m-primary-soft); color: var(--p2m-primary); }
 
@@ -1426,7 +1457,7 @@ input[type="password"]::placeholder {
 }
 
 .hero-mark {
-    width: 84px;
+    width: 169px;
     height: 84px;
 }
 
@@ -1531,7 +1562,7 @@ input[type="password"]::placeholder {
     margin-top: auto;
 }
 
-.footer-mark { width: 24px; height: 24px; vertical-align: -5px; }
+.footer-mark { width: 48px; height: 24px; vertical-align: -5px; }
 
 .footer-wordmark {
     font-weight: 700;
@@ -1648,7 +1679,7 @@ input[type="password"]::placeholder {
 
 @media (max-width: 576px) {
     .hero-title { font-size: 1.9rem; }
-    .hero-mark { width: 72px; height: 72px; }
+    .hero-mark { width: 144px; height: 72px; }
     .hero .btn-lg { width: 100%; }
     .profile-stats-row { gap: 1rem; }
 }
@@ -1712,6 +1743,63 @@ input[type="password"]::placeholder {
     border-color: var(--p2m-primary);
     color: #fff;
 }
+
+/* ---------------- Warm Rainbow (2026-11-23): colour with a job ----------------
+   Remus: the Warm Human base is good, but a social network needs more
+   life. Five new hues (tokens above), each assigned by MEANING, not
+   decoration: flair chips get their own colour, avatar placeholders
+   rotate through 8 warm tones so the feed feels full of people, and
+   each seeded space gets its own accent. Terracotta stays the primary
+   everywhere — these never replace it on buttons, links, or the brand.
+   This section sits after the rules it overrides (avatar placeholders,
+   post-type chips, space icons) so equal-specificity tone classes win. */
+
+/* Flair filter chips: soft tint + hue text at rest, solid hue when active.
+   Mapping: Discussion sage, Win honey, Ask teal, Referral Need
+   terracotta, Available plum, Intro peach. */
+.flair-chip.flair-discussion { background: var(--p2m-secondary-soft); color: var(--p2m-secondary); border-color: transparent; }
+.flair-chip.flair-discussion.is-active { background: var(--p2m-secondary); color: #fff; border-color: var(--p2m-secondary); }
+.flair-chip.flair-win { background: var(--p2m-honey-soft); color: var(--p2m-honey-ink); border-color: transparent; }
+.flair-chip.flair-win.is-active { background: var(--p2m-honey); color: #201A17; border-color: var(--p2m-honey); }
+.flair-chip.flair-ask { background: var(--p2m-teal-soft); color: var(--p2m-teal); border-color: transparent; }
+.flair-chip.flair-ask.is-active { background: var(--p2m-teal); color: #fff; border-color: var(--p2m-teal); }
+.flair-chip.flair-need { background: var(--p2m-primary-soft); color: var(--p2m-primary); border-color: transparent; }
+.flair-chip.flair-need.is-active { background: var(--p2m-primary); color: #fff; border-color: var(--p2m-primary); }
+.flair-chip.flair-available { background: var(--p2m-plum-soft); color: var(--p2m-plum); border-color: transparent; }
+.flair-chip.flair-available.is-active { background: var(--p2m-plum); color: #fff; border-color: var(--p2m-plum); }
+.flair-chip.flair-intro { background: var(--p2m-peach-soft); color: var(--p2m-peach-ink); border-color: transparent; }
+.flair-chip.flair-intro.is-active { background: var(--p2m-peach); color: #fff; border-color: var(--p2m-peach); }
+
+/* Post-card type chip: same flair colours, soft only (no active state). */
+.post-type-chip.flair-discussion { background-color: var(--p2m-secondary-soft); color: var(--p2m-secondary); }
+.post-type-chip.flair-win { background-color: var(--p2m-honey-soft); color: var(--p2m-honey-ink); }
+.post-type-chip.flair-ask { background-color: var(--p2m-teal-soft); color: var(--p2m-teal); }
+.post-type-chip.flair-need { background-color: var(--p2m-primary-soft); color: var(--p2m-primary); }
+.post-type-chip.flair-available { background-color: var(--p2m-plum-soft); color: var(--p2m-plum); }
+.post-type-chip.flair-intro { background-color: var(--p2m-peach-soft); color: var(--p2m-peach-ink); }
+
+/* Avatar tones: FIXED hex on purpose — identity colours, identical in
+   both themes (like GitHub/Google avatar colours), so a person keeps
+   their colour when they switch theme. Assigned by the avatar_tone
+   Jinja filter (md5 of the user id, mod 8). Light tones get warm-ink
+   initials, dark tones get white. */
+.avatar-tone-0 { background: #D9481C; color: #fff; }
+.avatar-tone-1 { background: #D9A441; color: #201A17; }
+.avatar-tone-2 { background: #3E5C50; color: #fff; }
+.avatar-tone-3 { background: #C97B7B; color: #fff; }
+.avatar-tone-4 { background: #2E7D7B; color: #fff; }
+.avatar-tone-5 { background: #E8A838; color: #201A17; }
+.avatar-tone-6 { background: #8E5A7A; color: #fff; }
+.avatar-tone-7 { background: #E8836B; color: #fff; }
+
+/* Space accents, by slug (seeded slugs are stable — models/space.py).
+   Unseeded spaces fall back to the terracotta default. */
+.space-icon.space-tech { background: var(--p2m-teal-soft); color: var(--p2m-teal); }
+.space-icon.space-trades { background: var(--p2m-honey-soft); color: var(--p2m-honey-ink); }
+.space-icon.space-montreal { background: var(--p2m-plum-soft); color: var(--p2m-plum); }
+.chip-space.space-tech { color: var(--p2m-teal); }
+.chip-space.space-trades { color: var(--p2m-honey-ink); }
+.chip-space.space-montreal { color: var(--p2m-plum); }
 
 /* Polls (Blind-style): options as buttons before voting, bars after. */
 .post-poll {
@@ -2008,11 +2096,13 @@ input[type="password"]::placeholder {
     pointer-events: none;
 }
 
-.nav-search-input {
-    padding-left: 2.375rem;
-    border-radius: 999px;
-    background: var(--p2m-surface-muted);
-    border-color: var(--p2m-border);
+/* The global input rule above (input[type="search"], !important)
+   beats a plain class selector, so this needs the .nav-search
+   ancestor for specificity AND !important — otherwise the search
+   icon overlaps the placeholder text. */
+.nav-search .nav-search-input {
+    padding-left: 2.375rem !important;
+    border-radius: 999px !important;
 }
 
 .nav-search-input:focus {
