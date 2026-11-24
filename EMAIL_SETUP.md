@@ -58,6 +58,23 @@ skipped. Sign-in still works — OAuth providers verify the email.
    fine for confirmation/reset mail at this scale, but this is not a
    long-term bulk-mail solution.
 
+## Option C — Resend HTTPS API (required on this droplet)
+
+DigitalOcean blocks outbound SMTP ports (25/465/587/2525) from the
+droplet, so Options A and B cannot send from the live server. When
+`RESEND_API_KEY` is set, the app sends through the Resend HTTPS API
+(port 443, open) instead of SMTP, and ignores the SMTP settings.
+
+1. Create a free Resend account and verify the sending domain
+   (`paid2match.work`) with the DNS records Resend shows (DKIM + SPF).
+2. Create an API key with "Sending access" permission.
+3. Set:
+   ```
+   RESEND_API_KEY=re_...
+   MAIL_DEFAULT_SENDER=support@paid2match.work
+   ```
+   The SMTP variables are kept as a fallback for hosts where SMTP works.
+
 ## What gets sent
 
 - **Referral invites** — subject "Someone referred you on Paid2Match",

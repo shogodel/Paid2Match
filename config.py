@@ -91,6 +91,10 @@ class Config:
     # If MAIL_SERVER is unset, the app runs without sending mail: signup
     # still works, but confirmation/reset emails are skipped (and logged),
     # and an admin must verify accounts manually until mail is configured.
+    # RESEND_API_KEY switches sending to the Resend HTTPS API instead of
+    # SMTP — required on hosts where outbound SMTP ports are blocked
+    # (DigitalOcean blocks 25/465/587/2525 on this droplet).
+    RESEND_API_KEY = os.getenv('RESEND_API_KEY')
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = int(os.getenv('MAIL_PORT', '587'))
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
