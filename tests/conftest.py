@@ -1,5 +1,6 @@
 """Pytest configuration and shared fixtures for Paid2Match tests."""
 import pytest
+from flask import g, has_app_context
 from app import create_app
 from extensions import db
 from models.user import User
@@ -198,31 +199,27 @@ def sample_message(app, sample_user, sample_hunter):
 
 @pytest.fixture
 def logged_in_user(client, sample_user):
-    """Log in the sample user and return the client."""
-    client.post('/auth/login', data={
-        'email': 'testuser@example.com',
-        'password': 'TestPass123!'
-    })
+    """Log in the sample user and return the client. Auth is
+    OAuth-only, so tests log in by setting the Flask-Login session
+    directly instead of posting a password form."""
+    with client.session_transaction() as sess:
+        sess['_user_id'] = str(sample_user.id)
     return client
 
 
 @pytest.fixture
 def logged_in_hunter(client, sample_hunter):
     """Log in the sample hunter user and return the client."""
-    client.post('/auth/login', data={
-        'email': 'hunter@example.com',
-        'password': 'HunterPass123!'
-    })
+    with client.session_transaction() as sess:
+        sess['_user_id'] = str(sample_hunter.id)
     return client
 
 
 @pytest.fixture
 def logged_in_admin(client, sample_admin):
     """Log in the admin user and return the client."""
-    client.post('/auth/login', data={
-        'email': 'admin@example.com',
-        'password': 'AdminPass123!'
-    })
+    with client.session_transaction() as sess:
+        sess['_user_id'] = str(sample_admin.id)
     return client
 
 
@@ -230,15 +227,24 @@ def logged_in_admin(client, sample_admin):
 
 
 @pytest.fixture
-def login_as():
-    """Return a helper to log a client in as any user. Logs out first so
-    it works when switching between users mid-test."""
-    def _login(client, email, password):
-        client.get('/auth/logout')
-        return client.post('/auth/login', data={
-            'email': email,
-            'password': password,
-        })
+def login_as(app):
+    """Return a helper to log a client in as any user. Auth is
+    OAuth-only, so the password argument is ignored — the user is
+    looked up by email and logged in via the session. Also clears
+    Flask-Login's cached ``g._login_user``: Flask reuses the test's
+    already-active app context for requests, so ``g`` is shared — a
+    cached anonymous user from an earlier request in the test would
+    otherwise shadow this login (Flask-Login never re-runs the user
+    loader while the cache is set)."""
+    def _login(client, email, password=None):
+        with app.app_context():
+            user = User.query.filter_by(email=email).first()
+            assert user is not None, f'login_as: no user {email}'
+            user_id = str(user.id)
+        with client.session_transaction() as sess:
+            sess['_user_id'] = user_id
+        if has_app_context():
+            g.pop('_login_user', None)
     return _login
 
 

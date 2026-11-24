@@ -24,9 +24,8 @@
                             {% else %}This referral is {{ referral.status }}.{% endif %}
                         </div>
                     {% elif not current_user.is_authenticated %}
-                        <p class="text-muted">Log in or create a free account to confirm or decline. Your email ({{ referral.referred_email }}) is the one this invite was sent to.</p>
-                        <a href="{{ url_for('auth.login', next=url_for('referrals.consent', token=referral.invite_token)) }}" class="btn btn-primary">Log in</a>
-                        <a href="{{ url_for('auth.register', ref=referral.invite_token) }}" class="btn btn-outline-primary">Create an account</a>
+                        <p class="text-muted">Sign in with Google or GitHub to confirm or decline. Your email ({{ referral.referred_email }}) is the one this invite was sent to — signing in creates your account if you don't have one yet.</p>
+                        <a href="{{ url_for('auth.login', next=url_for('referrals.consent', token=referral.invite_token)) }}" class="btn btn-primary">Sign in to answer</a>
                     {% elif current_user.email.lower() != referral.referred_email.lower() %}
                         <div class="alert alert-warning mb-0">This invite was sent to {{ referral.referred_email }} — you're logged in as {{ current_user.email }}. Only the invited person can answer it.</div>
                     {% else %}

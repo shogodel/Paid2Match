@@ -100,10 +100,6 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
     MAIL_SUPPRESS_SEND = False
 
-    # Signed-token expiry (seconds) for email confirmation / password reset.
-    EMAIL_CONFIRM_TOKEN_MAX_AGE = 86400  # 24 hours
-    PASSWORD_RESET_TOKEN_MAX_AGE = 3600  # 1 hour
-
 
 class DevelopmentConfig(Config):
     """Development configuration."""

@@ -1,138 +1,52 @@
-"""Tests for auth blueprint — login, register, logout."""
+"""Tests for auth blueprint — OAuth-only login page, logout.
+
+There is no email/password login or registration anymore: sign-in is
+Google or GitHub (see test_google_oauth.py / test_github_oauth.py).
+"""
 import pytest
 
 
 class TestAuthLogin:
-    """Tests for GET/POST /auth/login."""
+    """Tests for GET /auth/login."""
 
     def test_login_page_loads(self, client):
         """Login page returns 200."""
         r = client.get('/auth/login')
         assert r.status_code == 200
 
-    def test_login_success(self, client, app, sample_user):
-        """Valid credentials redirect to bounties board."""
-        r = client.post('/auth/login', data={
-            'email': 'testuser@example.com',
-            'password': 'TestPass123!',
-        }, follow_redirects=False)
-        assert r.status_code == 302
-        assert '/bounties/' in r.location
+    def test_login_page_has_no_password_form(self, client):
+        """The login page is OAuth buttons only — no email/password
+        form, no register/forgot-password links."""
+        html = client.get('/auth/login').data.decode()
+        assert 'type="password"' not in html
+        assert '/auth/register' not in html
+        assert '/auth/forgot-password' not in html
+        assert '/auth/resend-verification' not in html
 
-    def test_login_wrong_password(self, client, sample_user):
-        """Wrong password shows error and returns 200."""
-        r = client.post('/auth/login', data={
-            'email': 'testuser@example.com',
-            'password': 'WrongPassword',
-        })
-        assert r.status_code == 200
-        assert b'Invalid email or password' in r.data
-
-    def test_login_nonexistent_user(self, client):
-        """Nonexistent email shows same error message."""
-        r = client.post('/auth/login', data={
-            'email': 'nobody@example.com',
-            'password': 'AnyPassword',
-        })
-        assert r.status_code == 200
-        assert b'Invalid email or password' in r.data
-
-    def test_login_inactive_user(self, client, app, sample_user):
-        """Deactivated account is rejected."""
-        from extensions import db
-        with app.app_context():
-            from models.user import User
-            u = db.session.get(User, sample_user.id)
-            u.is_active = False
-            db.session.commit()
-
+    def test_login_post_is_not_allowed(self, client):
+        """POST /auth/login no longer exists (OAuth-only)."""
         r = client.post('/auth/login', data={
             'email': 'testuser@example.com',
             'password': 'TestPass123!',
         })
-        assert r.status_code == 200
-        assert b'deactivated' in r.data
+        assert r.status_code == 405
 
-    def test_login_redirect_next_param(self, client, sample_user):
-        """Login preserves next redirect URL."""
-        r = client.post('/auth/login?next=/bounties/', data={
-            'email': 'testuser@example.com',
-            'password': 'TestPass123!',
-        })
-        assert r.status_code == 302
-        assert '/bounties/' in r.location
+    def test_register_route_is_gone(self, client):
+        """GET /auth/register 404s — registration is via OAuth sign-in."""
+        assert client.get('/auth/register').status_code == 404
+        assert client.post('/auth/register', data={}).status_code == 404
+
+    def test_password_reset_routes_are_gone(self, client):
+        """Forgot/reset/resend/confirm routes 404."""
+        assert client.get('/auth/forgot-password').status_code == 404
+        assert client.get('/auth/reset-password/abc').status_code == 404
+        assert client.get('/auth/resend-verification').status_code == 404
+        assert client.get('/auth/confirm/abc').status_code == 404
 
     def test_authenticated_user_redirected(self, logged_in_user, client):
         """Already logged-in user is redirected from login page."""
         r = logged_in_user.get('/auth/login')
         assert r.status_code == 302
-
-
-class TestAuthRegister:
-    """Tests for GET/POST /auth/register."""
-
-    def test_register_page_loads(self, client):
-        """Registration page returns 200."""
-        r = client.get('/auth/register')
-        assert r.status_code == 200
-
-    def test_register_success(self, client, app):
-        """Valid registration creates an UNVERIFIED user and redirects to login.
-
-        Since M0, signup requires email confirmation: no auto-login, the
-        user must confirm via the emailed link before logging in.
-        """
-        r = client.post('/auth/register', data={
-            'full_name': 'New User',
-            'email': 'newuser@example.com',
-            'password': 'NewPass123!',
-            'confirm_password': 'NewPass123!',
-        }, follow_redirects=False)
-        assert r.status_code == 302
-        assert '/auth/login' in r.location
-
-        # Verify user created, unverified
-        with app.app_context():
-            from models.user import User
-            from extensions import db
-            u = User.query.filter_by(email='newuser@example.com').first()
-            assert u is not None
-            assert u.full_name == 'New User'
-            assert u.role == 'user'
-            assert u.email_verified is False
-
-    def test_register_duplicate_email(self, client, sample_user):
-        """Duplicate email shows error."""
-        r = client.post('/auth/register', data={
-            'full_name': 'Another User',
-            'email': 'testuser@example.com',
-            'password': 'Pass123456!',
-            'confirm_password': 'Pass123456!',
-        })
-        assert r.status_code == 200
-        assert b'already exists' in r.data
-
-    def test_register_password_mismatch(self, client):
-        """Mismatched passwords show error."""
-        r = client.post('/auth/register', data={
-            'full_name': 'User Name',
-            'email': 'unique@example.com',
-            'password': 'Pass123456!',
-            'confirm_password': 'DifferentPass1!',
-        })
-        assert r.status_code == 200
-        assert b'must match' in r.data
-
-    def test_register_short_password(self, client):
-        """Password < 8 chars is rejected."""
-        r = client.post('/auth/register', data={
-            'full_name': 'User Name',
-            'email': 'short@example.com',
-            'password': 'Short1!',
-            'confirm_password': 'Short1!',
-        })
-        assert r.status_code == 200
-        assert b'at least 8 characters' in r.data
 
 
 class TestAuthLogout:
@@ -153,3 +67,37 @@ class TestAuthLogout:
         """GET /auth/ redirects to login."""
         r = client.get('/auth/')
         assert r.status_code == 302
+
+
+class TestDeleteAccount:
+    """Account deletion is confirmed by typing DELETE (OAuth-only auth
+    has no password to check)."""
+
+    def test_delete_page_loads(self, logged_in_user, client):
+        r = logged_in_user.get('/auth/delete-account')
+        assert r.status_code == 200
+        assert b'type DELETE' in r.data
+        assert b'type="password"' not in r.data
+
+    def test_delete_requires_typed_confirmation(
+            self, app, logged_in_user, client, sample_user):
+        r = logged_in_user.post('/auth/delete-account', data={
+            'confirmation': 'nope',
+        }, follow_redirects=True)
+        assert r.status_code == 200
+        assert b'Type DELETE to confirm' in r.data
+        with app.app_context():
+            from extensions import db
+            from models.user import User
+            assert db.session.get(User, sample_user.id).is_deleted is False
+
+    def test_delete_with_confirmation_soft_deletes(
+            self, app, logged_in_user, client, sample_user):
+        r = logged_in_user.post('/auth/delete-account', data={
+            'confirmation': 'DELETE',
+        }, follow_redirects=False)
+        assert r.status_code == 302
+        with app.app_context():
+            from extensions import db
+            from models.user import User
+            assert db.session.get(User, sample_user.id).is_deleted is True

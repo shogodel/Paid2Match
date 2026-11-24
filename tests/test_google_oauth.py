@@ -110,18 +110,16 @@ class TestGoogleLoginRoute:
 
 class TestGoogleButton:
     def test_button_hidden_when_unconfigured(self, client):
-        for path in ('/auth/login', '/auth/register'):
-            resp = client.get(path)
-            assert resp.status_code == 200
-            assert b'Continue with Google' not in resp.data
+        resp = client.get('/auth/login')
+        assert resp.status_code == 200
+        assert b'Continue with Google' not in resp.data
 
     def test_button_shown_when_configured(self, app, client):
         _configure_google(app)
-        for path in ('/auth/login', '/auth/register'):
-            resp = client.get(path)
-            assert resp.status_code == 200
-            assert b'Continue with Google' in resp.data
-            assert b'/auth/google/login' in resp.data
+        resp = client.get('/auth/login')
+        assert resp.status_code == 200
+        assert b'Continue with Google' in resp.data
+        assert b'/auth/google/login' in resp.data
 
 
 class TestGoogleCallbackCreate:
@@ -161,21 +159,6 @@ class TestGoogleCallbackCreate:
             user = User.query.filter_by(email='noname@example.com').first()
             assert user is not None
             assert user.full_name == 'noname'
-
-    def test_google_user_cannot_log_in_with_a_password(self, app, client):
-        _configure_google(app)
-        _set_state(client)
-        post, get = _google_mocks()
-        with post, get:
-            client.get('/auth/google/callback?code=x&state=test-state')
-        client.get('/auth/logout')
-        resp = client.post('/auth/login', data={
-            'email': 'newuser@example.com',
-            'password': 'anything-at-all',
-        })
-        assert resp.status_code == 200
-        assert b'Invalid email or password' in resp.data
-
 
 class TestGoogleCallbackMatch:
     def test_matches_existing_user_and_marks_verified(self, app, client):
@@ -356,3 +339,48 @@ class TestGoogleCallbackRejections:
         assert b'has not verified that email address' in resp.data
         with app.app_context():
             assert User.query.count() == 0
+
+
+class TestGoogleCallbackRedirects:
+    """After a successful OAuth login the callback honours the stored
+    ?next= URL and a waiting referral invite (same as the old password
+    login did)."""
+
+    def test_callback_honours_safe_next_url(self, app, client):
+        _configure_google(app)
+        _set_state(client)
+        with client.session_transaction() as sess:
+            sess['next'] = '/social/spaces'
+        post, get = _google_mocks()
+        with post, get:
+            resp = client.get(
+                '/auth/google/callback?code=x&state=test-state'
+            )
+        assert resp.status_code == 302
+        assert resp.location.endswith('/social/spaces')
+
+    def test_callback_rejects_unsafe_next_url(self, app, client):
+        _configure_google(app)
+        _set_state(client)
+        with client.session_transaction() as sess:
+            sess['next'] = 'https://evil.example.com/x'
+        post, get = _google_mocks()
+        with post, get:
+            resp = client.get(
+                '/auth/google/callback?code=x&state=test-state'
+            )
+        assert resp.status_code == 302
+        assert resp.location.endswith('/bounties/')
+
+    def test_callback_honours_pending_referral(self, app, client):
+        _configure_google(app)
+        _set_state(client)
+        with client.session_transaction() as sess:
+            sess['pending_referral_token'] = 'invite-token-123'
+        post, get = _google_mocks()
+        with post, get:
+            resp = client.get(
+                '/auth/google/callback?code=x&state=test-state'
+            )
+        assert resp.status_code == 302
+        assert resp.location.endswith('/referrals/invite/invite-token-123')

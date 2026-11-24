@@ -1043,6 +1043,15 @@ msgstr "o"
 msgid "Continue with Google"
 msgstr "Continuar con Google"
 
+msgid "Continue with GitHub"
+msgstr "Continuar con GitHub"
+
+msgid "Sign in with Google or GitHub — no password needed."
+msgstr "Inicia sesión con Google o GitHub — no necesitas contraseña."
+
+msgid "Sign-in is not available right now — please check back soon."
+msgstr "El inicio de sesión no está disponible ahora mismo — vuelve pronto."
+
 #: templates/auth/login.html:62
 msgid "Dont have an account"
 msgstr "¿No tienes una cuenta?"

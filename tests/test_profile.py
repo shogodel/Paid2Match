@@ -17,11 +17,8 @@ class TestProfileSetup:
         r = logged_in_user.get('/profile/setup')
         assert r.status_code == 200
 
-    def test_setup_success(self, client, app, sample_user):
-        client.post('/auth/login', data={
-            'email': 'testuser@example.com',
-            'password': 'TestPass123!',
-        })
+    def test_setup_success(self, client, app, sample_user, login_as):
+        login_as(client, 'testuser@example.com')
         r = client.post('/profile/setup', data={
             'profile_type': 'worker',
             'display_name': 'Test Profile',
@@ -167,12 +164,9 @@ class TestProfileLinkedInFields:
             db.session.commit()
             return user.id
 
-    def test_setup_saves_linkedin_fields(self, client, app):
+    def test_setup_saves_linkedin_fields(self, client, app, login_as):
         self._fresh_verified_user(app)
-        client.post('/auth/login', data={
-            'email': 'fresh@example.com',
-            'password': 'FreshPass123!',
-        })
+        login_as(client, 'fresh@example.com')
         r = client.post('/profile/setup', data={
             'profile_type': 'worker',
             'display_name': 'Fresh User',

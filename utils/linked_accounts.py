@@ -58,6 +58,13 @@ OAUTH_ENDPOINTS = {
     },
 }
 
+# GitHub sign-in ("Continue with GitHub") needs the user's email, which
+# the profile endpoint only returns when it is public. The /user/emails
+# endpoint lists the (private) addresses — but it requires the
+# user:email scope, which the account-linking flow does not ask for.
+GITHUB_EMAILS_URL = 'https://api.github.com/user/emails'
+GITHUB_SIGNIN_SCOPE = 'read:user user:email'
+
 
 def _oauth_config(platform):
     """(client_id, client_secret) from config, or (None, None)."""
@@ -74,9 +81,11 @@ def oauth_available(platform):
     return bool(client_id and client_secret)
 
 
-def oauth_authorize_url(platform, redirect_uri, state):
+def oauth_authorize_url(platform, redirect_uri, state, scope=None):
     """The provider's authorize URL, or None when OAuth is not
-    configured for this platform."""
+    configured for this platform. ``scope`` overrides the platform's
+    default (sign-in asks GitHub for ``user:email`` too, so a hidden
+    email can still be read for login)."""
     if platform not in OAUTH_PLATFORMS:
         return None
     client_id, _secret = _oauth_config(platform)
@@ -87,7 +96,7 @@ def oauth_authorize_url(platform, redirect_uri, state):
         'client_id': client_id,
         'redirect_uri': redirect_uri,
         'state': state,
-        'scope': endpoints['scope'],
+        'scope': scope or endpoints['scope'],
     }
     if platform == 'linkedin':
         params['response_type'] = 'code'
@@ -148,6 +157,52 @@ def fetch_oauth_profile(platform, access_token):
     # LinkedIn userinfo: sub is the stable id, name the display name.
     handle = data.get('preferred_username') or data.get('name')
     return handle, None, None
+
+
+def fetch_github_user(access_token):
+    """Fetch the full GitHub /user payload for sign-in (login, name,
+    email — the email is null when the user hides it). Returns
+    (data, error)."""
+    try:
+        resp = requests.get(
+            OAUTH_ENDPOINTS['github']['profile'],
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Accept': 'application/json',
+            },
+            timeout=FETCH_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        logger.warning('GitHub user fetch failed: %s', exc)
+        return None, 'Could not reach GitHub — please try again.'
+    if resp.status_code != 200:
+        return None, 'Could not read your profile from GitHub.'
+    return resp.json(), None
+
+
+def fetch_github_primary_email(access_token):
+    """The user's primary verified GitHub email — the fallback for
+    sign-in when the public profile hides the email. Returns
+    (email, error); email is None when the account has no verified
+    address (not an error — the caller decides what to do)."""
+    try:
+        resp = requests.get(
+            GITHUB_EMAILS_URL,
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Accept': 'application/json',
+            },
+            timeout=FETCH_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        logger.warning('GitHub emails fetch failed: %s', exc)
+        return None, 'Could not reach GitHub — please try again.'
+    if resp.status_code != 200:
+        return None, 'Could not read your email from GitHub.'
+    for entry in resp.json() or []:
+        if entry.get('primary') and entry.get('verified'):
+            return entry.get('email'), None
+    return None, None
 
 
 def _fetch_page(url):

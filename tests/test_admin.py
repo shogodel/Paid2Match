@@ -59,6 +59,30 @@ class TestAdminUsers:
             u = db.session.get(User, sample_hunter.id)
             assert u.is_active == False
 
+    def test_admin_can_verify_user_email(self, logged_in_admin, client, app):
+        """Admin manually marks an unverified user's email verified."""
+        from werkzeug.security import generate_password_hash
+        from extensions import db
+        from models.user import User
+        with app.app_context():
+            user = User(
+                email='verify@example.com',
+                full_name='Verify User',
+                password_hash=generate_password_hash('VerifyPass123!'),
+                role='user',
+                is_active=True,
+                email_verified=False,
+            )
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+
+        r = logged_in_admin.post(f'/admin/users/{user_id}/verify-email',
+                                 follow_redirects=False)
+        assert r.status_code == 302
+        with app.app_context():
+            assert db.session.get(User, user_id).email_verified is True
+
 
 class TestAdminBounties:
     def test_bounties_page_loads(self, logged_in_admin, client, sample_bounty):

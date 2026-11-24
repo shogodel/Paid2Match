@@ -1,8 +1,10 @@
 # Email setup for Paid2Match
 
-Signup email confirmation and password reset send real email via Flask-Mail
-(SMTP). All settings come from environment variables — there are no
-hardcoded credentials anywhere in the code.
+Referral invites, notifications, and the weekly digest send real email
+via Flask-Mail (SMTP). All settings come from environment variables —
+there are no hardcoded credentials anywhere in the code. Auth is
+OAuth-only (Google / GitHub), so there is no signup confirmation or
+password reset mail anymore.
 
 ## Variables to set on the server (.env)
 
@@ -17,9 +19,8 @@ hardcoded credentials anywhere in the code.
 | `MAIL_DEFAULT_SENDER` | Yes | From address shown to users, e.g. `noreply@paid2match.work` |
 
 If `MAIL_SERVER` is left unset, the app still runs, but no email is sent:
-new signups are created unverified and cannot log in until an admin marks
-them verified from the admin user list ("Verify Email" button). So mail is
-effectively required before real users sign up.
+referral invites, notifications, and the weekly digest are silently
+skipped. Sign-in still works — OAuth providers verify the email.
 
 ## Option A — SendGrid SMTP relay (recommended for a production site)
 
@@ -59,20 +60,15 @@ effectively required before real users sign up.
 
 ## What gets sent
 
-- **Signup confirmation** — subject "Confirm your Paid2Match account",
-  link valid 24 hours (`EMAIL_CONFIRM_TOKEN_MAX_AGE` in config.py).
-- **Password reset** — subject "Reset your Paid2Match password",
-  link valid 1 hour (`PASSWORD_RESET_TOKEN_MAX_AGE`).
-
-Both links carry a signed, expiring token (itsdangerous, keyed by
-`SECRET_KEY`). Tokens are single-purpose (different salts) and cannot be
-forged without the secret key.
+- **Referral invites** — subject "Someone referred you on Paid2Match",
+  with the consent link for the referred person.
+- **Notifications** — account, referral, and payout updates.
+- **Weekly digest** — the `flask send-digest` CLI command.
 
 ## Notes
 
-- The reset and resend-verification forms always show the same message
-  whether or not the email exists, so they cannot be used to probe for
-  accounts.
+- The admin user list still has a "Verify Email" button for manually
+  verifying an account (OAuth sign-ins verify automatically).
 - Existing accounts (created before this change) were grandfathered as
   verified by the `m0_foundation` migration — they are not affected.
 - After changing `.env`, restart uWSGI for the new values to take effect.

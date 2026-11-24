@@ -14,7 +14,7 @@
         <h1 class="hero-title">{{ _('Hiring is human. Keep it that way.') }}</h1>
         <p class="lead hero-sub mx-auto">{{ _('Real people vouching for real people — no algorithms deciding your future. The referral network where humans hire humans, everywhere.') }}</p>
         <div class="d-flex gap-3 justify-content-center flex-wrap">
-            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">{{ _('Join the network') }}</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">{{ _('Join the network') }}</a>
             <a href="{{ url_for('social.feed') }}" class="btn btn-outline-secondary btn-lg">{{ _('Explore the Feed') }}</a>
         </div>
     </div>
@@ -47,7 +47,7 @@
             <div class="empty-state-icon">{{ icon('messages-square', 28) }}</div>
             <h5>{{ _('The network is just waking up') }}</h5>
             <p class="text-muted mb-3">{{ _('No posts yet — be the first to say hello, share a win, or ask the network for help.') }}</p>
-            <a href="{{ url_for('auth.register') }}" class="btn btn-primary">{{ _('Be the first to post') }}</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">{{ _('Be the first to post') }}</a>
         </div>
         {% endif %}
     </div>
