@@ -1,0 +1,63 @@
+{# Staked vouches list. Expects:
+   sv_items (StakedVouch rows, newest first), and optionally:
+   sv_show_voucher (default true) — show who staked,
+   sv_show_candidate (default false) — show who was staked on,
+   sv_show_bounty (default true) — link the need the stake relates to,
+   sv_resolvable_ids (default empty) — stake ids the viewer may
+     resolve (the need's poster, or an admin); active stakes in the
+     set get resolve buttons,
+   sv_next — redirect target after resolving.
+   Stakes are RECORDS ONLY — no money moved (see
+   models/staked_vouch.py); the copy never claims a payment. #}
+{% from 'partials/icon.html' import icon %}
+{% for stake in sv_items %}
+{% set sv_person = stake.candidate if sv_show_candidate else stake.voucher %}
+<div class="vouch-row">
+    <a href="{{ url_for('profile.public_profile', user_id=sv_person.handle or sv_person.id) }}" aria-label="{{ sv_person.full_name }}">
+        {% set sv_profile = sv_person.profiles.first() %}
+        {% if sv_profile and sv_profile.avatar_url %}
+        <img src="{{ sv_profile.avatar_url }}" alt="" class="avatar avatar-36">
+        {% else %}
+        <span class="avatar-placeholder avatar-36 avatar-tone-{{ sv_person.id|avatar_tone }}" aria-hidden="true">{{ sv_person.full_name[0] | upper }}</span>
+        {% endif %}
+    </a>
+    <div class="vouch-main">
+        <div class="small">
+            {% if sv_show_candidate and sv_show_voucher|default(true) %}
+            <a href="{{ url_for('profile.public_profile', user_id=stake.voucher.handle or stake.voucher.id) }}" class="fw-bold text-decoration-none">{{ stake.voucher.full_name }}</a>
+            {{ _('staked on') }}
+            <a href="{{ url_for('profile.public_profile', user_id=stake.candidate.handle or stake.candidate.id) }}" class="fw-bold text-decoration-none">{{ stake.candidate.full_name }}</a>
+            {% elif sv_show_candidate %}
+            <a href="{{ url_for('profile.public_profile', user_id=stake.candidate.handle or stake.candidate.id) }}" class="fw-bold text-decoration-none">{{ stake.candidate.full_name }}</a>
+            {% else %}
+            <a href="{{ url_for('profile.public_profile', user_id=stake.voucher.handle or stake.voucher.id) }}" class="fw-bold text-decoration-none">{{ stake.voucher.full_name }}</a>
+            {% endif %}
+            {% if stake.created_at %}· {{ stake.created_at.strftime('%Y-%m-%d') }}{% endif %}
+        </div>
+        <div>
+            <strong>{{ stake.amount|money(stake.currency) }}</strong>
+            <span class="badge {{ stake.badge_class }}">{{ stake.status_label }}</span>
+        </div>
+        {% if sv_show_bounty|default(true) and stake.bounty %}
+        <div class="small text-muted">
+            {{ _('For the need:') }} <a href="{{ url_for('bounties.detail', slug_code=stake.bounty.url_slug) }}">{{ stake.bounty.title }}</a>
+        </div>
+        {% endif %}
+        {% if stake.status != 'active' and stake.resolved_at %}
+        <div class="small text-muted">
+            {{ _('Resolved') }} {{ stake.resolved_at.strftime('%Y-%m-%d') }}{% if stake.resolved_by %} {{ _('by') }} {{ stake.resolved_by.full_name }}{% endif %}
+        </div>
+        {% endif %}
+        {% if sv_resolvable_ids is defined and stake.id in sv_resolvable_ids and stake.status == 'active' %}
+        <form method="POST" action="{{ url_for('staked_vouches.resolve', stake_id=stake.id) }}" class="mt-2 d-flex gap-1 flex-wrap align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if sv_next %}<input type="hidden" name="next" value="{{ sv_next }}">{% endif %}
+            <span class="small text-muted me-1">{{ _('Resolve:') }}</span>
+            <button type="submit" name="outcome" value="completed" class="btn btn-sm btn-outline-success">{{ _('Completed / hired') }}</button>
+            <button type="submit" name="outcome" value="flaked" class="btn btn-sm btn-outline-danger">{{ _('Flaked / no-show') }}</button>
+            <button type="submit" name="outcome" value="cancelled" class="btn btn-sm btn-outline-secondary">{{ _('Need cancelled') }}</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}

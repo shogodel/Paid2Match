@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-23 05:50+0000\n"
+"POT-Creation-Date: 2026-11-24 05:06+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,83 +17,163 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: blueprints/auth/forms.py:29 blueprints/auth/forms.py:46
-#: blueprints/auth/forms.py:76 blueprints/auth/forms.py:104
-#: templates/auth/forgot_password.html:18 templates/auth/login.html:17
-#: templates/auth/register.html:27 templates/auth/resend_verification.html:18
-msgid "Email"
+#: blueprints/intro_bounties.py:37
+msgid "Who do you want to be introduced to?"
 msgstr ""
 
-#: blueprints/auth/forms.py:33 blueprints/auth/forms.py:50
-#: templates/auth/login.html:27 templates/auth/register.html:37
-msgid "Password"
+#: blueprints/intro_bounties.py:41
+msgid "Organization (optional)"
 msgstr ""
 
-#: blueprints/auth/forms.py:36
-msgid "Remember Me"
+#: blueprints/intro_bounties.py:45
+msgid "What is the introduction for?"
 msgstr ""
 
-#: blueprints/auth/forms.py:37 templates/auth/login.html:3
-#: templates/auth/register.html:78 templates/base.html:238
-msgid "Login"
+#: blueprints/intro_bounties.py:49
+msgid "Reward amount"
 msgstr ""
 
-#: blueprints/auth/forms.py:42 templates/auth/register.html:17
-msgid "Full Name"
+#: blueprints/intro_bounties.py:57
+msgid "The reward must be more than zero."
 msgstr ""
 
-#: blueprints/auth/forms.py:54 templates/auth/register.html:47
-msgid "Confirm Password"
+#: blueprints/bounties/forms.py:58 blueprints/intro_bounties.py:62
+#: templates/partials/staked_vouch_form.html:19
+msgid "Currency"
 msgstr ""
 
-#: blueprints/auth/forms.py:58
-msgid "Create Account"
+#: blueprints/intro_bounties.py:66
+msgid "Post intro bounty"
 msgstr ""
 
-#: blueprints/auth/forms.py:80
-msgid "Send Reset Link"
+#: blueprints/intro_bounties.py:72
+msgid "How do you know the target? (optional)"
 msgstr ""
 
-#: blueprints/auth/forms.py:85 templates/auth/reset_password.html:17
-msgid "New Password"
+#: blueprints/intro_bounties.py:75
+msgid "I can make this intro"
 msgstr ""
 
-#: blueprints/auth/forms.py:89 templates/auth/reset_password.html:27
-msgid "Confirm New Password"
+#: blueprints/intro_bounties.py:111
+msgid "Your intro bounty is live."
 msgstr ""
 
-#: blueprints/auth/forms.py:93 templates/auth/reset_password.html:3
-msgid "Reset Password"
+#: blueprints/intro_bounties.py:165
+msgid "You cannot claim your own intro bounty."
 msgstr ""
 
-#: blueprints/auth/forms.py:108 templates/auth/resend_verification.html:3
-#: templates/auth/resend_verification.html:11
-msgid "Resend Confirmation Email"
+#: blueprints/intro_bounties.py:173
+msgid "This intro bounty is no longer open."
 msgstr ""
 
-#: blueprints/bounties/forms.py:28 blueprints/social/forms.py:88
+#: blueprints/intro_bounties.py:181
+msgid "You already have a pending claim on this intro bounty."
+msgstr ""
+
+#: blueprints/intro_bounties.py:190
+msgid "Could not submit your claim. Please try again."
+msgstr ""
+
+#: blueprints/intro_bounties.py:206
+msgid "Your claim was sent to the poster."
+msgstr ""
+
+#: blueprints/intro_bounties.py:239 blueprints/intro_bounties.py:271
+msgid "This claim has already been decided."
+msgstr ""
+
+#: blueprints/intro_bounties.py:251
+msgid ""
+"Intro confirmed. The reward is recorded as owed and will be paid once "
+"payouts are available."
+msgstr ""
+
+#: blueprints/intro_bounties.py:285
+msgid "Claim rejected."
+msgstr ""
+
+#: blueprints/intro_bounties.py:305
+msgid "This intro bounty can no longer be cancelled."
+msgstr ""
+
+#: blueprints/intro_bounties.py:318
+msgid "Intro bounty cancelled."
+msgstr ""
+
+#: blueprints/pledge.py:24
+msgid "Organization name"
+msgstr ""
+
+#: blueprints/pledge.py:28 templates/bounties/detail.html:197
+#: templates/pledge/new.html:7 templates/pledge/register.html:10
+#: templates/pledge/register.html:21 templates/profile/public.html:32
+#: templates/profile/view.html:27
+msgid ""
+"We pledge that no AI screens our applicants: a human reads every "
+"application."
+msgstr ""
+
+#: blueprints/pledge.py:32
+msgid "Submit my pledge"
+msgstr ""
+
+#: blueprints/pledge.py:65
+msgid "You already have an active pledge."
+msgstr ""
+
+#: blueprints/pledge.py:79
+msgid ""
+"Your pledge was submitted for review. An admin will approve it once it is"
+" checked."
+msgstr ""
+
+#: blueprints/wins.py:39
+msgid "Your role"
+msgstr ""
+
+#: blueprints/wins.py:40
+msgid "Your story"
+msgstr ""
+
+#: blueprints/wins.py:44
+msgid "Share your story"
+msgstr ""
+
+#: blueprints/wins.py:165
+msgid "You have already shared every story you can for this need."
+msgstr ""
+
+#: blueprints/wins.py:180 blueprints/wins.py:209
+msgid "A story for that role already exists for this need."
+msgstr ""
+
+#: blueprints/wins.py:215
+msgid "Your story is now on the wins wall. Thank you for sharing it!"
+msgstr ""
+
+#: blueprints/bounties/forms.py:29 blueprints/social/forms.py:88
 msgid "Title"
 msgstr ""
 
-#: blueprints/bounties/forms.py:34
+#: blueprints/bounties/forms.py:35
 msgid "Vertical"
 msgstr ""
 
-#: blueprints/bounties/forms.py:40 templates/bounties/board.html:60
+#: blueprints/bounties/forms.py:41 templates/bounties/board.html:60
 msgid "Category"
 msgstr ""
 
-#: blueprints/bounties/forms.py:42 templates/bounties/recruitment_board.html:29
+#: blueprints/bounties/forms.py:43 templates/bounties/recruitment_board.html:29
 #: templates/bounties/services_board.html:29
 msgid "Direction"
 msgstr ""
 
-#: blueprints/bounties/forms.py:43
+#: blueprints/bounties/forms.py:44
 msgid "What are you doing?"
 msgstr ""
 
-#: blueprints/bounties/forms.py:44 models/bounty.py:57
-#: templates/bounties/post.html:276
+#: blueprints/bounties/forms.py:45 models/bounty.py:60
+#: templates/bounties/post.html:284
 #: templates/bounties/recruitment_board.html:32
 #: templates/bounties/recruitment_board.html:34
 #: templates/bounties/services_board.html:32
@@ -101,42 +181,42 @@ msgstr ""
 msgid "Seeking Opportunity"
 msgstr ""
 
-#: blueprints/bounties/forms.py:45 models/bounty.py:58
-#: templates/bounties/post.html:277
+#: blueprints/bounties/forms.py:46 models/bounty.py:61
+#: templates/bounties/post.html:285
 #: templates/bounties/recruitment_board.html:33
 #: templates/bounties/services_board.html:33
 msgid "Offering Opportunity"
 msgstr ""
 
-#: blueprints/bounties/forms.py:47 templates/bounties/detail.html:57
+#: blueprints/bounties/forms.py:48 templates/bounties/detail.html:57
 msgid "Description"
 msgstr ""
 
-#: blueprints/bounties/forms.py:51
-msgid "Reward Amount ($)"
+#: blueprints/bounties/forms.py:52
+msgid "Reward Amount"
 msgstr ""
 
-#: blueprints/bounties/forms.py:58
-msgid "Reward when a referral is submitted ($)"
+#: blueprints/bounties/forms.py:66
+msgid "Reward when a referral is submitted"
 msgstr ""
 
-#: blueprints/bounties/forms.py:61
-msgid "Reward when a candidate is interviewed ($)"
+#: blueprints/bounties/forms.py:69
+msgid "Reward when a candidate is interviewed"
 msgstr ""
 
-#: blueprints/bounties/forms.py:64
-msgid "Reward when a hire is made ($)"
+#: blueprints/bounties/forms.py:72
+msgid "Reward when a hire is made"
 msgstr ""
 
-#: blueprints/bounties/forms.py:76
+#: blueprints/bounties/forms.py:84
 #, python-format
 msgid ""
 "Paid needs need a bounty of at least $%(floor)s — or post it as a free "
 "community need ($0)."
 msgstr ""
 
-#: blueprints/bounties/forms.py:80 blueprints/profile/forms.py:24
-#: blueprints/profile/forms.py:64 blueprints/social/forms.py:32
+#: blueprints/bounties/forms.py:88 blueprints/profile/forms.py:32
+#: blueprints/profile/forms.py:81 blueprints/social/forms.py:32
 #: blueprints/social/forms.py:92 templates/bounties/board.html:77
 #: templates/bounties/board.html:78
 #: templates/bounties/recruitment_board.html:38
@@ -144,194 +224,206 @@ msgstr ""
 msgid "Location"
 msgstr ""
 
-#: blueprints/bounties/forms.py:83
+#: blueprints/bounties/forms.py:91
 msgid "Deadline"
 msgstr ""
 
-#: blueprints/bounties/forms.py:84 templates/bounties/detail.html:70
+#: blueprints/bounties/forms.py:92 templates/bounties/detail.html:70
 msgid "Success Criteria"
 msgstr ""
 
-#: blueprints/bounties/forms.py:85 blueprints/profile/forms.py:26
-#: blueprints/profile/forms.py:66
+#: blueprints/bounties/forms.py:93 blueprints/profile/forms.py:34
+#: blueprints/profile/forms.py:83
 msgid "Skills (comma-separated)"
 msgstr ""
 
-#: blueprints/bounties/forms.py:86
+#: blueprints/bounties/forms.py:94
 msgid "Free Need (No payment required)"
 msgstr ""
 
-#: blueprints/bounties/forms.py:87
+#: blueprints/bounties/forms.py:95
 msgid "Post Referral Need"
 msgstr ""
 
-#: blueprints/bounties/forms.py:92
+#: blueprints/bounties/forms.py:100
 msgid "Why they fit"
 msgstr ""
 
-#: blueprints/bounties/forms.py:96
+#: blueprints/bounties/forms.py:104
 msgid "Submit Referral"
 msgstr ""
 
-#: blueprints/profile/forms.py:12
+#: blueprints/profile/forms.py:13 templates/profile/setup.html:36
+msgid "Handles use 3–30 lowercase letters, numbers, dots, dashes or underscores."
+msgstr ""
+
+#: blueprints/profile/forms.py:20
 msgid "Profile Type"
 msgstr ""
 
-#: blueprints/profile/forms.py:14 blueprints/profile/forms.py:54
+#: blueprints/profile/forms.py:22 blueprints/profile/forms.py:62
 msgid "Business"
 msgstr ""
 
-#: blueprints/profile/forms.py:15 blueprints/profile/forms.py:55
+#: blueprints/profile/forms.py:23 blueprints/profile/forms.py:63
 msgid "HR Professional"
 msgstr ""
 
-#: blueprints/profile/forms.py:16 blueprints/profile/forms.py:56
+#: blueprints/profile/forms.py:24 blueprints/profile/forms.py:64
 msgid "Worker"
 msgstr ""
 
-#: blueprints/profile/forms.py:17 blueprints/profile/forms.py:57
+#: blueprints/profile/forms.py:25 blueprints/profile/forms.py:65
 msgid "Independent"
 msgstr ""
 
-#: blueprints/profile/forms.py:21 blueprints/profile/forms.py:61
+#: blueprints/profile/forms.py:29 blueprints/profile/forms.py:69
 msgid "Display Name"
 msgstr ""
 
-#: blueprints/profile/forms.py:22 blueprints/profile/forms.py:62
+#: blueprints/profile/forms.py:30 blueprints/profile/forms.py:79
 msgid "Headline"
 msgstr ""
 
-#: blueprints/profile/forms.py:23 blueprints/profile/forms.py:63
+#: blueprints/profile/forms.py:31 blueprints/profile/forms.py:80
 msgid "Bio"
 msgstr ""
 
-#: blueprints/profile/forms.py:25 blueprints/profile/forms.py:65
+#: blueprints/profile/forms.py:33 blueprints/profile/forms.py:82
 msgid "Company Name"
 msgstr ""
 
-#: blueprints/profile/forms.py:27 blueprints/profile/forms.py:67
+#: blueprints/profile/forms.py:35 blueprints/profile/forms.py:84
 #: models/linked_account.py:47
 msgid "Website"
 msgstr ""
 
-#: blueprints/profile/forms.py:28 blueprints/profile/forms.py:68
-#: templates/profile/edit.html:70 templates/profile/setup.html:66
+#: blueprints/profile/forms.py:36 blueprints/profile/forms.py:85
+#: templates/profile/edit.html:70 templates/profile/setup.html:78
 msgid "LinkedIn URL"
 msgstr ""
 
-#: blueprints/profile/forms.py:29 blueprints/profile/forms.py:69
-#: templates/profile/edit.html:74 templates/profile/setup.html:70
+#: blueprints/profile/forms.py:37 blueprints/profile/forms.py:86
+#: templates/profile/edit.html:74 templates/profile/setup.html:82
 msgid "GitHub URL"
 msgstr ""
 
-#: blueprints/profile/forms.py:30 blueprints/profile/forms.py:70
-#: templates/profile/edit.html:84 templates/profile/setup.html:80
+#: blueprints/profile/forms.py:38 blueprints/profile/forms.py:87
+#: templates/profile/edit.html:84 templates/profile/setup.html:92
 msgid "Instagram URL"
 msgstr ""
 
-#: blueprints/profile/forms.py:31 blueprints/profile/forms.py:71
-#: templates/profile/edit.html:88 templates/profile/setup.html:84
+#: blueprints/profile/forms.py:39 blueprints/profile/forms.py:88
+#: templates/profile/edit.html:88 templates/profile/setup.html:96
 msgid "Facebook URL"
 msgstr ""
 
-#: blueprints/profile/forms.py:32 blueprints/profile/forms.py:72
-#: templates/profile/edit.html:92 templates/profile/setup.html:88
+#: blueprints/profile/forms.py:40 blueprints/profile/forms.py:89
+#: templates/profile/edit.html:92 templates/profile/setup.html:100
 msgid "TikTok URL"
 msgstr ""
 
-#: blueprints/profile/forms.py:33 blueprints/profile/forms.py:73
-#: templates/profile/edit.html:96 templates/profile/setup.html:92
+#: blueprints/profile/forms.py:41 blueprints/profile/forms.py:90
+#: templates/profile/edit.html:96 templates/profile/setup.html:104
 msgid "YouTube URL"
 msgstr ""
 
-#: blueprints/profile/forms.py:34 blueprints/profile/forms.py:74
+#: blueprints/profile/forms.py:42 blueprints/profile/forms.py:91
 msgid "Twitter Handle"
 msgstr ""
 
-#: blueprints/profile/forms.py:35 blueprints/profile/forms.py:75
-#: templates/profile/edit.html:100 templates/profile/setup.html:96
+#: blueprints/profile/forms.py:43 blueprints/profile/forms.py:92
+#: templates/profile/edit.html:100 templates/profile/setup.html:108
 msgid "Profile Picture"
 msgstr ""
 
-#: blueprints/profile/forms.py:36 blueprints/profile/forms.py:76
+#: blueprints/profile/forms.py:44 blueprints/profile/forms.py:93
 msgid "Open to Remote Work"
 msgstr ""
 
-#: blueprints/profile/forms.py:37 blueprints/profile/forms.py:77
+#: blueprints/profile/forms.py:45 blueprints/profile/forms.py:94
 msgid "Needs Relocation Assistance"
 msgstr ""
 
-#: blueprints/profile/forms.py:41
+#: blueprints/profile/forms.py:49
 msgid "Let Pro users see my name when I view their profile"
 msgstr ""
 
-#: blueprints/profile/forms.py:43
+#: blueprints/profile/forms.py:51
 msgid "Privacy Level"
 msgstr ""
 
-#: blueprints/profile/forms.py:47
+#: blueprints/profile/forms.py:55
 msgid "Save Profile"
 msgstr ""
 
-#: blueprints/profile/forms.py:52
+#: blueprints/profile/forms.py:60
 msgid "I am a..."
 msgstr ""
 
-#: blueprints/profile/forms.py:78
+#: blueprints/profile/forms.py:75
+msgid "Profile handle"
+msgstr ""
+
+#: blueprints/profile/forms.py:95
 msgid "Create Profile"
 msgstr ""
 
-#: blueprints/profile/forms.py:83
+#: blueprints/profile/forms.py:107
+msgid "That handle is already taken."
+msgstr ""
+
+#: blueprints/profile/forms.py:112
 msgid "Your profile URL on that platform"
 msgstr ""
 
-#: blueprints/profile/forms.py:86
+#: blueprints/profile/forms.py:115
 msgid "Handle (optional)"
 msgstr ""
 
-#: blueprints/profile/forms.py:87
+#: blueprints/profile/forms.py:116
 msgid "How to verify"
 msgstr ""
 
-#: blueprints/profile/forms.py:88
+#: blueprints/profile/forms.py:117
 msgid "Bio link — I put my Paid2Match link in my bio"
 msgstr ""
 
-#: blueprints/profile/forms.py:89
+#: blueprints/profile/forms.py:118
 msgid "Unique code — I post a code on that platform"
 msgstr ""
 
-#: blueprints/profile/forms.py:91
+#: blueprints/profile/forms.py:120
 msgid "Who can see this link"
 msgstr ""
 
-#: blueprints/profile/forms.py:92
+#: blueprints/profile/forms.py:121
 msgid "Everyone"
 msgstr ""
 
-#: blueprints/profile/forms.py:93
+#: blueprints/profile/forms.py:122
 msgid "My followers only"
 msgstr ""
 
-#: blueprints/profile/forms.py:94
+#: blueprints/profile/forms.py:123
 msgid "Hidden (counts for trust, not displayed)"
 msgstr ""
 
-#: blueprints/profile/forms.py:96
+#: blueprints/profile/forms.py:125
 msgid "Add link"
 msgstr ""
 
-#: blueprints/profile/forms.py:101 templates/bounties/board.html:73
+#: blueprints/profile/forms.py:130 templates/bounties/board.html:73
 #: templates/bounties/recruitment_board.html:25
 #: templates/bounties/services_board.html:25 templates/social/people.html:11
 msgid "Skill"
 msgstr ""
 
-#: blueprints/profile/forms.py:102
+#: blueprints/profile/forms.py:131
 msgid "Why? (optional)"
 msgstr ""
 
-#: blueprints/profile/forms.py:103
+#: blueprints/profile/forms.py:132
 msgid "Endorse"
 msgstr ""
 
@@ -407,8 +499,8 @@ msgstr ""
 msgid "Poll options (one per line)"
 msgstr ""
 
-#: blueprints/social/forms.py:44 templates/base.html:179
-#: templates/base.html:371 templates/base.html:372
+#: blueprints/social/forms.py:44 templates/base.html:184
+#: templates/base.html:375 templates/base.html:376
 #: templates/social/_composer.html:92 templates/social/_post_card.html:164
 #: templates/social/analytics.html:84 templates/social/analytics.html:113
 #: templates/social/post_detail.html:2
@@ -470,7 +562,7 @@ msgstr ""
 msgid "Scam"
 msgstr ""
 
-#: blueprints/social/forms.py:115 models/bounty.py:41 models/bounty.py:49
+#: blueprints/social/forms.py:115 models/bounty.py:44 models/bounty.py:52
 msgid "Other"
 msgstr ""
 
@@ -494,57 +586,168 @@ msgstr ""
 msgid "Publish my pledge"
 msgstr ""
 
-#: models/bounty.py:26 templates/base.html:107 templates/base.html:334
+#: blueprints/staked_vouches/routes.py:105
+#: blueprints/staked_vouches/routes.py:154
+msgid "Pick the person you want to stake on."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:108
+#: blueprints/staked_vouches/routes.py:157
+msgid "You cannot stake on yourself."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:118
+#: blueprints/staked_vouches/routes.py:165
+msgid "That need no longer exists."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:172
+#: blueprints/staked_vouches/routes.py:175
+msgid "Enter an amount greater than zero."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:182
+msgid "Choose a supported currency."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:192
+msgid "You already have an active stake on this person for this need."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:207
+msgid "That stake could not be recorded — check the amount and try again."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:214
+#, python-format
+msgid "You staked %(amount)s on %(name)s. The stake is recorded — no money moved."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:239
+msgid "Choose an outcome to resolve the stake."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:242
+msgid "Only an active stake can be resolved."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:247
+msgid "That stake could not be resolved."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:252
+msgid "Stake released — the candidate came through."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:257
+msgid "Stake forfeited — the candidate flaked."
+msgstr ""
+
+#: blueprints/staked_vouches/routes.py:262
+msgid "Stake returned — the need was cancelled."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:102
+#: blueprints/video_vouches/routes.py:163
+msgid "That video is too large. Videos must be under 50 MB."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:120
+msgid "Choose whether this is a pitch or a vouch."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:129
+msgid "Pick the need you are pitching for."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:132
+msgid "You cannot pitch for your own need."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:138
+msgid "Pick the person you are vouching for."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:141
+msgid "You cannot vouch for yourself."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:146
+msgid "Choose a video file first."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:152
+msgid "Only MP4, WebM and MOV videos are allowed."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:178
+#, python-format
+msgid "That video is %(seconds)s seconds — keep it to %(max)s seconds or less."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:198
+msgid "Your video pitch is live."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:200
+msgid "Your video vouch is live."
+msgstr ""
+
+#: blueprints/video_vouches/routes.py:237
+msgid "Video removed."
+msgstr ""
+
+#: models/bounty.py:29 templates/base.html:107 templates/base.html:337
 #: templates/bounties/board.html:30
 msgid "Recruitment"
 msgstr ""
 
-#: models/bounty.py:27 templates/base.html:108 templates/base.html:337
+#: models/bounty.py:30 templates/base.html:108 templates/base.html:340
 #: templates/bounties/board.html:31
 msgid "Services"
 msgstr ""
 
-#: models/bounty.py:35
+#: models/bounty.py:38
 msgid "Skilled trades"
 msgstr ""
 
-#: models/bounty.py:36
+#: models/bounty.py:39
 msgid "Hospitality & food"
 msgstr ""
 
-#: models/bounty.py:37
+#: models/bounty.py:40
 msgid "Healthcare"
 msgstr ""
 
-#: models/bounty.py:38
+#: models/bounty.py:41
 msgid "Office & admin"
 msgstr ""
 
-#: models/bounty.py:39
+#: models/bounty.py:42
 msgid "Sales"
 msgstr ""
 
-#: models/bounty.py:40
+#: models/bounty.py:43
 msgid "Tech"
 msgstr ""
 
-#: models/bounty.py:44
+#: models/bounty.py:47
 msgid "Home services"
 msgstr ""
 
-#: models/bounty.py:45
+#: models/bounty.py:48
 msgid "Creative & design"
 msgstr ""
 
-#: models/bounty.py:46
+#: models/bounty.py:49
 msgid "Professional services"
 msgstr ""
 
-#: models/bounty.py:47
+#: models/bounty.py:50
 msgid "Health & wellness"
 msgstr ""
 
-#: models/bounty.py:48
+#: models/bounty.py:51
 msgid "Tech services"
 msgstr ""
 
@@ -608,11 +811,39 @@ msgstr ""
 msgid "Muted"
 msgstr ""
 
-#: templates/base.html:73 templates/base.html:247
+#: models/staked_vouch.py:64 templates/social/pledges.html:38
+msgid "Active"
+msgstr ""
+
+#: models/staked_vouch.py:65
+msgid "Released"
+msgstr ""
+
+#: models/staked_vouch.py:66
+msgid "Forfeited"
+msgstr ""
+
+#: models/staked_vouch.py:67
+msgid "Returned"
+msgstr ""
+
+#: models/win_story.py:43
+msgid "Poster"
+msgstr ""
+
+#: models/win_story.py:44
+msgid "Referrer"
+msgstr ""
+
+#: models/win_story.py:45 templates/bounties/trail.html:28
+msgid "Hired candidate"
+msgstr ""
+
+#: templates/base.html:73 templates/base.html:249
 msgid "Toggle dark mode"
 msgstr ""
 
-#: templates/base.html:87 templates/base.html:366 templates/social/feed.html:3
+#: templates/base.html:87 templates/base.html:370 templates/social/feed.html:3
 #: templates/social/feed.html:37 tests/test_phase2.py:134
 msgid "Feed"
 msgstr ""
@@ -637,12 +868,12 @@ msgstr ""
 msgid "All Opportunities"
 msgstr ""
 
-#: templates/base.html:109 templates/base.html:340
+#: templates/base.html:109 templates/base.html:343
 #: templates/social/pledges.html:2 templates/social/pledges.html:5
 msgid "Human-reviewed hiring pledge"
 msgstr ""
 
-#: templates/base.html:115 templates/base.html:172
+#: templates/base.html:115 templates/base.html:177
 #: templates/bounties/board.html:43
 #: templates/bounties/recruitment_board.html:21
 #: templates/bounties/services_board.html:21 templates/social/people.html:17
@@ -651,145 +882,202 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: templates/base.html:120 templates/base.html:193 templates/base.html:202
+#: templates/base.html:120 templates/base.html:198 templates/base.html:207
 #: templates/social/notifications.html:3 templates/social/notifications.html:10
 msgid "Notifications"
 msgstr ""
 
-#: templates/base.html:126 templates/base.html:232
+#: templates/base.html:126 templates/base.html:237
 msgid "Messages"
 msgstr ""
 
-#: templates/base.html:131 templates/base.html:274 templates/base.html:379
-#: templates/profile/public.html:3 templates/profile/view.html:86
+#: templates/base.html:131 templates/base.html:276 templates/base.html:383
+#: templates/profile/public.html:3 templates/profile/view.html:87
 msgid "Profile"
 msgstr ""
 
-#: templates/base.html:136 templates/base.html:275
+#: templates/base.html:136 templates/base.html:277
 #: templates/social/saved.html:3
 msgid "Saved"
 msgstr ""
 
-#: templates/base.html:146 templates/base.html:276
+#: templates/base.html:146 templates/base.html:278
 msgid "My Referrals"
 msgstr ""
 
-#: templates/base.html:151 templates/base.html:289
+#: templates/base.html:151 templates/base.html:279
+#: templates/stakes/my_stakes.html:3 templates/stakes/my_stakes.html:6
+msgid "My Stakes"
+msgstr ""
+
+#: templates/base.html:156 templates/base.html:292
 msgid "Logout"
 msgstr ""
 
-#: templates/base.html:156 templates/base.html:253
+#: templates/base.html:161 templates/base.html:255
 msgid "Language"
 msgstr ""
 
-#: templates/base.html:172
+#: templates/base.html:177
 msgid "Search people, posts, opportunities…"
 msgstr ""
 
-#: templates/base.html:203 templates/social/notifications.html:13
+#: templates/base.html:208 templates/social/notifications.html:13
 msgid "Mark all read"
 msgstr ""
 
-#: templates/base.html:209 templates/social/notifications.html:47
+#: templates/base.html:214 templates/social/notifications.html:47
 msgid "New"
 msgstr ""
 
-#: templates/base.html:217 templates/social/notifications.html:54
+#: templates/base.html:222 templates/social/notifications.html:54
 msgid "Earlier"
 msgstr ""
 
-#: templates/base.html:225
+#: templates/base.html:230
 msgid "No notifications yet."
 msgstr ""
 
-#: templates/base.html:228
+#: templates/base.html:233
 msgid "View all notifications"
 msgstr ""
 
-#: templates/auth/login.html:63 templates/auth/register.html:3
-#: templates/base.html:241
-msgid "Register"
+#: templates/auth/login.html:3 templates/base.html:243
+msgid "Login"
 msgstr ""
 
-#: templates/base.html:265
+#: templates/base.html:267
 msgid "Account menu"
 msgstr ""
 
-#: templates/base.html:277 templates/social/notifications.html:28
+#: templates/base.html:280 templates/social/notifications.html:28
 msgid "Payouts"
 msgstr ""
 
-#: templates/base.html:278
+#: templates/base.html:281
 msgid "Analytics"
 msgstr ""
 
-#: templates/base.html:279 templates/social/analytics.html:105
+#: templates/base.html:282 templates/social/analytics.html:105
 #: templates/social/analytics.html:243
 msgid "Pro"
 msgstr ""
 
-#: templates/base.html:281
+#: templates/base.html:284
 msgid "Admin"
 msgstr ""
 
-#: templates/base.html:284
+#: templates/base.html:287
 msgid "Appearance"
 msgstr ""
 
-#: templates/base.html:285
+#: templates/base.html:288
 msgid "Light"
 msgstr ""
 
-#: templates/base.html:286
+#: templates/base.html:289
 msgid "Dark"
 msgstr ""
 
-#: templates/base.html:287
+#: templates/base.html:290
 msgid "System"
 msgstr ""
 
-#: templates/base.html:327
+#: templates/base.html:330
 msgid "Connecting talent with opportunity across the globe."
 msgstr ""
 
-#: templates/base.html:331
+#: templates/base.html:334
 msgid "Our Opportunities"
 msgstr ""
 
-#: templates/base.html:346
+#: templates/base.html:349
 msgid "Legal"
 msgstr ""
 
-#: templates/base.html:348
+#: templates/auth/settings.html:40 templates/base.html:351
+#: templates/help.html:3 templates/help.html:9
+msgid "Help"
+msgstr ""
+
+#: templates/base.html:352 templates/legal/privacy.html:3
+#: templates/legal/privacy.html:9
 msgid "Privacy Policy"
 msgstr ""
 
-#: templates/base.html:349
+#: templates/base.html:353 templates/legal/terms.html:3
+#: templates/legal/terms.html:9
 msgid "Terms of Service"
 msgstr ""
 
-#: templates/base.html:350
+#: templates/base.html:354 templates/legal/cookies.html:3
+#: templates/legal/cookies.html:9
 msgid "Cookie Policy"
 msgstr ""
 
-#: templates/base.html:356
+#: templates/base.html:360
 msgid "All rights reserved."
 msgstr ""
 
-#: templates/base.html:357
+#: templates/base.html:361
 msgid "Made in Canada"
 msgstr ""
 
-#: templates/base.html:364
+#: templates/base.html:368
 msgid "Primary"
 msgstr ""
 
-#: templates/base.html:369
+#: templates/base.html:373
 msgid "Discover"
 msgstr ""
 
-#: templates/base.html:375
+#: templates/base.html:379
 msgid "Alerts"
+msgstr ""
+
+#: templates/help.html:13
+msgid "Can't sign in?"
+msgstr ""
+
+#: templates/help.html:14
+msgid ""
+"Paid2Match signs you in with Google, GitHub, or Facebook — there is no "
+"password to reset."
+msgstr ""
+
+#: templates/help.html:15
+msgid "Try your other sign-in method."
+msgstr ""
+
+#: templates/help.html:16
+msgid ""
+"If two of your accounts use the same email address, signing in with "
+"either one opens the same Paid2Match account."
+msgstr ""
+
+#: templates/help.html:17
+msgid "Lost access to both?"
+msgstr ""
+
+#: templates/help.html:18
+msgid ""
+"Email support@paid2match.work from the email address on your Paid2Match "
+"account. Tell us what happened and we will verify you and relink your "
+"account."
+msgstr ""
+
+#: templates/help.html:19
+msgid ""
+"Tip: while you still have access, sign in with the other method using the"
+" same email — that adds it as a backup way in."
+msgstr ""
+
+#: templates/help.html:25
+msgid "Contact support"
+msgstr ""
+
+#: templates/help.html:26
+msgid "We reply within a few business days."
 msgstr ""
 
 #: templates/index.html:6
@@ -819,70 +1107,82 @@ msgid "Explore the Feed"
 msgstr ""
 
 #: templates/index.html:32
-msgid "Fresh from the network"
+msgid "Paid out so far"
 msgstr ""
 
-#: templates/index.html:33 templates/social/saved.html:22
-msgid "Open the Feed"
-msgstr ""
-
-#: templates/index.html:35
-msgid "What people are posting right now."
+#: templates/index.html:33
+msgid "Real money paid to real people for referrals."
 msgstr ""
 
 #: templates/index.html:48
+msgid "See the wins"
+msgstr ""
+
+#: templates/index.html:63
+msgid "Fresh from the network"
+msgstr ""
+
+#: templates/index.html:64 templates/social/saved.html:22
+msgid "Open the Feed"
+msgstr ""
+
+#: templates/index.html:66
+msgid "What people are posting right now."
+msgstr ""
+
+#: templates/index.html:79
 msgid "The network is just waking up"
 msgstr ""
 
-#: templates/index.html:49
+#: templates/index.html:80
 msgid ""
 "No posts yet — be the first to say hello, share a win, or ask the network"
 " for help."
 msgstr ""
 
-#: templates/index.html:50
+#: templates/index.html:81
 msgid "Be the first to post"
 msgstr ""
 
-#: templates/index.html:58 templates/social/feed.html:152
+#: templates/index.html:89 templates/social/feed.html:152
 msgid "Top Helpers"
 msgstr ""
 
-#: templates/index.html:59
+#: templates/index.html:90
 msgid "People who completed the most referrals — the heart of the network."
 msgstr ""
 
-#: templates/index.html:69 templates/social/feed.html:23
+#: templates/index.html:100 templates/social/feed.html:23
 #: templates/social/people.html:42 templates/social/search.html:51
 msgid "karma"
 msgstr ""
 
-#: templates/index.html:69 templates/profile/public.html:62
-#: templates/profile/view.html:62 templates/social/analytics.html:32
+#: templates/index.html:100 templates/profile/public.html:63
+#: templates/profile/view.html:63 templates/social/analytics.html:32
 #: templates/social/feed.html:23 templates/social/people.html:42
 #: templates/social/search.html:51
 msgid "Helped"
 msgstr ""
 
-#: templates/index.html:78
+#: templates/index.html:109
 msgid "No helpers yet"
 msgstr ""
 
-#: templates/index.html:79
+#: templates/index.html:110
 msgid ""
 "Nobody has completed a referral so far — complete the first one and take "
 "the top spot."
 msgstr ""
 
-#: templates/index.html:80
+#: templates/index.html:111 templates/wins/wall.html:38
 msgid "Browse referral needs"
 msgstr ""
 
-#: templates/index.html:88
+#: templates/index.html:119
 msgid "Featured Referral Needs"
 msgstr ""
 
-#: templates/index.html:89
+#: templates/index.html:120
 msgid ""
 "Open needs from the community — refer someone you know and earn the "
 "reward."
@@ -891,77 +1191,77 @@ msgstr ""
 #: templates/bounties/board.html:32 templates/bounties/board.html:125
 #: templates/bounties/detail.html:22
 #: templates/bounties/recruitment_board.html:69
-#: templates/bounties/services_board.html:69 templates/index.html:100
-#: templates/index.html:113 templates/social/_composer.html:75
+#: templates/bounties/services_board.html:69 templates/index.html:131
+#: templates/index.html:144 templates/social/_composer.html:75
 #: templates/social/_post_card.html:100
 msgid "Free"
 msgstr ""
 
-#: templates/index.html:122
+#: templates/index.html:153
 msgid "View"
 msgstr ""
 
-#: templates/index.html:129
+#: templates/index.html:160
 msgid "View All"
 msgstr ""
 
-#: templates/index.html:134
+#: templates/index.html:165
 msgid "No referral needs yet"
 msgstr ""
 
-#: templates/index.html:135
+#: templates/index.html:166
 msgid ""
 "Nobody is looking for a referral right now — post the first need and let "
 "the network find your person."
 msgstr ""
 
-#: templates/index.html:136
+#: templates/index.html:167
 msgid "Post the first need"
 msgstr ""
 
-#: templates/index.html:147
+#: templates/index.html:178
 msgid "The human-reviewed hiring pledge"
 msgstr ""
 
-#: templates/index.html:148
+#: templates/index.html:179
 msgid ""
 "Every employer on this register promises two things: no AI screening of "
 "candidates, and a human response to every referral within 5 business "
 "days. If a pledger stops answering, their pledge shows as suspended."
 msgstr ""
 
-#: templates/index.html:149 templates/social/feed.html:166
+#: templates/index.html:180 templates/social/feed.html:166
 msgid "See who pledged"
 msgstr ""
 
-#: templates/index.html:157
+#: templates/index.html:188
 msgid "How It Works"
 msgstr ""
 
 #: templates/bounties/post.html:3 templates/bounties/recruitment_board.html:13
 #: templates/bounties/recruitment_board.html:116
 #: templates/bounties/services_board.html:13
-#: templates/bounties/services_board.html:116 templates/index.html:161
+#: templates/bounties/services_board.html:116 templates/index.html:192
 msgid "Post a Referral Need"
 msgstr ""
 
-#: templates/index.html:162
+#: templates/index.html:193
 msgid "Describe what you need and set your reward"
 msgstr ""
 
-#: templates/index.html:166
+#: templates/index.html:197
 msgid "Receive Referrals"
 msgstr ""
 
-#: templates/index.html:167
+#: templates/index.html:198
 msgid "Referrers submit referrals with teasers"
 msgstr ""
 
-#: templates/index.html:171
+#: templates/index.html:202
 msgid "Confirm and Earn"
 msgstr ""
 
-#: templates/index.html:172
+#: templates/index.html:203
 msgid "Both parties confirm successful placement"
 msgstr ""
 
@@ -983,98 +1283,42 @@ msgstr ""
 msgid "Try again"
 msgstr ""
 
-#: templates/auth/forgot_password.html:3 templates/auth/forgot_password.html:11
-msgid "Forgot Password"
-msgstr ""
-
-#: templates/auth/forgot_password.html:12
-msgid ""
-"Enter the email you signed up with and we will send you a link to reset "
-"your password."
-msgstr ""
-
-#: templates/auth/forgot_password.html:19 templates/auth/login.html:18
-#: templates/auth/register.html:28 templates/auth/resend_verification.html:19
-msgid "you@example.com"
-msgstr ""
-
-#: templates/auth/forgot_password.html:31
-#: templates/auth/resend_verification.html:31
-msgid "Back to login"
-msgstr ""
-
 #: templates/auth/login.html:11
 msgid "Welcome Back"
 msgstr ""
 
-#: templates/auth/login.html:28
-msgid "Enter your password"
+#: templates/auth/login.html:12
+msgid "Sign in with Google, GitHub, or Facebook — no password needed."
 msgstr ""
 
-#: templates/auth/login.html:38
-msgid "Remember me"
-msgstr ""
-
-#: templates/auth/login.html:55 templates/auth/register.html:70
-msgid "or"
-msgstr ""
-
-#: templates/auth/login.html:58 templates/auth/register.html:73
+#: templates/auth/login.html:15
 msgid "Continue with Google"
 msgstr ""
 
-#: templates/auth/login.html:62
-msgid "Dont have an account"
+#: templates/auth/login.html:18
+msgid "Continue with GitHub"
 msgstr ""
 
-#: templates/auth/login.html:66
-msgid "Forgot your password?"
+#: templates/auth/login.html:21
+msgid "Continue with Facebook"
 msgstr ""
 
-#: templates/auth/login.html:69
-msgid "Didn't get a confirmation email?"
+#: templates/auth/login.html:24
+msgid "Sign-in is not available right now — please check back soon."
 msgstr ""
 
-#: templates/auth/login.html:70
-msgid "Resend it"
+#: templates/auth/login.html:26
+msgid "Can't sign in? Get help"
 msgstr ""
 
-#: templates/auth/register.html:11
-msgid "Create your account"
+#: templates/auth/settings.html:37
+msgid "Backup sign-in"
 msgstr ""
 
-#: templates/auth/register.html:18
-msgid "John Doe"
-msgstr ""
-
-#: templates/auth/register.html:38
-msgid "Minimum 8 characters"
-msgstr ""
-
-#: templates/auth/register.html:48
-msgid "Repeat your password"
-msgstr ""
-
-#: templates/auth/register.html:77
-msgid "Already have an account"
-msgstr ""
-
-#: templates/auth/resend_verification.html:12
+#: templates/auth/settings.html:40
 msgid ""
-"Enter the email you signed up with and we will send you a new "
-"confirmation link."
-msgstr ""
-
-#: templates/auth/reset_password.html:11
-msgid "Choose a New Password"
-msgstr ""
-
-#: templates/auth/reset_password.html:18
-msgid "At least 8 characters, upper + lower + digit + special"
-msgstr ""
-
-#: templates/auth/reset_password.html:28
-msgid "Repeat your new password"
+"Signed in with Google or GitHub? Sign in with the other one using the "
+"same email to add it as a backup way in."
 msgstr ""
 
 #: templates/bounties/board.html:11
@@ -1147,7 +1391,7 @@ msgstr ""
 msgid "Filter"
 msgstr ""
 
-#: templates/bounties/board.html:112 templates/bounties/detail.html:136
+#: templates/bounties/board.html:112 templates/bounties/detail.html:194
 #: templates/profile/public.html:31 templates/profile/view.html:26
 #: templates/social/_post_card.html:107
 msgid ""
@@ -1155,13 +1399,13 @@ msgid ""
 "business days"
 msgstr ""
 
-#: templates/bounties/board.html:112 templates/bounties/detail.html:136
+#: templates/bounties/board.html:112 templates/bounties/detail.html:194
 #: templates/profile/public.html:31 templates/profile/view.html:26
 #: templates/social/_post_card.html:107 templates/social/pledges.html:28
 msgid "Pledged"
 msgstr ""
 
-#: templates/bounties/board.html:115 templates/bounties/detail.html:167
+#: templates/bounties/board.html:115 templates/bounties/detail.html:228
 msgid "Secured"
 msgstr ""
 
@@ -1210,23 +1454,23 @@ msgstr ""
 msgid "Amount:"
 msgstr ""
 
-#: templates/bounties/close.html:22 templates/bounties/close.html:102
+#: templates/bounties/close.html:22 templates/bounties/close.html:100
 msgid "Note:"
 msgstr ""
 
-#: templates/bounties/close.html:22 templates/bounties/close.html:102
+#: templates/bounties/close.html:22 templates/bounties/close.html:100
 msgid "Closing this need will:"
 msgstr ""
 
-#: templates/bounties/close.html:24 templates/bounties/close.html:104
+#: templates/bounties/close.html:24 templates/bounties/close.html:102
 msgid "Remove it from the public board"
 msgstr ""
 
-#: templates/bounties/close.html:25 templates/bounties/close.html:105
+#: templates/bounties/close.html:25 templates/bounties/close.html:103
 msgid "Stop accepting new referrals"
 msgstr ""
 
-#: templates/bounties/close.html:26 templates/bounties/close.html:106
+#: templates/bounties/close.html:26 templates/bounties/close.html:104
 msgid "Preserve all existing referrals and matches for your records"
 msgstr ""
 
@@ -1262,40 +1506,41 @@ msgstr ""
 msgid "Total Refund"
 msgstr ""
 
-#: templates/bounties/close.html:79
+#: templates/bounties/close.html:77
 msgid ""
 "The transaction fee and Stripe fees are non-refundable and will be "
 "deducted from your refund. You will receive approximately"
 msgstr ""
 
-#: templates/bounties/close.html:79
+#: templates/bounties/close.html:77
 msgid "back."
 msgstr ""
 
-#: templates/bounties/close.html:86 templates/bounties/expired.html:20
+#: templates/bounties/close.html:84 templates/bounties/expired.html:20
 msgid "Your payment of"
 msgstr ""
 
-#: templates/bounties/close.html:86
+#: templates/bounties/close.html:84
 msgid ""
 "will be kept secure and applied to your next bounty. No additional fees "
 "will be charged."
 msgstr ""
 
-#: templates/bounties/close.html:92 templates/bounties/close.html:113
+#: templates/bounties/close.html:90 templates/bounties/close.html:111
 msgid "Close This Need"
 msgstr ""
 
-#: templates/bounties/close.html:95 templates/bounties/close.html:116
-#: templates/bounties/dispute_form.html:31 templates/bounties/edit.html:134
-#: templates/bounties/post.html:258 templates/bounties/rate.html:48
+#: templates/bounties/close.html:93 templates/bounties/close.html:114
+#: templates/bounties/dispute_form.html:31 templates/bounties/edit.html:142
+#: templates/bounties/post.html:266 templates/bounties/rate.html:48
 #: templates/bounties/secure_third_party.html:52
-#: templates/social/_composer.html:91 templates/social/convert.html:37
-#: templates/social/post_form.html:62 templates/social/report_form.html:20
+#: templates/intro_bounties/new.html:47 templates/social/_composer.html:91
+#: templates/social/convert.html:37 templates/social/post_form.html:62
+#: templates/social/report_form.html:20
 msgid "Cancel"
 msgstr ""
 
-#: templates/bounties/confirmed_match.html:3 templates/bounties/detail.html:227
+#: templates/bounties/confirmed_match.html:3 templates/bounties/detail.html:299
 msgid "Match Confirmed"
 msgstr ""
 
@@ -1357,7 +1602,7 @@ msgid "Dispute open — under admin review"
 msgstr ""
 
 #: templates/bounties/confirmed_match.html:100
-#: templates/profile/public.html:140
+#: templates/profile/public.html:141
 msgid "Reviews"
 msgstr ""
 
@@ -1373,101 +1618,154 @@ msgstr ""
 msgid "Browse More Needs"
 msgstr ""
 
-#: templates/bounties/detail.html:61 templates/profile/public.html:212
-#: templates/profile/view.html:280
+#: templates/bounties/detail.html:61 templates/profile/public.html:276
+#: templates/profile/view.html:342
 msgid "Skills"
 msgstr ""
 
-#: templates/bounties/detail.html:81
+#: templates/bounties/detail.html:80
+msgid "See the Money Trail"
+msgstr ""
+
+#: templates/bounties/detail.html:82
+msgid "Who posted, shared, referred — and what each person earned."
+msgstr ""
+
+#: templates/bounties/detail.html:90
 msgid "This bounty is"
 msgstr ""
 
-#: templates/bounties/detail.html:88 templates/bounties/detail.html:157
+#: templates/bounties/detail.html:97 templates/bounties/detail.html:218
 msgid "Refer yourself"
 msgstr ""
 
-#: templates/bounties/detail.html:96
+#: templates/bounties/detail.html:105
 msgid "Explain why you are the right person for this need..."
 msgstr ""
 
-#: templates/bounties/detail.html:102
+#: templates/bounties/detail.html:111
 msgid "Your referral stays anonymous until the poster shows interest."
 msgstr ""
 
-#: templates/bounties/detail.html:113
+#: templates/bounties/detail.html:123
+msgid "Your video pitch"
+msgstr ""
+
+#: templates/bounties/detail.html:129
+msgid "Pitch by video"
+msgstr ""
+
+#: templates/bounties/detail.html:130
+msgid "Skip the text — pitch in 30 seconds on camera."
+msgstr ""
+
+#: templates/bounties/detail.html:144
 msgid "Know someone better?"
 msgstr ""
 
-#: templates/bounties/detail.html:114
+#: templates/bounties/detail.html:145
 msgid ""
 "Refer a person you know — they confirm before the poster sees anything, "
 "and you earn the bounty or karma if they're the one who gets hired."
 msgstr ""
 
-#: templates/bounties/detail.html:116 templates/bounties/detail.html:158
-#: templates/bounties/detail.html:352 templates/social/_post_card.html:115
+#: templates/bounties/detail.html:147 templates/bounties/detail.html:219
+#: templates/bounties/detail.html:468 templates/social/_post_card.html:115
 msgid "Refer someone"
 msgstr ""
 
-#: templates/bounties/detail.html:123
+#: templates/bounties/detail.html:159
+msgid "People in your network who could help"
+msgstr ""
+
+#: templates/bounties/detail.html:160
+msgid "Your connections closest to the right person for this need."
+msgstr ""
+
+#: templates/bounties/detail.html:172
+msgid "View profile"
+msgstr ""
+
+#: templates/bounties/detail.html:181
 msgid "You have already referred someone for this need."
 msgstr ""
 
-#: templates/bounties/detail.html:132
+#: templates/bounties/detail.html:190 templates/intro_bounties/detail.html:22
+#: templates/intro_bounties/list.html:18
 msgid "Posted by"
 msgstr ""
 
-#: templates/bounties/detail.html:144
+#: templates/bounties/detail.html:197 templates/pledge/register.html:21
+#: templates/profile/public.html:32 templates/profile/view.html:27
+msgid "Human-Reviewed"
+msgstr ""
+
+#: templates/bounties/detail.html:205
 msgid "Reward"
 msgstr ""
 
-#: templates/bounties/detail.html:153
+#: templates/bounties/detail.html:214
 msgid "Payment Secured"
 msgstr ""
 
-#: templates/bounties/detail.html:171
+#: templates/bounties/detail.html:232
 msgid "Boost Visibility"
 msgstr ""
 
-#: templates/bounties/detail.html:175 templates/social/_post_card.html:51
+#: templates/bounties/detail.html:236 templates/social/_post_card.html:51
 #: templates/social/post_detail.html:14
 msgid "Edit"
 msgstr ""
 
-#: templates/bounties/detail.html:179
+#: templates/bounties/detail.html:240
 msgid "Close"
 msgstr ""
 
-#: templates/bounties/detail.html:205
+#: templates/bounties/detail.html:266
 msgid "Candidate revealed"
 msgstr ""
 
-#: templates/bounties/detail.html:221 templates/bounties/detail.html:223
+#: templates/bounties/detail.html:293 templates/bounties/detail.html:295
 msgid "Message"
 msgstr ""
 
-#: templates/bounties/detail.html:229 templates/bounties/detail.html:234
+#: templates/bounties/detail.html:301 templates/bounties/detail.html:306
 msgid "Awaiting Your Confirm"
 msgstr ""
 
-#: templates/bounties/detail.html:231 templates/bounties/detail.html:236
-#: templates/bounties/detail.html:240
+#: templates/bounties/detail.html:303 templates/bounties/detail.html:308
+#: templates/bounties/detail.html:312
 msgid "Confirm Match"
 msgstr ""
 
-#: templates/bounties/detail.html:243 templates/social/analytics.html:221
+#: templates/bounties/detail.html:315 templates/intro_bounties/detail.html:39
+#: templates/intro_bounties/detail.html:82 templates/social/analytics.html:221
 msgid "Confirmed"
 msgstr ""
 
-#: templates/bounties/detail.html:280
+#: templates/bounties/detail.html:352
 msgid "Interested"
 msgstr ""
 
-#: templates/bounties/detail.html:284
+#: templates/bounties/detail.html:356
 msgid "Pass"
 msgstr ""
 
-#: templates/bounties/detail.html:349 templates/partials/hiring_strip.html:16
+#: templates/bounties/detail.html:378 templates/profile/public.html:213
+msgid "Staked vouches"
+msgstr ""
+
+#: templates/bounties/detail.html:381
+msgid ""
+"Recorded commitments behind the people on this need — no money moved. "
+"Resolve each stake once the outcome is known."
+msgstr ""
+
+#: templates/bounties/detail.html:400 templates/profile/public.html:174
+msgid "Video pitches"
+msgstr ""
+
+#: templates/bounties/detail.html:465 templates/partials/hiring_strip.html:16
 #: templates/social/search.html:84
 msgid "Free need"
 msgstr ""
@@ -1511,23 +1809,27 @@ msgstr ""
 msgid "Paid needs need a bounty of at least $50. Free needs carry no reward."
 msgstr ""
 
-#: templates/bounties/edit.html:88 templates/bounties/post.html:184
-msgid "City, State or Remote"
+#: templates/bounties/edit.html:92 templates/bounties/post.html:188
+msgid "All amounts on this need use this currency."
 msgstr ""
 
 #: templates/bounties/edit.html:96 templates/bounties/post.html:192
-msgid "Python, SQL, Leadership"
-msgstr ""
-
-#: templates/bounties/edit.html:100 templates/bounties/post.html:196
-msgid "What makes this need complete?"
+msgid "City, State or Remote"
 msgstr ""
 
 #: templates/bounties/edit.html:104 templates/bounties/post.html:200
+msgid "Python, SQL, Leadership"
+msgstr ""
+
+#: templates/bounties/edit.html:108 templates/bounties/post.html:204
+msgid "What makes this need complete?"
+msgstr ""
+
+#: templates/bounties/edit.html:112 templates/bounties/post.html:208
 msgid "Staged rewards (optional)"
 msgstr ""
 
-#: templates/bounties/edit.html:105 templates/bounties/post.html:201
+#: templates/bounties/edit.html:113 templates/bounties/post.html:209
 msgid ""
 "Reward the steps, not just the hire: a small amount when a referral is "
 "submitted, more when a candidate is interviewed. These amounts are shown "
@@ -1535,25 +1837,25 @@ msgid ""
 " are wired."
 msgstr ""
 
-#: templates/bounties/edit.html:109 templates/bounties/edit.html:116
-#: templates/bounties/edit.html:123 templates/bounties/post.html:205
-#: templates/bounties/post.html:212 templates/bounties/post.html:219
+#: templates/bounties/edit.html:117 templates/bounties/edit.html:124
+#: templates/bounties/edit.html:131 templates/bounties/post.html:213
+#: templates/bounties/post.html:220 templates/bounties/post.html:227
 msgid "Optional"
 msgstr ""
 
-#: templates/bounties/edit.html:133
+#: templates/bounties/edit.html:141
 msgid "Save Changes"
 msgstr ""
 
-#: templates/bounties/edit.html:141
+#: templates/bounties/edit.html:149
 msgid "Need Status"
 msgstr ""
 
-#: templates/bounties/edit.html:147
+#: templates/bounties/edit.html:155
 msgid "Note"
 msgstr ""
 
-#: templates/bounties/edit.html:148
+#: templates/bounties/edit.html:156
 msgid ""
 "You can edit bounty details anytime. If you change the reward amount, you"
 " may need to re-secure the bounty."
@@ -1873,87 +2175,87 @@ msgstr ""
 msgid "Reward & Details"
 msgstr ""
 
-#: templates/bounties/post.html:227
+#: templates/bounties/post.html:235
 msgid "This is a free need (no reward payment required)"
 msgstr ""
 
-#: templates/bounties/post.html:231
+#: templates/bounties/post.html:239
 msgid "Who will pay the referral reward?"
 msgstr ""
 
-#: templates/bounties/post.html:235
+#: templates/bounties/post.html:243
 msgid "I will pay"
 msgstr ""
 
-#: templates/bounties/post.html:236
+#: templates/bounties/post.html:244
 msgid "You secure the payment with your card"
 msgstr ""
 
-#: templates/bounties/post.html:242
+#: templates/bounties/post.html:250
 msgid "Invite someone to pay"
 msgstr ""
 
-#: templates/bounties/post.html:243
+#: templates/bounties/post.html:251
 msgid "They must accept the agreement before paying"
 msgstr ""
 
-#: templates/bounties/post.html:246
+#: templates/bounties/post.html:254
 msgid "Username to invite"
 msgstr ""
 
-#: templates/bounties/post.html:247
+#: templates/bounties/post.html:255
 msgid "Enter their username"
 msgstr ""
 
-#: templates/bounties/post.html:248
+#: templates/bounties/post.html:256
 msgid "Message (optional)"
 msgstr ""
 
-#: templates/bounties/post.html:249
+#: templates/bounties/post.html:257
 msgid "Optional message to the payer"
 msgstr ""
 
-#: templates/bounties/post.html:265
+#: templates/bounties/post.html:273
 msgid "How it works"
 msgstr ""
 
-#: templates/bounties/post.html:267
+#: templates/bounties/post.html:275
 msgid "Pick a vertical"
 msgstr ""
 
-#: templates/bounties/post.html:267
+#: templates/bounties/post.html:275
 msgid "recruitment (hire someone) or services (refer a service provider)"
 msgstr ""
 
-#: templates/bounties/post.html:268
+#: templates/bounties/post.html:276
 msgid "Choose your direction"
 msgstr ""
 
-#: templates/bounties/post.html:268
+#: templates/bounties/post.html:276
 msgid "seeking or offering"
 msgstr ""
 
-#: templates/bounties/post.html:269
+#: templates/bounties/post.html:277
 msgid "Fill in the details and set your reward"
 msgstr ""
 
-#: templates/bounties/post.html:270
+#: templates/bounties/post.html:278
 msgid "Free needs go live immediately"
 msgstr ""
 
-#: templates/bounties/post.html:271
+#: templates/bounties/post.html:279
 msgid "Paid needs need payment before publishing"
 msgstr ""
 
-#: templates/bounties/post.html:274
+#: templates/bounties/post.html:282
 msgid "Direction Guide"
 msgstr ""
 
-#: templates/bounties/post.html:276
+#: templates/bounties/post.html:284
 msgid "You're hiring, find me someone"
 msgstr ""
 
-#: templates/bounties/post.html:277
+#: templates/bounties/post.html:285
 msgid "I have a candidate, pay me"
 msgstr ""
 
@@ -2045,6 +2347,24 @@ msgstr ""
 msgid "No services needs found"
 msgstr ""
 
+#: templates/bounties/trail.html:3 templates/bounties/trail.html:13
+msgid "Money Trail"
+msgstr ""
+
+#: templates/bounties/trail.html:10
+msgid "Back to the need"
+msgstr ""
+
+#: templates/bounties/trail.html:15
+msgid ""
+"Every completed hire shows the full chain — who posted, who shared, who "
+"referred, who got hired — and what each person earned."
+msgstr ""
+
+#: templates/bounties/trail.html:40
+msgid "No completed hire yet — the trail appears here once someone is hired."
+msgstr ""
+
 #: templates/bounties/upgrade.html:3
 msgid "Premium Upgrade"
 msgstr ""
@@ -2109,6 +2429,185 @@ msgstr ""
 
 #: templates/bounties/upgrade.html:84
 msgid "You can upgrade anytime from the need detail page."
+msgstr ""
+
+#: templates/intro_bounties/detail.html:2
+msgid "Intro bounty"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:12
+msgid "Open"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:14
+msgid "Claimed"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:16
+msgid "Completed"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:18
+msgid "Cancelled"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:24
+msgid ""
+"The intro was confirmed. The reward is recorded as owed and will be paid "
+"once payouts are available."
+msgstr ""
+
+#: templates/intro_bounties/detail.html:28
+msgid "Claims"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:37
+#: templates/intro_bounties/detail.html:80
+msgid "Pending"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:41
+#: templates/intro_bounties/detail.html:84 templates/profile/linked.html:21
+msgid "Rejected"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:52
+msgid "Confirm intro made"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:56
+msgid "Reject"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:65
+msgid "No claims yet."
+msgstr ""
+
+#: templates/intro_bounties/detail.html:70
+msgid "Cancel intro bounty"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:75
+msgid "Your claims"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:96
+msgid "Your claim is pending — the poster will confirm once the intro is made."
+msgstr ""
+
+#: templates/intro_bounties/detail.html:98
+msgid "Can you make this intro?"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:113
+msgid "Sign in to claim this intro"
+msgstr ""
+
+#: templates/intro_bounties/detail.html:118
+msgid "Back to intro bounties"
+msgstr ""
+
+#: templates/intro_bounties/list.html:2 templates/intro_bounties/list.html:5
+msgid "Intro bounties"
+msgstr ""
+
+#: templates/intro_bounties/list.html:6
+msgid ""
+"Get paid for a warm introduction — not just for a hire. Someone here will"
+" pay you to introduce them to the right person."
+msgstr ""
+
+#: templates/intro_bounties/list.html:26
+msgid ""
+"No open intro bounties yet. Be the first to offer a reward for an "
+"introduction."
+msgstr ""
+
+#: templates/intro_bounties/list.html:30 templates/intro_bounties/new.html:2
+#: templates/intro_bounties/new.html:5
+msgid "Post an intro bounty"
+msgstr ""
+
+#: templates/intro_bounties/list.html:32
+msgid "Sign in to post an intro bounty"
+msgstr ""
+
+#: templates/intro_bounties/new.html:6
+msgid ""
+"Offer a reward to anyone who introduces you to the person you need to "
+"reach. You confirm the intro happened — the reward is then recorded as "
+"owed."
+msgstr ""
+
+#: templates/legal/cookies.html:10 templates/legal/privacy.html:10
+#: templates/legal/terms.html:10
+msgid "Last updated: November 23, 2026"
+msgstr ""
+
+#: templates/legal/cookies.html:11 templates/legal/privacy.html:11
+#: templates/legal/terms.html:11
+msgid "This page is available in English only."
+msgstr ""
+
+#: templates/legal/cookies.html:17
+msgid "What we use"
+msgstr ""
+
+#: templates/legal/cookies.html:26
+msgid "Your choice"
+msgstr ""
+
+#: templates/legal/cookies.html:29 templates/legal/privacy.html:42
+#: templates/legal/terms.html:41
+msgid "Contact"
+msgstr ""
+
+#: templates/legal/privacy.html:17
+msgid "What we collect"
+msgstr ""
+
+#: templates/legal/privacy.html:27
+msgid "What we use it for"
+msgstr ""
+
+#: templates/legal/privacy.html:34
+msgid "Your choices"
+msgstr ""
+
+#: templates/legal/privacy.html:38
+msgid "Data deletion"
+msgstr ""
+
+#: templates/legal/terms.html:17
+msgid "What Paid2Match is"
+msgstr ""
+
+#: templates/legal/terms.html:20
+msgid "Accounts"
+msgstr ""
+
+#: templates/legal/terms.html:23
+msgid "Referral needs and fees"
+msgstr ""
+
+#: templates/legal/terms.html:26
+msgid "Pro and boosts"
+msgstr ""
+
+#: templates/legal/terms.html:29
+msgid "Behaviour"
+msgstr ""
+
+#: templates/legal/terms.html:32
+msgid "Content"
+msgstr ""
+
+#: templates/legal/terms.html:35
+msgid "Liability"
+msgstr ""
+
+#: templates/legal/terms.html:38
+msgid "Changes"
 msgstr ""
 
 #: templates/partials/hiring_strip.html:10
@@ -2183,9 +2682,98 @@ msgid ""
 "marked pending. No money moves until payouts are connected."
 msgstr ""
 
+#: templates/partials/staked_vouch_form.html:15
+msgid "Amount"
+msgstr ""
+
+#: templates/partials/staked_vouch_form.html:26
+msgid "Stake on this person"
+msgstr ""
+
+#: templates/partials/staked_vouch_form.html:28
+msgid ""
+"A stake is a recorded commitment against your future referral earnings — "
+"no money moves now. If they flake, you lose the stake."
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:28
+msgid "staked on"
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:43 templates/stakes/new.html:13
+msgid "For the need:"
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:48
+msgid "Resolved"
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:48
+msgid "by"
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:55
+msgid "Resolve:"
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:56
+msgid "Completed / hired"
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:57
+msgid "Flaked / no-show"
+msgstr ""
+
+#: templates/partials/staked_vouch_list.html:58
+msgid "Need cancelled"
+msgstr ""
+
 #: templates/partials/verification_badge.html:7
 #, python-format
 msgid "Verification tier %(tier)s of 3 — click to learn how verification works"
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:16
+msgid "Pitch for which need?"
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:18
+msgid "Choose a need…"
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:26
+msgid "Video file"
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:28
+#, python-format
+msgid "That video is too long — keep it to %(max)s seconds or less."
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:29
+#, python-format
+msgid "That video is too large — keep it under %(size)s MB."
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:30
+#, python-format
+msgid "%(max)s seconds max · MP4, WebM or MOV · under %(size)s MB"
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:33
+msgid "Upload video pitch"
+msgstr ""
+
+#: templates/partials/video_vouch_form.html:33
+msgid "Upload video vouch"
+msgstr ""
+
+#: templates/partials/video_vouch_list.html:15
+msgid "Pitched for"
+msgstr ""
+
+#: templates/partials/video_vouch_list.html:24
+msgid "Remove video"
 msgstr ""
 
 #: templates/partials/vouches.html:10
@@ -2220,6 +2808,41 @@ msgstr ""
 msgid "Endorsing needs 250 karma. Trusted+ endorsements weigh more."
 msgstr ""
 
+#: templates/pledge/new.html:2 templates/pledge/new.html:5
+#: templates/pledge/register.html:32
+msgid "Pledge as an employer"
+msgstr ""
+
+#: templates/pledge/new.html:7
+msgid "By pledging, your organization promises:"
+msgstr ""
+
+#: templates/pledge/new.html:7
+msgid "An admin reviews every pledge before it appears on the public register."
+msgstr ""
+
+#: templates/pledge/register.html:3 templates/pledge/register.html:6
+msgid "Human-Reviewed Employer Pledge Register"
+msgstr ""
+
+#: templates/pledge/register.html:7
+msgid ""
+"These employers pledge that a human reads every application — no AI "
+"screening. Each pledge is reviewed by an admin before it appears here."
+msgstr ""
+
+#: templates/pledge/register.html:13
+msgid "Your pledge is pending review."
+msgstr ""
+
+#: templates/pledge/register.html:28
+msgid "No approved pledges yet."
+msgstr ""
+
+#: templates/pledge/register.html:34
+msgid "Sign in to pledge"
+msgstr ""
+
 #: templates/profile/edit.html:2
 msgid "Edit Profile"
 msgstr ""
@@ -2236,35 +2859,35 @@ msgstr ""
 msgid "Basic Information"
 msgstr ""
 
-#: templates/profile/edit.html:36 templates/profile/setup.html:32
+#: templates/profile/edit.html:36 templates/profile/setup.html:44
 msgid "e.g. Senior Python Developer | 5+ years experience"
 msgstr ""
 
-#: templates/profile/edit.html:41 templates/profile/setup.html:37
+#: templates/profile/edit.html:41 templates/profile/setup.html:49
 msgid "Tell us about yourself..."
 msgstr ""
 
-#: templates/profile/edit.html:48 templates/profile/setup.html:44
+#: templates/profile/edit.html:48 templates/profile/setup.html:56
 msgid "City, Country"
 msgstr ""
 
-#: templates/profile/edit.html:52 templates/profile/setup.html:48
+#: templates/profile/edit.html:52 templates/profile/setup.html:60
 msgid "Your company (optional)"
 msgstr ""
 
-#: templates/profile/edit.html:58 templates/profile/setup.html:54
+#: templates/profile/edit.html:58 templates/profile/setup.html:66
 msgid "e.g. Python, JavaScript, Project Management"
 msgstr ""
 
-#: templates/profile/edit.html:59 templates/profile/setup.html:55
+#: templates/profile/edit.html:59 templates/profile/setup.html:67
 msgid "Separate skills with commas"
 msgstr ""
 
-#: templates/profile/edit.html:65 templates/profile/setup.html:61
+#: templates/profile/edit.html:65 templates/profile/setup.html:73
 msgid "https://yourwebsite.com"
 msgstr ""
 
-#: templates/profile/edit.html:78 templates/profile/setup.html:74
+#: templates/profile/edit.html:78 templates/profile/setup.html:86
 msgid "johndoe"
 msgstr ""
 
@@ -2276,11 +2899,11 @@ msgstr ""
 msgid "View current avatar"
 msgstr ""
 
-#: templates/profile/edit.html:107 templates/profile/setup.html:100
+#: templates/profile/edit.html:107 templates/profile/setup.html:112
 msgid "Upload a professional photo (PNG, JPG, GIF - max 16MB)"
 msgstr ""
 
-#: templates/profile/edit.html:110 templates/profile/setup.html:103
+#: templates/profile/edit.html:110 templates/profile/setup.html:115
 msgid "Preferences"
 msgstr ""
 
@@ -2308,10 +2931,6 @@ msgstr ""
 
 #: templates/profile/linked.html:19
 msgid "Pending verification"
-msgstr ""
-
-#: templates/profile/linked.html:21
-msgid "Rejected"
 msgstr ""
 
 #: templates/profile/linked.html:37
@@ -2367,175 +2986,207 @@ msgstr ""
 msgid "The user has set their profile to private."
 msgstr ""
 
-#: templates/profile/public.html:33 templates/profile/view.html:28
+#: templates/profile/public.html:34 templates/profile/view.html:29
 msgid "No headline added yet"
 msgstr ""
 
-#: templates/profile/public.html:38 templates/profile/view.html:33
+#: templates/profile/public.html:39 templates/profile/view.html:34
 msgid "Joined"
 msgstr ""
 
-#: templates/profile/public.html:44 templates/social/feed.html:140
+#: templates/profile/public.html:45 templates/social/feed.html:140
 #: templates/social/people.html:49 templates/social/people.html:69
 #: templates/social/search.html:58
 msgid "Follow"
 msgstr ""
 
-#: templates/profile/public.html:45 templates/profile/public.html:60
-#: templates/profile/view.html:60 templates/social/feed.html:48
+#: templates/profile/public.html:46 templates/profile/public.html:61
+#: templates/profile/view.html:61 templates/social/feed.html:48
 #: templates/social/feed.html:140 templates/social/follow_list.html:2
 #: templates/social/people.html:49 templates/social/people.html:69
 #: templates/social/search.html:58
 msgid "Following"
 msgstr ""
 
-#: templates/profile/public.html:46 templates/social/feed.html:140
+#: templates/profile/public.html:47 templates/social/feed.html:140
 #: templates/social/people.html:49 templates/social/people.html:69
 #: templates/social/search.html:58
 msgid "Unfollow"
 msgstr ""
 
-#: templates/profile/public.html:52
+#: templates/profile/public.html:53
 msgid "Block"
 msgstr ""
 
-#: templates/profile/public.html:54 templates/social/_post_card.html:58
+#: templates/profile/public.html:55 templates/social/_post_card.html:58
 #: templates/social/post_detail.html:32 templates/social/report_form.html:2
 msgid "Report"
 msgstr ""
 
-#: templates/profile/public.html:61 templates/profile/view.html:61
+#: templates/profile/public.html:62 templates/profile/view.html:62
 #: templates/social/follow_list.html:2
 msgid "Followers"
 msgstr ""
 
-#: templates/profile/public.html:63 templates/profile/view.html:63
+#: templates/profile/public.html:64 templates/profile/view.html:64
 #: templates/social/analytics.html:30
 msgid "Karma"
 msgstr ""
 
-#: templates/profile/public.html:67 templates/profile/view.html:67
+#: templates/profile/public.html:68 templates/profile/view.html:68
 msgid "Trust:"
 msgstr ""
 
-#: templates/profile/public.html:69 templates/profile/view.html:69
+#: templates/profile/public.html:70 templates/profile/view.html:70
 msgid "Identity verified"
 msgstr ""
 
-#: templates/profile/public.html:72
+#: templates/profile/public.html:73
 msgid "Two or more linked accounts verified elsewhere"
 msgstr ""
 
-#: templates/profile/public.html:72
+#: templates/profile/public.html:73
 msgid "Verified elsewhere"
 msgstr ""
 
-#: templates/profile/public.html:75
+#: templates/profile/public.html:76
 msgid "People who vouch for this member"
 msgstr ""
 
-#: templates/profile/public.html:75 templates/profile/view.html:78
+#: templates/profile/public.html:76 templates/profile/view.html:79
 msgid "vouch"
 msgstr ""
 
-#: templates/profile/public.html:75 templates/profile/view.html:78
+#: templates/profile/public.html:76 templates/profile/view.html:79
 msgid "vouches"
 msgstr ""
 
-#: templates/profile/public.html:89 templates/profile/view.html:103
+#: templates/profile/public.html:90 templates/profile/view.html:104
 #: templates/social/search.html:67
 msgid "Posts"
 msgstr ""
 
-#: templates/profile/public.html:92 templates/profile/public.html:125
-#: templates/profile/view.html:106 templates/social/analytics.html:59
+#: templates/profile/public.html:93 templates/profile/public.html:126
+#: templates/profile/view.html:107 templates/social/analytics.html:59
 #: templates/social/analytics.html:221 templates/social/bump.html:94
 #: templates/social/notifications.html:27
 msgid "Referrals"
 msgstr ""
 
-#: templates/profile/public.html:95 templates/profile/public.html:175
-#: templates/profile/view.html:109 templates/profile/view.html:214
+#: templates/profile/public.html:96 templates/profile/public.html:239
+#: templates/profile/view.html:110 templates/profile/view.html:276
 msgid "About"
 msgstr ""
 
-#: templates/profile/public.html:112 templates/profile/view.html:126
+#: templates/profile/public.html:113 templates/profile/view.html:127
 msgid "No posts yet"
 msgstr ""
 
-#: templates/profile/public.html:113
+#: templates/profile/public.html:114
 msgid "This user"
 msgstr ""
 
-#: templates/profile/public.html:113
+#: templates/profile/public.html:114
 msgid "hasn't posted anything yet."
 msgstr ""
 
-#: templates/profile/public.html:121 templates/profile/view.html:136
+#: templates/profile/public.html:122 templates/profile/view.html:137
 msgid "Referral activity"
 msgstr ""
 
-#: templates/profile/public.html:129 templates/profile/view.html:148
+#: templates/profile/public.html:130 templates/profile/view.html:149
 msgid "Matches"
 msgstr ""
 
-#: templates/profile/public.html:133 templates/profile/view.html:156
-#: templates/profile/view.html:185
+#: templates/profile/public.html:134 templates/profile/view.html:157
+#: templates/profile/view.html:186
 msgid "Reputation"
 msgstr ""
 
-#: templates/profile/public.html:144
+#: templates/profile/public.html:145
 msgid "from"
 msgstr ""
 
-#: templates/profile/public.html:144
+#: templates/profile/public.html:145
 #, python-format
 msgid "%(num)s review"
 msgid_plural "%(num)s reviews"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/profile/public.html:163
+#: templates/profile/public.html:164
 msgid "No reviews yet."
 msgstr ""
 
-#: templates/profile/public.html:179 templates/profile/view.html:218
+#: templates/profile/public.html:181 templates/profile/view.html:210
+msgid "No video pitches yet."
+msgstr ""
+
+#: templates/profile/public.html:188 templates/profile/view.html:225
+msgid "Video vouches"
+msgstr ""
+
+#: templates/profile/public.html:192 templates/profile/view.html:230
+msgid "Vouched by"
+msgstr ""
+
+#: templates/profile/public.html:196 templates/profile/view.html:234
+msgid "No video vouches yet."
+msgstr ""
+
+#: templates/profile/public.html:199
+msgid "Vouch for this person on camera — 30 seconds, no CV needed."
+msgstr ""
+
+#: templates/profile/public.html:214
+msgid "People who put their own money on the line behind this member."
+msgstr ""
+
+#: templates/profile/public.html:224
+msgid "No staked vouches yet."
+msgstr ""
+
+#: templates/profile/public.html:227
+msgid "Stake on this person — put your money where your vouch is."
+msgstr ""
+
+#: templates/profile/public.html:243 templates/profile/view.html:280
 msgid "No bio added yet."
 msgstr ""
 
-#: templates/profile/public.html:222
+#: templates/profile/public.html:286
 msgid "Links"
 msgstr ""
 
-#: templates/profile/public.html:228 utils/verification_tiers.py:29
+#: templates/profile/public.html:292 utils/verification_tiers.py:29
 msgid "Verified"
 msgstr ""
 
-#: templates/profile/public.html:241 templates/profile/view.html:238
+#: templates/profile/public.html:305 templates/profile/view.html:300
 msgid "LinkedIn Profile"
 msgstr ""
 
-#: templates/profile/public.html:247 templates/profile/view.html:245
+#: templates/profile/public.html:311 templates/profile/view.html:307
 msgid "GitHub Profile"
 msgstr ""
 
-#: templates/profile/public.html:253 templates/profile/view.html:252
+#: templates/profile/public.html:317 templates/profile/view.html:314
 msgid "Instagram"
 msgstr ""
 
-#: templates/profile/public.html:259 templates/profile/view.html:259
+#: templates/profile/public.html:323 templates/profile/view.html:321
 msgid "Facebook"
 msgstr ""
 
-#: templates/profile/public.html:265 templates/profile/view.html:266
+#: templates/profile/public.html:329 templates/profile/view.html:328
 msgid "TikTok"
 msgstr ""
 
-#: templates/profile/public.html:271 templates/profile/view.html:273
+#: templates/profile/public.html:335 templates/profile/view.html:335
 msgid "YouTube"
 msgstr ""
 
-#: templates/profile/public.html:275
+#: templates/profile/public.html:339
 msgid "No links added."
 msgstr ""
 
@@ -2561,115 +3212,147 @@ msgstr ""
 msgid "My Profile"
 msgstr ""
 
-#: templates/profile/view.html:72
+#: templates/profile/view.html:73
 msgid "verified linked account"
 msgstr ""
 
-#: templates/profile/view.html:72
+#: templates/profile/view.html:73
 msgid "verified linked accounts"
 msgstr ""
 
-#: templates/profile/view.html:78
+#: templates/profile/view.html:79
 msgid "People who vouch for you"
 msgstr ""
 
-#: templates/profile/view.html:86
+#: templates/profile/view.html:87
 msgid "complete"
 msgstr ""
 
-#: templates/profile/view.html:87
+#: templates/profile/view.html:88
 msgid "Complete it"
 msgstr ""
 
-#: templates/profile/view.html:127
+#: templates/profile/view.html:128
 msgid ""
 "Say hello to the network — share a win, ask a question, or post a "
 "referral need."
 msgstr ""
 
-#: templates/profile/view.html:128
+#: templates/profile/view.html:129
 msgid "Write your first post"
 msgstr ""
 
-#: templates/profile/view.html:140
+#: templates/profile/view.html:141
 msgid "Referrals sent"
 msgstr ""
 
-#: templates/profile/view.html:144
+#: templates/profile/view.html:145
 msgid "Referrals completed"
 msgstr ""
 
-#: templates/profile/view.html:152
+#: templates/profile/view.html:153
 msgid "Disputes"
 msgstr ""
 
-#: templates/profile/view.html:160
+#: templates/profile/view.html:161
 msgid "Profile views (7d)"
 msgstr ""
 
-#: templates/profile/view.html:164
+#: templates/profile/view.html:165
 msgid "My referrals"
 msgstr ""
 
-#: templates/profile/view.html:165
+#: templates/profile/view.html:166
 msgid "Full analytics"
 msgstr ""
 
-#: templates/profile/view.html:170
+#: templates/profile/view.html:171
 msgid "Reputation & Level"
 msgstr ""
 
-#: templates/profile/view.html:174
+#: templates/profile/view.html:175
 msgid "Level"
 msgstr ""
 
-#: templates/profile/view.html:181
+#: templates/profile/view.html:182
 msgid "Points"
 msgstr ""
 
-#: templates/profile/view.html:199
+#: templates/profile/view.html:202
+msgid "My video pitches"
+msgstr ""
+
+#: templates/profile/view.html:203
+msgid ""
+"Pitch yourself in 30 seconds — pick a need, record a video, and the "
+"poster sees you, not a CV."
+msgstr ""
+
+#: templates/profile/view.html:226
+msgid "People who vouched for you on camera."
+msgstr ""
+
+#: templates/profile/view.html:243
+msgid "My staked vouches"
+msgstr ""
+
+#: templates/profile/view.html:244
+msgid "Active stakes you placed — trust backed by money, not just clicks."
+msgstr ""
+
+#: templates/profile/view.html:254
+msgid ""
+"No active stakes. Stake on someone from their profile — if they flake, "
+"you lose the stake."
+msgstr ""
+
+#: templates/profile/view.html:256
+msgid "See all my stakes"
+msgstr ""
+
+#: templates/profile/view.html:261
 msgid "Referrals waiting for your reply"
 msgstr ""
 
-#: templates/profile/view.html:200
+#: templates/profile/view.html:262
 msgid ""
 "You have 5 business days to answer a referral. Unanswered referrals past "
 "their deadline suspend your trust badge."
 msgstr ""
 
-#: templates/profile/view.html:224
+#: templates/profile/view.html:286
 msgid "Company:"
 msgstr ""
 
-#: templates/profile/view.html:290 templates/social/verification.html:3
+#: templates/profile/view.html:352 templates/social/verification.html:3
 #: templates/social/verification.html:9
 msgid "Verification"
 msgstr ""
 
-#: templates/profile/view.html:294
+#: templates/profile/view.html:356
 msgid "Your verification request is pending admin review."
 msgstr ""
 
-#: templates/profile/view.html:296
+#: templates/profile/view.html:358
 msgid ""
 "Get the verified badge (+5 trust, unlocks the Trusted level). Tell us how"
 " an admin can check who you are — a LinkedIn profile, a business "
 "registration, a phone call."
 msgstr ""
 
-#: templates/profile/view.html:299
+#: templates/profile/view.html:361
 msgid "How can we verify you? (optional)"
 msgstr ""
 
-#: templates/profile/view.html:300
+#: templates/profile/view.html:362
 msgid "Request verification"
 msgstr ""
 
-#: templates/profile/view.html:306
+#: templates/profile/view.html:368
 msgid "Profile Completion"
 msgstr ""
 
-#: templates/profile/view.html:316
+#: templates/profile/view.html:378
 msgid "Complete your profile to stand out"
 msgstr ""
 
@@ -3133,7 +3816,7 @@ msgstr ""
 msgid "Paid:"
 msgstr ""
 
-#: templates/social/analytics.html:221
+#: templates/social/analytics.html:221 templates/wins/new.html:10
 msgid "Need"
 msgstr ""
 
@@ -3471,10 +4154,6 @@ msgstr ""
 msgid "No-ghosting (30 days)"
 msgstr ""
 
-#: templates/social/pledges.html:38
-msgid "Active"
-msgstr ""
-
 #: templates/social/pledges.html:39
 msgid "Suspended — response overdue"
 msgstr ""
@@ -3720,6 +4399,108 @@ msgid ""
 "answering referrals on time."
 msgstr ""
 
+#: templates/stakes/my_stakes.html:7
+msgid ""
+"Stakes are recorded commitments against future referral earnings — no "
+"money moves. The need's poster (or an admin) resolves each stake once the"
+" outcome is known."
+msgstr ""
+
+#: templates/stakes/my_stakes.html:10
+msgid "Stakes I placed"
+msgstr ""
+
+#: templates/stakes/my_stakes.html:20
+msgid ""
+"You have not staked on anyone yet. Visit a profile or a need to put your "
+"money where your vouch is."
+msgstr ""
+
+#: templates/stakes/my_stakes.html:25
+msgid "Stakes on me"
+msgstr ""
+
+#: templates/stakes/my_stakes.html:35
+msgid "Nobody has staked on you yet."
+msgstr ""
+
+#: templates/stakes/new.html:3 templates/stakes/new.html:7
+msgid "Stake on"
+msgstr ""
+
+#: templates/stakes/new.html:9
+msgid ""
+"Put your own money on the line behind this person. If they flake, you "
+"lose the stake — that is what makes a staked vouch worth more than a "
+"click."
+msgstr ""
+
+#: templates/stakes/new.html:18
+#, python-format
+msgid "You already have an active stake of %(amount)s on this person%(need)s."
+msgstr ""
+
+#: templates/stakes/new.html:20
+msgid " for this need"
+msgstr ""
+
+#: templates/stakes/new.html:21
+msgid "See my stakes"
+msgstr ""
+
+#: templates/stakes/new.html:31
+msgid ""
+"A stake is recorded only — no money moves and no payment is taken. The "
+"need's poster (or an admin) resolves the stake once the outcome is known:"
+" completed means released, flaked means forfeited, cancelled means "
+"returned."
+msgstr ""
+
+#: templates/wins/new.html:2 templates/wins/new.html:5
+msgid "Share your win"
+msgstr ""
+
+#: templates/wins/new.html:6
+msgid "Tell the network what happened — in your own words."
+msgstr ""
+
+#: templates/wins/new.html:8
+msgid ""
+"Only the people involved in a completed hire can share a story: the "
+"poster, the referrer, and the hired candidate. Each side gets one story "
+"per need."
+msgstr ""
+
+#: templates/wins/new.html:23
+msgid "What happened, in your own words (up to 1000 characters)."
+msgstr ""
+
+#: templates/wins/new.html:29
+msgid "Back to the wins wall"
+msgstr ""
+
+#: templates/wins/wall.html:2 templates/wins/wall.html:5
+msgid "Wins wall"
+msgstr ""
+
+#: templates/wins/wall.html:6
+msgid ""
+"Real hires, real payouts — stories from the people on both sides of a "
+"completed referral."
+msgstr ""
+
+#: templates/wins/wall.html:16
+msgid "Earned"
+msgstr ""
+
+#: templates/wins/wall.html:36
+msgid "No wins yet"
+msgstr ""
+
+#: templates/wins/wall.html:37
+msgid "No win stories yet — the first completed hire will start the wall."
+msgstr ""
+
 #: utils/feed.py:33
 msgid ""
 "Discover ranks posts by engagement (likes, comments and shares), how "
@@ -3736,6 +4517,46 @@ msgid ""
 "from the last 7 days, ordered by likes, comments and shares only — no "
 "trust score, no boost lift, no cap on referral needs, and your own posts "
 "can trend too."
+msgstr ""
+
+#: utils/money_trail.py:47
+msgid "Posted the need"
+msgstr ""
+
+#: utils/money_trail.py:48
+msgid "Platform fee"
+msgstr ""
+
+#: utils/money_trail.py:49
+msgid "Shared the need"
+msgstr ""
+
+#: utils/money_trail.py:50
+msgid "Referred the hire"
+msgstr ""
+
+#: utils/money_trail.py:51
+msgid "Got hired"
+msgstr ""
+
+#: utils/network_match.py:189
+#, python-format
+msgid "Knows %(skill)s"
+msgstr ""
+
+#: utils/network_match.py:197
+#, python-format
+msgid "%(count)d vouch"
+msgid_plural "%(count)d vouches"
+msgstr[0] ""
+msgstr[1] ""
+
+#: utils/network_match.py:206
+msgid "Trusted member"
+msgstr ""
+
+#: utils/network_match.py:211
+msgid "Same city"
 msgstr ""
 
 #: utils/onboarding.py:33

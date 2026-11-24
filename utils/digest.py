@@ -154,7 +154,7 @@ def build_digest(user):
             )
             lines.append(f"- {bounty.title} ({reward})")
             lines.append(
-                f"  {url_for('bounties.detail', id=bounty.id, _external=True)}"
+                f"  {url_for('bounties.detail', slug_code=bounty.url_slug, _external=True)}"
             )
         lines.append('')
 

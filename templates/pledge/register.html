@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('Human-Reviewed Employer Pledge Register') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>{{ _('Human-Reviewed Employer Pledge Register') }}</h2>
+    <p class="text-muted">{{ _('These employers pledge that a human reads every application — no AI screening. Each pledge is reviewed by an admin before it appears here.') }}</p>
+    <div class="alert alert-info">
+        {{ icon('shield-check', 18) }}
+        {{ _('We pledge that no AI screens our applicants: a human reads every application.') }}
+    </div>
+    {% if my_pledge and my_pledge.status == 'pending' %}
+    <div class="alert alert-warning">{{ _('Your pledge is pending review.') }}</div>
+    {% endif %}
+    {% if pledges %}
+    <ul class="list-group">
+        {% for pledge in pledges %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+                <strong>{{ pledge.org_name }}</strong>
+                <span class="badge bg-primary ms-1" title="{{ _('We pledge that no AI screens our applicants: a human reads every application.') }}">{{ icon('shield-check', 12) }} {{ _('Human-Reviewed') }}</span>
+            </span>
+            <small class="text-muted">{{ pledge.created_at.strftime('%b %d, %Y') if pledge.created_at else '' }}</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{{ _('No approved pledges yet.') }}</p>
+    {% endif %}
+    <div class="mt-4">
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('pledge.new_pledge') }}" class="btn btn-primary">{{ _('Pledge as an employer') }}</a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">{{ _('Sign in to pledge') }}</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

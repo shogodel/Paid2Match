@@ -20,6 +20,37 @@
     </div>
 </section>
 
+<!-- PAID OUT SO FAR — the live counter of completed referral
+     payouts. Per-currency figures (CA$ / US$ / €), never a blended
+     total: there is no FX conversion anywhere, so the three amounts
+     are shown side by side. At $0 the counter still renders all
+     three figures. The whole card links to the wins wall. -->
+<section class="container py-4">
+    <a href="{{ url_for('wins.wall') }}" class="text-decoration-none">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="section-title mb-1">{{ _('Paid out so far') }}</h2>
+                <p class="text-muted mb-3">{{ _('Real money paid to real people for referrals.') }}</p>
+                <div class="row g-3 justify-content-center">
+                    <div class="col-auto">
+                        <div class="fs-3 fw-bold text-brand">{{ paid_out['CAD']|money('CAD') }}</div>
+                        <div class="text-muted small">CAD</div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="fs-3 fw-bold text-brand">{{ paid_out['USD']|money('USD') }}</div>
+                        <div class="text-muted small">USD</div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="fs-3 fw-bold text-brand">{{ paid_out['EUR']|money('EUR') }}</div>
+                        <div class="text-muted small">EUR</div>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0"><span class="btn btn-outline-primary btn-sm">{{ _('See the wins') }}</span></p>
+            </div>
+        </div>
+    </a>
+</section>
+
 <!-- FRESH FROM THE NETWORK — the social layer leads; hiring is a
      section below, not the headline. Uses the same post-card component
      as the feed, so visitors see exactly what joining gets them.
@@ -64,7 +95,7 @@
             <div class="card h-100 helper-card">
                 <div class="card-body text-center">
                     <div class="helper-rank rank-{{ loop.index }}">{{ loop.index }}</div>
-                    <h5 class="card-title"><a href="{{ url_for('profile.public_profile', user_id=profile.user_id) }}" class="text-decoration-none">{{ profile.display_name or profile.user.full_name }}</a></h5>
+                    <h5 class="card-title"><a href="{{ url_for('profile.public_profile', user_id=profile.user.handle or profile.user_id) }}" class="text-decoration-none">{{ profile.display_name or profile.user.full_name }}</a></h5>
                     <p class="text-muted small mb-2">{{ profile.headline or '' }}</p>
                     <p class="text-muted small mb-0">{{ profile.karma or 0 }} {{ _('karma') }} &middot; {{ _('Helped') }} {{ profile.helped_count or 0 }}</p>
                 </div>
@@ -108,7 +139,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold {% if bounty.reward_amount and bounty.reward_amount > 0 %}text-brand{% else %}text-muted{% endif %}">
                                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                                    ${{ "{:,.0f}".format(bounty.reward_amount) }}
+                                    {{ bounty.reward_amount|money(bounty.currency) }}
                                 {% else %}
                                      {{ _('Free') }}
                                 {% endif %}
@@ -119,7 +150,7 @@
                         </div>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-primary btn-sm w-100">{{ _('View') }}</a>
+                        <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-outline-primary btn-sm w-100">{{ _('View') }}</a>
                     </div>
                 </div>
             </div>

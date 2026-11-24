@@ -11,7 +11,7 @@
 <div class="stage-rewards-compact">
     <span class="stage-rewards-label">{{ _('Staged rewards:') }}</span>
     {% for stage in bounty.stage_rewards %}
-    <span class="stage-rewards-item">{{ stage.label }} ${{ "{:,.0f}".format(stage.amount) }}</span>{% if not loop.last %}<span class="stage-rewards-sep">&middot;</span>{% endif %}
+    <span class="stage-rewards-item">{{ stage.label }} {{ stage.amount|money(bounty.currency) }}</span>{% if not loop.last %}<span class="stage-rewards-sep">&middot;</span>{% endif %}
     {% endfor %}
 </div>
 {% else %}
@@ -22,7 +22,7 @@
         {% for stage in bounty.stage_rewards %}
         <li class="stage-rewards-row">
             <span>{{ stage.label }}</span>
-            <strong class="bounty-reward">${{ "{:,.0f}".format(stage.amount) }}</strong>
+            <strong class="bounty-reward">{{ stage.amount|money(bounty.currency) }}</strong>
         </li>
         {% endfor %}
     </ul>
@@ -30,7 +30,7 @@
     <p class="small mb-1"><strong>{{ _('Completed stages') }}</strong></p>
     <ul class="list-unstyled small mb-2">
         {% for event in stage_events %}
-        <li>{{ event.label }} — ${{ "{:,.0f}".format(event.amount) }} <span class="badge bg-warning text-dark">{{ _('Pending — stage payouts not wired yet') }}</span></li>
+        <li>{{ event.label }} — {{ event.amount|money(bounty.currency) }} <span class="badge bg-warning text-dark">{{ _('Pending — stage payouts not wired yet') }}</span></li>
         {% endfor %}
     </ul>
     {% endif %}

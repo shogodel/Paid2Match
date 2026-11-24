@@ -17,7 +17,7 @@
                         <div class="card-body">
                             <h5>{{ bounty.title }}</h5>
                             <p class="mb-0">
-                                <strong>{{ _('Amount:') }}</strong> ${{ "{:,.2f}".format(bounty.reward_amount) }}
+                                <strong>{{ _('Amount:') }}</strong> {{ bounty.reward_amount|money(bounty.currency) }}
                             </p>
                         </div>
                     </div>
@@ -38,7 +38,7 @@
                         </small>
                     </div>
                     
-                    <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-outline-secondary">
                         {{ _('Back to Need') }}
                     </a>
                 </div>

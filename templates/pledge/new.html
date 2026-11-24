@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Pledge as an employer') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>{{ _('Pledge as an employer') }}</h2>
+    <div class="alert alert-info">
+        {{ _('By pledging, your organization promises:') }} <strong>{{ _('We pledge that no AI screens our applicants: a human reads every application.') }}</strong> {{ _('An admin reviews every pledge before it appears on the public register.') }}
+    </div>
+    <form method="POST" action="{{ url_for('pledge.new_pledge') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.org_name.label(class="form-label") }}
+            {{ form.org_name(class="form-control") }}
+            {% if form.org_name.errors %}
+            <div class="text-danger">{% for error in form.org_name.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="form-check mb-3">
+            {{ form.confirm(class="form-check-input") }}
+            {{ form.confirm.label(class="form-check-label") }}
+            {% if form.confirm.errors %}
+            <div class="text-danger">{% for error in form.confirm.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+</div>
+{% endblock %}

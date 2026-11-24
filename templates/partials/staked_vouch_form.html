@@ -1,0 +1,29 @@
+{# Inline create-stake form. Expects:
+   sv_candidate_id (the person being staked on), sv_form_id
+   (unique suffix for element ids), sv_next (redirect target),
+   and optionally sv_bounty_id (the need the stake relates to).
+   Amount + currency select (CAD default). The note under the
+   form states the record-only rule: a stake is a recorded
+   commitment, no money moves (see models/staked_vouch.py). #}
+<form method="POST" action="{{ url_for('staked_vouches.create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="candidate_id" value="{{ sv_candidate_id }}">
+    {% if sv_bounty_id %}<input type="hidden" name="bounty_id" value="{{ sv_bounty_id }}">{% endif %}
+    {% if sv_next %}<input type="hidden" name="next" value="{{ sv_next }}">{% endif %}
+    <div class="d-flex gap-2 flex-wrap align-items-end">
+        <div>
+            <label class="form-label small mb-1" for="sv-amount-{{ sv_form_id }}">{{ _('Amount') }}</label>
+            <input type="number" min="0.01" step="0.01" class="form-control form-control-sm" id="sv-amount-{{ sv_form_id }}" name="amount" placeholder="100" required style="width: 8rem;">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="sv-currency-{{ sv_form_id }}">{{ _('Currency') }}</label>
+            <select class="form-select form-select-sm" id="sv-currency-{{ sv_form_id }}" name="currency">
+                <option value="CAD" selected>CAD</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">{{ _('Stake on this person') }}</button>
+    </div>
+    <p class="text-muted small mt-1 mb-0">{{ _('A stake is a recorded commitment against your future referral earnings — no money moves now. If they flake, you lose the stake.') }}</p>
+</form>

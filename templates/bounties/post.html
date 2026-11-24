@@ -172,12 +172,20 @@
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">{{ form.reward_amount.label }} ($)</label>
+                                <label class="form-label">{{ form.reward_amount.label }}</label>
                                 {{ form.reward_amount(class="form-control", placeholder=_('0 for a free need — $50 minimum for a paid need')) }}
                                 {% for error in form.reward_amount.errors %}
                                 <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
                                 <div class="form-text">{{ _('Paid needs need a bounty of at least $50. Free needs carry no reward.') }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.currency.label }}</label>
+                                {{ form.currency(class="form-select") }}
+                                {% for error in form.currency.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                                <div class="form-text">{{ _('All amounts on this need use this currency.') }}</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.location.label }}</label>

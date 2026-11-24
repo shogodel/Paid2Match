@@ -110,7 +110,7 @@ class TestGitHubLoginRoute:
         _configure_github(app)
         resp = client.get('/auth/github/login')
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
 
 
 class TestGitHubButton:
@@ -137,7 +137,7 @@ class TestGitHubCallbackCreate:
                 '/auth/github/callback?code=fake-code&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
         # Public email: the /user/emails fallback must NOT run.
         assert calls == ['https://api.github.com/user']
         with app.app_context():
@@ -206,7 +206,7 @@ class TestGitHubCallbackCreate:
                 '/auth/github/callback?code=x&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
         assert 'https://api.github.com/user/emails' in calls
         with app.app_context():
             # The primary VERIFIED address wins, not the first entry.
@@ -264,7 +264,7 @@ class TestGitHubCallbackMatch:
                 '/auth/github/callback?code=x&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
         with app.app_context():
             assert User.query.count() == 1
             user = db.session.get(User, user_id)
@@ -338,7 +338,7 @@ class TestGitHubCallbackRejections:
                 '/auth/github/callback?code=x&state=test-state'
             )
             assert first.status_code == 302
-            assert first.location.endswith('/bounties/')
+            assert first.location.endswith('/needs/')
             # Replay the same callback: the state was consumed.
             client.get('/auth/logout')
             replay = client.get(

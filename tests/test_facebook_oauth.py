@@ -100,7 +100,7 @@ class TestFacebookLoginRoute:
         _configure_facebook(app)
         resp = client.get('/auth/facebook/login')
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
 
 
 class TestFacebookButton:
@@ -126,7 +126,7 @@ class TestFacebookCallbackCreate:
                 '/auth/facebook/callback?code=fake-code&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
         with app.app_context():
             user = User.query.filter_by(email='newuser@example.com').first()
             assert user is not None
@@ -201,7 +201,7 @@ class TestFacebookCallbackMatch:
                 '/auth/facebook/callback?code=x&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
         with app.app_context():
             assert User.query.count() == 1
             user = db.session.get(User, user_id)

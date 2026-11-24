@@ -30,7 +30,9 @@ def _normalized(name):
 
 
 def _mention_index():
-    """{token: user_id} for every active user, cached on flask.g."""
+    """{token: (user_id, handle)} for every active user, cached on
+    flask.g. The handle builds the nice profile URL; the id is for
+    notifications."""
     if getattr(g, '_mention_index', None) is None:
         index = {}
         rows = db.session.query(User, Profile).join(
@@ -46,7 +48,7 @@ def _mention_index():
             for name in names:
                 for token in {_normalized(name), _normalized(name.split(' ')[0])}:
                     if token and token not in index:
-                        index[token] = user.id
+                        index[token] = (user.id, user.handle)
         g._mention_index = index
     return g._mention_index
 
@@ -61,10 +63,10 @@ def find_mentions(text):
     seen = set()
     for match in MENTION_RE.finditer(text):
         token = match.group(1)
-        user_id = index.get(token.lower())
-        if user_id and user_id not in seen:
-            seen.add(user_id)
-            found.append((token, user_id))
+        entry = index.get(token.lower())
+        if entry and entry[0] not in seen:
+            seen.add(entry[0])
+            found.append((token, entry[0]))
     return found
 
 
@@ -95,10 +97,13 @@ def link_mentions(text):
 
     def _replace(match):
         token = match.group(1)
-        user_id = index.get(token.lower())
-        if not user_id:
+        entry = index.get(token.lower())
+        if not entry:
             return match.group(0)
-        url = url_for('profile.public_profile', user_id=user_id)
+        user_id, handle = entry
+        url = url_for(
+            'profile.public_profile', user_id=handle or user_id
+        )
         return (
             f'<a href="{escape(url)}" class="mention-link">'
             f'@{escape(token)}</a>'

@@ -105,7 +105,7 @@ class TestGoogleLoginRoute:
         _configure_google(app)
         resp = client.get('/auth/google/login')
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
 
 
 class TestGoogleButton:
@@ -132,7 +132,7 @@ class TestGoogleCallbackCreate:
                 '/auth/google/callback?code=fake-code&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
         with app.app_context():
             user = User.query.filter_by(email='newuser@example.com').first()
             assert user is not None
@@ -188,7 +188,7 @@ class TestGoogleCallbackMatch:
                 '/auth/google/callback?code=x&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
         with app.app_context():
             assert User.query.count() == 1
             user = db.session.get(User, user_id)
@@ -262,7 +262,7 @@ class TestGoogleCallbackRejections:
                 '/auth/google/callback?code=x&state=test-state'
             )
             assert first.status_code == 302
-            assert first.location.endswith('/bounties/')
+            assert first.location.endswith('/needs/')
             # Replay the same callback: the state was consumed.
             client.get('/auth/logout')
             replay = client.get(
@@ -370,7 +370,7 @@ class TestGoogleCallbackRedirects:
                 '/auth/google/callback?code=x&state=test-state'
             )
         assert resp.status_code == 302
-        assert resp.location.endswith('/bounties/')
+        assert resp.location.endswith('/needs/')
 
     def test_callback_honours_pending_referral(self, app, client):
         _configure_google(app)

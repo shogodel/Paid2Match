@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('My Stakes') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 960px;">
+    <h3 class="mb-1">{{ _('My Stakes') }}</h3>
+    <p class="text-muted mb-4">{{ _('Stakes are recorded commitments against future referral earnings — no money moves. The need\'s poster (or an admin) resolves each stake once the outcome is known.') }}</p>
+
+    <div class="profile-card">
+        <h5 class="profile-card-title">{{ _('Stakes I placed') }}</h5>
+        {% if placed %}
+            {% set sv_items = placed %}
+            {% set sv_show_voucher = false %}
+            {% set sv_show_candidate = true %}
+            {% set sv_show_bounty = true %}
+            {% set sv_resolvable_ids = resolvable_ids %}
+            {% set sv_next = url_for('staked_vouches.mine') %}
+            {% include 'partials/staked_vouch_list.html' %}
+        {% else %}
+            <p class="text-muted small mb-0">{{ _('You have not staked on anyone yet. Visit a profile or a need to put your money where your vouch is.') }}</p>
+        {% endif %}
+    </div>
+
+    <div class="profile-card">
+        <h5 class="profile-card-title">{{ _('Stakes on me') }}</h5>
+        {% if received %}
+            {% set sv_items = received %}
+            {% set sv_show_voucher = true %}
+            {% set sv_show_candidate = false %}
+            {% set sv_show_bounty = true %}
+            {% set sv_resolvable_ids = resolvable_ids %}
+            {% set sv_next = url_for('staked_vouches.mine') %}
+            {% include 'partials/staked_vouch_list.html' %}
+        {% else %}
+            <p class="text-muted small mb-0">{{ _('Nobody has staked on you yet.') }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

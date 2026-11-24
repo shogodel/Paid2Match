@@ -7,7 +7,7 @@
             <h2>Refer someone for "{{ bounty.title }}"</h2>
             <p class="text-muted">
                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                Bounty: ${{ "{:,.0f}".format(bounty.reward_amount) }} if your referral is the one who gets hired.
+                Bounty: {{ bounty.reward_amount|money(bounty.currency) }} if your referral is the one who gets hired.
                 {% else %}
                 Community referral — no bounty. You earn karma, trust, and a "helped" credit instead.
                 {% endif %}
@@ -41,7 +41,7 @@
                     <div class="form-text">50–1000 characters. This is what the poster reads once the person confirms.</div>
                 </div>
                 {{ form.submit(class="btn btn-primary") }}
-                <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-link">Cancel</a>
+                <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-link">Cancel</a>
             </form>
         </div>
     </div>

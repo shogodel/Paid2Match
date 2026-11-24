@@ -1,6 +1,7 @@
 """Profile routes for Paid2Match."""
 import os
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+import uuid
+from flask import Blueprint, abort, render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
 from sqlalchemy import desc
 from werkzeug.utils import secure_filename
@@ -21,6 +22,9 @@ from models.linked_account import (
 )
 from models.profile_view import ProfileView
 from models.review import revealed_reviews_for_user
+from models.staked_vouch import StakedVouch
+from models.video_vouch import VideoVouch
+from blueprints.staked_vouches.routes import can_resolve as _stake_can_resolve
 from models.verification import VerificationRequest
 from utils.analytics import get_analytics
 from utils.endorsements import endorsements_for, give_endorsement
@@ -39,6 +43,7 @@ from utils.linked_accounts import (
     visible_linked_accounts,
 )
 from utils.sla import sla_breaches
+from utils.slugs import handle_from_name
 from utils.trust import ratings_summary, trust_level
 from .forms import EndorseForm, LinkedAccountForm, ProfileForm, SetupForm
 
@@ -68,7 +73,17 @@ def setup():
         return redirect(url_for('profile.view'))
     
     form = SetupForm()
+    # Nice URLs: prefill the generated handle suggestion (the one
+    # assigned at sign-up, or a fresh one from the name). The user
+    # may change it; blank keeps the current handle.
+    if request.method == 'GET':
+        form.handle.data = current_user.handle or handle_from_name(
+            current_user.full_name
+        )
     if form.validate_on_submit():
+        handle = (form.handle.data or '').strip()
+        if handle and handle != current_user.handle:
+            current_user.handle = handle
         profile = Profile(
             user_id=current_user.id,
             profile_type=form.profile_type.data,
@@ -201,6 +216,30 @@ def view():
     open_needs = Bounty.query.filter_by(
         poster_id=current_user.id, status='open'
     ).order_by(desc(Bounty.created_at)).limit(3).all()
+    # Video vouches: my video pitches, the video vouches I received,
+    # and the open needs I could pitch for (a video pitch needs a
+    # bounty, so the profile upload form offers a need picker).
+    my_video_pitches = VideoVouch.query.filter_by(
+        user_id=current_user.id, kind='pitch', status='active'
+    ).order_by(desc(VideoVouch.created_at)).all()
+    video_vouches_received = VideoVouch.query.filter_by(
+        target_user_id=current_user.id, kind='vouch', status='active'
+    ).order_by(desc(VideoVouch.created_at)).all()
+    pitchable_bounties = Bounty.query.filter(
+        Bounty.status == 'open',
+        Bounty.poster_id != current_user.id,
+        Bounty.publicly_visible_filter(),
+    ).order_by(desc(Bounty.created_at)).limit(50).all()
+    # Staked vouches: the active stakes I placed (money I put on
+    # the line behind others), plus which of them I may resolve
+    # (a need I posted, or any stake when I am an admin).
+    my_active_stakes = StakedVouch.query.filter_by(
+        voucher_id=current_user.id, status='active'
+    ).order_by(desc(StakedVouch.created_at)).all()
+    staked_resolvable_ids = {
+        s.id for s in my_active_stakes
+        if _stake_can_resolve(current_user, s)
+    }
 
     return render_template('profile/view.html',
                         profile=profile,
@@ -231,7 +270,12 @@ def view():
                             current_user.id),
                         open_needs=open_needs,
                         verified_linked_count=verified_linked_count(
-                            current_user.id))
+                            current_user.id),
+                        my_video_pitches=my_video_pitches,
+                        video_vouches_received=video_vouches_received,
+                        pitchable_bounties=pitchable_bounties,
+                        my_active_stakes=my_active_stakes,
+                        staked_resolvable_ids=staked_resolvable_ids)
 
 
 @profile_bp.route('/verify-request', methods=['POST'])
@@ -259,7 +303,32 @@ def verify_request():
 
 @profile_bp.route('/<string:user_id>')
 def public_profile(user_id):
-    user = get_or_404(User, user_id)
+    """GET /profile/<handle> — or /profile/<uuid>, which 301s to
+    the handle URL (so a handle change never breaks old links:
+    the UUID always resolves to the current handle). Unknown
+    handles 404. The static /profile/* routes (setup, edit,
+    linked, …) are unaffected — Werkzeug matches static segments
+    before this variable rule."""
+    user = None
+    try:
+        uuid.UUID(user_id)
+        is_uuid = True
+    except ValueError:
+        is_uuid = False
+    if is_uuid:
+        user = db.session.get(User, user_id)
+        if user is None:
+            abort(404)
+        if user.handle:
+            return redirect(
+                url_for('profile.public_profile', user_id=user.handle),
+                code=301,
+            )
+    else:
+        user = User.query.filter_by(handle=user_id).first()
+        if user is None:
+            abort(404)
+    user_id = user.id
     profile = Profile.query.filter_by(user_id=user_id).first()
     
     # If profile doesn't exist or is private
@@ -325,6 +394,25 @@ def public_profile(user_id):
     liked_ids, shared_ids = _liked_and_shared_ids([p.id for p in posts])
     saved_ids = _saved_ids([p.id for p in posts])
     poll_votes = _poll_votes([p.id for p in posts])
+    # Video vouches: this user's video pitches + the video vouches
+    # they received.
+    video_pitches = VideoVouch.query.filter_by(
+        user_id=user_id, kind='pitch', status='active'
+    ).order_by(desc(VideoVouch.created_at)).all()
+    video_vouches_received = VideoVouch.query.filter_by(
+        target_user_id=user_id, kind='vouch', status='active'
+    ).order_by(desc(VideoVouch.created_at)).all()
+    # Staked vouches this member received (all statuses — a
+    # forfeited stake is trust signal too), plus which of them the
+    # viewer may resolve (the need's poster, or an admin).
+    staked_vouches_received = StakedVouch.query.filter_by(
+        candidate_id=user_id
+    ).order_by(desc(StakedVouch.created_at)).all()
+    staked_resolvable_ids = {
+        s.id for s in staked_vouches_received
+        if s.status == 'active'
+        and _stake_can_resolve(current_user, s)
+    }
 
     return render_template('profile/public.html',
                         user=user, profile=profile,
@@ -356,7 +444,11 @@ def public_profile(user_id):
                         poll_votes=poll_votes,
                         author_levels=_author_levels(posts),
                         author_profiles=_author_profiles(posts),
-                        share_form=ShareForm())
+                        share_form=ShareForm(),
+                        video_pitches=video_pitches,
+                        video_vouches_received=video_vouches_received,
+                        staked_vouches_received=staked_vouches_received,
+                        staked_resolvable_ids=staked_resolvable_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -495,7 +587,9 @@ def check_linked_account(account_id):
         return redirect(url_for('profile.linked_accounts'))
     if account.verification_method == 'bio_link':
         profile_url = url_for(
-            'profile.public_profile', user_id=current_user.id, _external=True
+            'profile.public_profile',
+            user_id=current_user.handle or current_user.id,
+            _external=True,
         )
         ok, error = verify_bio_link(account, profile_url)
     elif account.verification_method == 'code':
@@ -574,9 +668,13 @@ def endorse_user(user_id):
     """POST /profile/users/<id>/endorse — endorse someone for a skill."""
     endorsee = get_or_404(User, user_id)
     form = EndorseForm()
+    profile_url = url_for(
+        'profile.public_profile',
+        user_id=endorsee.handle or user_id,
+    )
     if not form.validate_on_submit():
         flash('Add a skill to endorse for.', 'danger')
-        return redirect(url_for('profile.public_profile', user_id=user_id))
+        return redirect(profile_url)
     _endorsement, error = give_endorsement(
         current_user, endorsee,
         form.skill.data.strip(),
@@ -587,4 +685,4 @@ def endorse_user(user_id):
     else:
         db.session.commit()
         flash(f'You endorsed {endorsee.full_name} for {form.skill.data.strip()}.', 'success')
-    return redirect(url_for('profile.public_profile', user_id=user_id))
+    return redirect(profile_url)

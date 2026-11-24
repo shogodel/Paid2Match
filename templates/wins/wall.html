@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Wins wall') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>{{ _('Wins wall') }}</h2>
+    <p class="text-muted">{{ _('Real hires, real payouts — stories from the people on both sides of a completed referral.') }}</p>
+    {% if stories %}
+    <div class="row g-4">
+        {% for story in stories %}
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
+                        <span class="badge bg-secondary">{{ story.role_label }}</span>
+                        {% if story.earned_amount %}
+                        <span class="badge bg-success">{{ _('Earned') }} {{ story.earned_amount|money(story.earned_currency) }}</span>
+                        {% endif %}
+                    </div>
+                    <h5 class="card-title">
+                        <a href="{{ url_for('bounties.detail', slug_code=story.bounty.url_slug) }}" class="text-decoration-none">{{ story.bounty.title }}</a>
+                    </h5>
+                    <p class="card-text">{{ story.body }}</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">
+                        <a href="{{ url_for('profile.public_profile', user_id=story.author.handle or story.author_id) }}" class="text-decoration-none">{{ story.author.full_name }}</a>
+                        &middot; {{ story.created_at.strftime('%b %d, %Y') if story.created_at else '' }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h5>{{ _('No wins yet') }}</h5>
+        <p class="text-muted mb-3">{{ _('No win stories yet — the first completed hire will start the wall.') }}</p>
+        <a href="{{ url_for('bounties.board') }}" class="btn btn-primary">{{ _('Browse referral needs') }}</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

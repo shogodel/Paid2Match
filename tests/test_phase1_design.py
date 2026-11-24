@@ -398,7 +398,7 @@ class TestProfileShell:
 
     def test_public_profile_has_ajax_follow_pill(
             self, client, logged_in_user, second_user):
-        html = client.get(f'/profile/{second_user.id}').data.decode()
+        html = client.get(f'/profile/{second_user.handle}').data.decode()
         assert 'profile-cover-band' in html
         assert 'btn-follow' in html
         assert f'data-follow-url="/social/follow/{second_user.id}"' in html

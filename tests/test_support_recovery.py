@@ -101,7 +101,7 @@ class TestAdminChangeEmail:
             data={'new_email': 'hacker@example.com'},
             follow_redirects=False)
         assert r.status_code == 302
-        assert '/bounties' in r.headers['Location']
+        assert '/needs' in r.headers['Location']
         with app.app_context():
             assert db.session.get(User, sample_user.id).email == \
                 sample_user.email

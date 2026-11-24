@@ -52,7 +52,7 @@ def new_referral(bounty_id):
         return redirect(url_for('bounties.board'))
     if bounty.poster_id == current_user.id:
         flash('You cannot refer someone for your own need.', 'danger')
-        return redirect(url_for('bounties.detail', id=bounty_id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     form = ReferForm()
     form.connection_id.choices = _connection_choices(current_user.id)
@@ -87,7 +87,7 @@ def new_referral(bounty_id):
 
         if referred_email == current_user.email:
             flash('You cannot refer yourself.', 'danger')
-            return redirect(url_for('bounties.detail', id=bounty_id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
         # First timestamp wins (§4.2): one referral per person per need.
         existing = Referral.query.filter_by(
@@ -95,7 +95,7 @@ def new_referral(bounty_id):
         ).filter(Referral.status != 'cancelled').first()
         if existing:
             flash('Someone has already referred this person for this need.', 'info')
-            return redirect(url_for('bounties.detail', id=bounty_id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
         referral = Referral(
             referrer_id=current_user.id,
@@ -112,7 +112,7 @@ def new_referral(bounty_id):
         except IntegrityError:
             db.session.rollback()
             flash('Someone has already referred this person for this need.', 'info')
-            return redirect(url_for('bounties.detail', id=bounty_id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
         if referred_user_id:
             notify(
@@ -189,14 +189,14 @@ def confirm_referral(referral_id):
         f'New referral for "{bounty.title}"',
         f'{referral.referrer.full_name} referred {referral.referred_name}.',
         actor_id=referral.referrer_id,
-        link_url=url_for('bounties.detail', id=bounty.id),
+        link_url=url_for('bounties.detail', slug_code=bounty.url_slug),
     )
     notify(
         referral.referrer_id, 'referral_consented',
         f'{referral.referred_name} confirmed your referral',
         f'The poster of "{bounty.title}" can now review it.',
         actor_id=current_user.id,
-        link_url=url_for('bounties.detail', id=bounty.id),
+        link_url=url_for('bounties.detail', slug_code=bounty.url_slug),
     )
     db.session.commit()
     session.pop('pending_referral_token', None)
@@ -204,7 +204,7 @@ def confirm_referral(referral_id):
     from models.profile import Profile
     if not Profile.query.filter_by(user_id=current_user.id).first():
         return redirect(url_for('profile.setup'))
-    return redirect(url_for('bounties.detail', id=bounty.id))
+    return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
 
 @referrals_bp.route('/<referral_id>/decline', methods=['POST'])

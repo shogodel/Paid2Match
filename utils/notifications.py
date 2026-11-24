@@ -101,6 +101,8 @@ NOTIFICATION_ICONS = {
     'linked_verified': 'link',
     'linked_rejected': 'link',
     'pledge_revoked': 'shield-check',
+    'employer_pledge_approved': 'shield-check',
+    'employer_pledge_revoked': 'shield-check',
 }
 
 
@@ -163,7 +165,7 @@ def notification_to_dict(notification):
         ),
         'actor_name': actor.full_name if actor else None,
         'actor_url': (
-            url_for('profile.public_profile', user_id=actor.id)
+            url_for('profile.public_profile', user_id=actor.handle or actor.id)
             if actor else None
         ),
         'actor_avatar_url': (

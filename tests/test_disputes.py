@@ -43,7 +43,7 @@ class TestFileDispute:
                                   sample_user, sample_hunter):
         bounty = _free_bounty(app, sample_user)
         match = _confirmed_match(app, bounty, sample_hunter, sample_user)
-        resp = client.get(f'/bounties/matches/{match.id}/dispute')
+        resp = client.get(f'/needs/matches/{match.id}/dispute')
         assert resp.status_code == 200
         assert b'File a dispute' in resp.data
 
@@ -51,7 +51,7 @@ class TestFileDispute:
                                                app, sample_user, sample_hunter):
         bounty = _free_bounty(app, sample_user)
         match = _confirmed_match(app, bounty, sample_hunter, sample_user)
-        resp = client.post(f'/bounties/matches/{match.id}/dispute',
+        resp = client.post(f'/needs/matches/{match.id}/dispute',
                            data={'reason': 'The poster never paid the reward.'},
                            follow_redirects=True)
         assert b'Dispute filed' in resp.data
@@ -69,7 +69,7 @@ class TestFileDispute:
                                           sample_user, sample_hunter):
         bounty = _free_bounty(app, sample_user)
         match = _confirmed_match(app, bounty, sample_hunter, sample_user)
-        resp = client.post(f'/bounties/matches/{match.id}/dispute',
+        resp = client.post(f'/needs/matches/{match.id}/dispute',
                            data={'reason': 'bad'},
                            follow_redirects=True)
         assert b'at least 10 characters' in resp.data
@@ -80,9 +80,9 @@ class TestFileDispute:
         bounty = _free_bounty(app, sample_user)
         match = _confirmed_match(app, bounty, sample_hunter, sample_user)
         data = {'reason': 'The poster never paid the reward.'}
-        client.post(f'/bounties/matches/{match.id}/dispute', data=data,
+        client.post(f'/needs/matches/{match.id}/dispute', data=data,
                     follow_redirects=True)
-        resp = client.post(f'/bounties/matches/{match.id}/dispute',
+        resp = client.post(f'/needs/matches/{match.id}/dispute',
                            data={'reason': 'Another complaint entirely.'},
                            follow_redirects=True)
         assert b'already an open dispute' in resp.data
@@ -97,7 +97,7 @@ class TestFileDispute:
                           outcome='dismissed')
         db.session.add(dispute)
         db.session.commit()
-        resp = client.post(f'/bounties/matches/{match.id}/dispute',
+        resp = client.post(f'/needs/matches/{match.id}/dispute',
                            data={'reason': 'A new problem has come up.'},
                            follow_redirects=True)
         assert b'Dispute filed' in resp.data
@@ -108,7 +108,7 @@ class TestFileDispute:
         bounty = _free_bounty(app, sample_user)
         match = _confirmed_match(app, bounty, sample_hunter, sample_user)
         login_as(client, 'second@example.com', 'SecondPass123!')
-        resp = client.post(f'/bounties/matches/{match.id}/dispute',
+        resp = client.post(f'/needs/matches/{match.id}/dispute',
                            data={'reason': 'I have nothing to do with this.'},
                            follow_redirects=True)
         assert b'Access denied' in resp.data

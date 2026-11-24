@@ -16,6 +16,7 @@ from models.match import Match
 from models.dispute import Dispute
 from models.admin_settings import AdminSettings
 from models.endorsement import Pledge
+from models.employer_pledge import EmployerPledge
 from models.linked_account import LinkedAccount
 from models.payout import Payout
 from models.profile import Profile
@@ -436,7 +437,7 @@ def resolve_dispute(id):
     match = db.session.get(Match, dispute.match_id)
     if match is not None:
         bounty_title = match.bounty.title if match.bounty else 'your referral'
-        link = url_for('bounties.detail', id=match.bounty_id) if match.bounty_id else None
+        link = url_for('bounties.detail', slug_code=match.bounty.url_slug) if match.bounty else None
         # The outcome reads differently per side: 'upheld' means the
         # raiser was right (the other party lost).
         raiser_text = (
@@ -955,6 +956,97 @@ def revoke_pledge(id):
     db.session.commit()
     flash('Pledge revoked.', 'success')
     return redirect(url_for('admin.pledges'))
+
+
+# ---------------------------------------------------------------------------
+# Human-reviewed employer pledges (models/employer_pledge.py)
+#
+# NOTE: /admin/pledges above reviews the M3 self-published Pledge
+# (models/endorsement.py). These routes review the separate
+# human-reviewed EmployerPledge, so they live under
+# /admin/employer-pledges to avoid colliding with it.
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/employer-pledges')
+@admin_required
+def employer_pledges():
+    """GET /admin/employer-pledges — review queue for human-reviewed
+    employer pledges (pending first, then newest)."""
+    status = request.args.get('status', 'pending')
+    query = EmployerPledge.query
+    if status:
+        query = query.filter_by(status=status)
+    pledges_list = query.order_by(desc(EmployerPledge.created_at)).all()
+    pending_count = EmployerPledge.query.filter_by(status='pending').count()
+    return render_template(
+        'admin/employer_pledges.html',
+        pledges=pledges_list,
+        status=status,
+        pending_count=pending_count,
+    )
+
+
+@admin_bp.route('/employer-pledges/<id>/approve', methods=['POST'])
+@admin_required
+def approve_employer_pledge(id):
+    """POST /admin/employer-pledges/<id>/approve — approve a pending
+    pledge: the organization appears on the public register."""
+    pledge = get_or_404(EmployerPledge, id)
+    if pledge.status != 'pending':
+        flash('This pledge was already reviewed.', 'info')
+        return redirect(url_for('admin.employer_pledges'))
+    pledge.status = 'approved'
+    pledge.decided_at = utc_now()
+    pledge.decided_by_id = current_user.id
+    notify(
+        pledge.user_id, 'employer_pledge_approved',
+        'Your employer pledge was approved!',
+        f'"{pledge.org_name}" is now on the human-reviewed employer '
+        'pledge register.',
+        link_url=url_for('pledge.register'),
+    )
+    db.session.commit()
+    AuditLog.log(
+        admin_id=current_user.id,
+        action='approve_employer_pledge',
+        target_type='employer_pledge',
+        target_id=id,
+        details=f'Approved employer pledge for {pledge.org_name}',
+    )
+    flash('Employer pledge approved.', 'success')
+    return redirect(url_for('admin.employer_pledges'))
+
+
+@admin_bp.route('/employer-pledges/<id>/revoke', methods=['POST'])
+@admin_required
+def revoke_employer_pledge(id):
+    """POST /admin/employer-pledges/<id>/revoke — revoke an approved
+    (or pending) pledge: the organization leaves the register. The
+    employer may re-pledge afterwards."""
+    pledge = get_or_404(EmployerPledge, id)
+    if pledge.status == 'revoked':
+        flash('This pledge is already revoked.', 'info')
+        return redirect(url_for('admin.employer_pledges'))
+    pledge.status = 'revoked'
+    pledge.decided_at = utc_now()
+    pledge.decided_by_id = current_user.id
+    notify(
+        pledge.user_id, 'employer_pledge_revoked',
+        'Your employer pledge was revoked',
+        f'"{pledge.org_name}" is no longer on the human-reviewed '
+        'employer pledge register. You may submit a new pledge.',
+        link_url=url_for('pledge.register'),
+    )
+    db.session.commit()
+    AuditLog.log(
+        admin_id=current_user.id,
+        action='revoke_employer_pledge',
+        target_type='employer_pledge',
+        target_id=id,
+        details=f'Revoked employer pledge for {pledge.org_name}',
+    )
+    flash('Employer pledge revoked.', 'success')
+    return redirect(url_for('admin.employer_pledges'))
 
 
 @admin_bp.route('/recurring-bumps/run', methods=['POST'])

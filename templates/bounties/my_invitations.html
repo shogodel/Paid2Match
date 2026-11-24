@@ -21,7 +21,7 @@
                             <strong>{{ _('Invited by:') }}</strong> {{ inv.inviter.username }}
                         </p>
                         <p class="mb-1">
-                            <strong>{{ _('Amount:') }}</strong> ${{ "{:,.2f}".format(inv.bounty.reward_amount) }}
+                            <strong>{{ _('Amount:') }}</strong> {{ inv.bounty.reward_amount|money(inv.bounty.currency) }}
                         </p>
                         <p class="text-muted small mb-2">
                             {{ inv.invited_at.strftime('%Y-%m-%d %H:%M') }}

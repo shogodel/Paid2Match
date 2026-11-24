@@ -7,7 +7,7 @@
             <div class="card">
                 <div class="card-body">
                     <h2>Referral</h2>
-                    <p><strong>{{ referral.referrer.full_name }}</strong> referred <strong>{{ referral.referred_name }}</strong> ({{ referral.referred_email }}) for <a href="{{ url_for('bounties.detail', id=referral.bounty.id) }}">{{ referral.bounty.title }}</a>.</p>
+                    <p><strong>{{ referral.referrer.full_name }}</strong> referred <strong>{{ referral.referred_name }}</strong> ({{ referral.referred_email }}) for <a href="{{ url_for('bounties.detail', slug_code=referral.bounty.url_slug) }}">{{ referral.bounty.title }}</a>.</p>
                     <p><em>"{{ referral.message }}"</em></p>
                     <p>Status: <span class="badge bg-{{ 'success' if referral.status == 'completed' else 'primary' if referral.status == 'consented' else 'secondary' }}">{{ referral.status|title }}</span></p>
                     <p class="text-muted small">Invited {{ referral.invited_at.strftime('%b %d, %Y %I:%M %p') }}

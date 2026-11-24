@@ -42,8 +42,13 @@ from .bump import Bump, BumpPackPurchase, Boost, RecurringBump
 from .subscription import ProSubscription
 from .linked_account import LinkedAccount
 from .endorsement import Endorsement, Pledge
+from .employer_pledge import EmployerPledge
 from .post_view import PostView, SearchAppearance
 from .staged_reward import StageRewardEvent
+from .video_vouch import VideoVouch
+from .intro_bounty import IntroBounty, IntroClaim, IntroRewardEvent
+from .staked_vouch import StakedVouch, RESOLUTIONS
+from .win_story import WinStory
 
 __all__ = [
     'User',
@@ -94,9 +99,17 @@ __all__ = [
     'LinkedAccount',
     'Endorsement',
     'Pledge',
+    'EmployerPledge',
     'PostView',
     'SearchAppearance',
     'StageRewardEvent',
+    'VideoVouch',
+    'IntroBounty',
+    'IntroClaim',
+    'IntroRewardEvent',
+    'StakedVouch',
+    'RESOLUTIONS',
+    'WinStory',
     'generate_uuid',
     'utc_now',
 ]

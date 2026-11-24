@@ -329,7 +329,7 @@ class TestVouches:
             assert err is None
             db.session.commit()
         html = client.get(
-            f'/profile/{sample_user.id}').data.decode()
+            f'/profile/{sample_user.handle}').data.decode()
         assert 'Vouches' in html
         assert 'Second User' in html
         assert 'Python' in html
@@ -429,7 +429,7 @@ class TestReputationMetrics:
                 hunter_confirmed=True, employer_confirmed=True))
             db.session.commit()
         html = client.get(
-            f'/profile/{sample_hunter.id}').data.decode()
+            f'/profile/{sample_hunter.handle}').data.decode()
         assert '1 completed referral' in html
 
 
@@ -440,11 +440,11 @@ class TestPledgeBadge:
             db.session.add(Pledge(
                 user_id=sample_user.id, company_name='Test Co'))
             db.session.commit()
-        html = client.get('/bounties/').data.decode()
+        html = client.get('/needs/').data.decode()
         assert 'Pledged' in html
 
     def test_no_badge_without_pledge(self, client, sample_bounty):
-        html = client.get('/bounties/').data.decode()
+        html = client.get('/needs/').data.decode()
         assert 'Pledged' not in html
 
     def test_has_active_pledge(self, app, sample_user):
@@ -543,7 +543,7 @@ class TestReferralThreads:
             pitch = db.session.get(Pitch, sample_pitch.id)
             pitch.status = 'interested'
             db.session.commit()
-        html = client.get(f'/bounties/{sample_bounty.id}').data.decode()
+        html = client.get(f'/needs/{sample_bounty.url_slug}').data.decode()
         assert f'/referrals/{referral.id}#thread' in html
 
 
@@ -574,7 +574,7 @@ class TestHiringStrip:
             db.session.add(other)
             db.session.commit()
         html = client.get(
-            f'/bounties/?poster={sample_user.id}').data.decode()
+            f'/needs/?poster={sample_user.id}').data.decode()
         assert 'Senior Python Engineer Needed for Startup' in html
         assert 'A completely different need from Second' not in html
 
@@ -587,7 +587,7 @@ class TestBountyFloor:
         assert MIN_PAID_BOUNTY_CAD == 50
 
     def test_paid_below_floor_rejected(self, client, logged_in_user):
-        r = client.post('/bounties/post', data={
+        r = client.post('/needs/post', data={
             'title': 'A paid need with too small a bounty',
             'description': 'This description is long enough to pass the fifty character minimum.',
             'bounty_type': 'recruitment',
@@ -598,7 +598,7 @@ class TestBountyFloor:
         assert b'at least $50' in r.data
 
     def test_free_zero_allowed(self, client, logged_in_user):
-        r = client.post('/bounties/post', data={
+        r = client.post('/needs/post', data={
             'title': 'A free community need for testing',
             'description': 'This description is long enough to pass the fifty character minimum.',
             'bounty_type': 'recruitment',
@@ -630,11 +630,11 @@ class TestStagedRewards:
             bounty.stage_interview_reward = 50
             bounty.stage_hire_reward = 500
             db.session.commit()
-        board = client.get('/bounties/').data.decode()
+        board = client.get('/needs/').data.decode()
         assert 'Staged rewards' in board
-        assert 'Referral submitted $5' in board
+        assert 'Referral submitted CA$5.00' in board
         detail = client.get(
-            f'/bounties/{sample_bounty.id}').data.decode()
+            f'/needs/{sample_bounty.url_slug}').data.decode()
         assert 'Staged rewards' in detail
         assert '$500' in detail
         assert 'not wired yet' in detail
@@ -650,7 +650,7 @@ class TestStagedRewards:
             bounty.status = 'open'
             bounty.payment_status = 'secured'
             db.session.commit()
-        client.post(f'/bounties/{sample_bounty.id}/pitch', data={
+        client.post(f'/needs/{sample_bounty.id}/pitch', data={
             'candidate_teaser': (
                 'I have 5 years of Python experience and have worked '
                 'with Django and Flask extensively. Available now.'),
@@ -715,17 +715,17 @@ class TestBoardCleanup:
                 payment_status='secured')
             db.session.add(paid)
             db.session.commit()
-        html = client.get('/bounties/').data.decode()
+        html = client.get('/needs/').data.decode()
         assert 'Free' in html  # chip row present
-        free = client.get('/bounties/?free=1').data.decode()
+        free = client.get('/needs/?free=1').data.decode()
         assert 'Senior Python Engineer Needed for Startup' in free
         assert 'Paid need with a real bounty here' not in free
         services = client.get(
-            '/bounties/?bounty_type=services').data.decode()
+            '/needs/?bounty_type=services').data.decode()
         assert 'Senior Python Engineer Needed for Startup' not in services
 
     def test_reward_brand_colour(self, client, sample_bounty):
-        html = client.get('/bounties/').data.decode()
+        html = client.get('/needs/').data.decode()
         assert 'bounty-reward' in html
         # Rewards are brand terracotta, never Bootstrap green.
         assert 'fw-bold text-success' not in html
@@ -735,7 +735,7 @@ class TestBoardCleanup:
                                   login_as):
         login_as(client, 'second@example.com', 'SecondPass123!')
         html = client.get(
-            f'/bounties/{sample_bounty.id}').data.decode()
+            f'/needs/{sample_bounty.url_slug}').data.decode()
         assert 'bounty-sticky-cta' in html
         assert 'bounty-detail-sidebar' in html
         assert 'Refer someone' in html

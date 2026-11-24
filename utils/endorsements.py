@@ -81,7 +81,9 @@ def give_endorsement(endorser, endorsee, skill, comment=None):
         f'{endorser.full_name} endorsed you for {skill}',
         comment or None,
         actor_id=endorser.id,
-        link_url=f'/profile/{endorsee.id}',
+        # Built by hand, not url_for: this runs outside a request
+        # context (tests and background jobs call it directly).
+        link_url=f'/profile/{endorsee.handle or endorsee.id}',
     )
     return endorsement, None
 

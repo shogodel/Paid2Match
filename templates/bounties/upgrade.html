@@ -75,7 +75,7 @@
             </div>
             
             <div class="mt-4 text-center">
-                <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left"></i> Skip & View Need
                 </a>
             </div>

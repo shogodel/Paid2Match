@@ -135,7 +135,7 @@ class TestProfilePublic:
                 )
                 db.session.add(profile)
                 db.session.commit()
-        r = client.get(f'/profile/{sample_user.id}')
+        r = client.get(f'/profile/{sample_user.handle}')
         assert r.status_code == 200
 
     def test_public_profile_404(self, client):

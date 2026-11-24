@@ -29,6 +29,7 @@
                     {% set tier_info = verification_tier %}
                     {% include 'partials/verification_badge.html' %}
                     {% if pledge %}<span class="post-trust-badge" title="{{ _('Pledged human-reviewed hiring — no AI screening, human response within 5 business days') }}">{{ icon('shield-check', 20) }}{{ _('Pledged') }}</span>{% endif %}
+                    {% if user.has_approved_pledge %}<span class="post-trust-badge" title="{{ _('We pledge that no AI screens our applicants: a human reads every application.') }}">{{ icon('shield-check', 20) }}{{ _('Human-Reviewed') }}</span>{% endif %}
                 </h1>
                 <p class="profile-headline">{{ profile.headline or _('No headline added yet') }}</p>
                 <div class="profile-meta-line">
@@ -167,6 +168,69 @@
             <!-- Vouches (Phase 3): the M3 endorsements, shown as real
                  humans with avatars — the Peerlist vouch graph. -->
             {% include 'partials/vouches.html' %}
+
+            <!-- Video pitches this member recorded for needs. -->
+            <div class="profile-card" id="video-pitches">
+                <h5 class="profile-card-title">{{ _('Video pitches') }}</h5>
+                {% if video_pitches %}
+                    {% set vv_items = video_pitches %}
+                    {% set vv_show_uploader = false %}
+                    {% set vv_show_bounty = true %}
+                    {% include 'partials/video_vouch_list.html' %}
+                {% else %}
+                    <p class="text-muted small mb-0">{{ _('No video pitches yet.') }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Video vouches this member received, plus the form to
+                 vouch for them on camera. -->
+            <div class="profile-card" id="video-vouches">
+                <h5 class="profile-card-title">{{ _('Video vouches') }}</h5>
+                {% if video_vouches_received %}
+                    {% set vv_items = video_vouches_received %}
+                    {% set vv_show_uploader = true %}
+                    {% set vv_uploader_label = _('Vouched by') %}
+                    {% set vv_show_bounty = false %}
+                    {% include 'partials/video_vouch_list.html' %}
+                {% else %}
+                    <p class="text-muted small mb-2">{{ _('No video vouches yet.') }}</p>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.id != user.id %}
+                <p class="text-muted small mt-2">{{ _('Vouch for this person on camera — 30 seconds, no CV needed.') }}</p>
+                {% set vv_kind = 'vouch' %}
+                {% set vv_target_id = user.id %}
+                {% set vv_next = url_for('profile.public_profile', user_id=user.id) %}
+                {% set vv_form_id = 'public' %}
+                {% include 'partials/video_vouch_form.html' %}
+                {% endif %}
+            </div>
+
+            <!-- Staked vouches this member received — trust backed
+                 by money, not just clicks. Stakes are recorded
+                 commitments only; no money moved. Visitors who are
+                 not the member can stake on them here. -->
+            <div class="profile-card" id="staked-vouches">
+                <h5 class="profile-card-title">{{ _('Staked vouches') }}</h5>
+                <p class="text-muted small">{{ _('People who put their own money on the line behind this member.') }}</p>
+                {% if staked_vouches_received %}
+                    {% set sv_items = staked_vouches_received %}
+                    {% set sv_show_voucher = true %}
+                    {% set sv_show_candidate = false %}
+                    {% set sv_show_bounty = true %}
+                    {% set sv_resolvable_ids = staked_resolvable_ids %}
+                    {% set sv_next = url_for('profile.public_profile', user_id=user.handle or user.id) %}
+                    {% include 'partials/staked_vouch_list.html' %}
+                {% else %}
+                    <p class="text-muted small mb-2">{{ _('No staked vouches yet.') }}</p>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.id != user.id %}
+                <p class="text-muted small mt-2">{{ _('Stake on this person — put your money where your vouch is.') }}</p>
+                {% set sv_candidate_id = user.id %}
+                {% set sv_next = url_for('profile.public_profile', user_id=user.handle or user.id) %}
+                {% set sv_form_id = 'public' %}
+                {% include 'partials/staked_vouch_form.html' %}
+                {% endif %}
+            </div>
         </div>
 
         <!-- About -->

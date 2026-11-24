@@ -1,0 +1,29 @@
+{# Video pitch / vouch playback list. Expects: vv_items (VideoVouch
+   rows, newest first). Optional flags: vv_show_uploader (link the
+   uploader's name), vv_uploader_label (translated label before the
+   name, e.g. 'Vouched by'), vv_show_bounty (link the pitched need).
+   A delete button shows for the uploader and for admins. #}
+{% for item in vv_items %}
+<div class="mb-3">
+    <video controls preload="metadata" class="w-100 rounded" src="{{ url_for('video_vouches.serve', filename=item.filename) }}"></video>
+    <div class="small text-muted mt-1 d-flex flex-wrap gap-2 align-items-center justify-content-between">
+        <span>
+            {% if vv_show_uploader %}
+                {% if vv_uploader_label %}{{ vv_uploader_label }} {% endif %}<a href="{{ url_for('profile.public_profile', user_id=item.user_id) }}" class="text-decoration-none">{{ item.user.full_name }}</a> ·
+            {% endif %}
+            {% if vv_show_bounty and item.bounty %}
+                {{ _('Pitched for') }} <a href="{{ url_for('bounties.detail', slug_code=item.bounty.url_slug) }}" class="text-decoration-none">{{ item.bounty.title }}</a> ·
+            {% endif %}
+            {% if item.duration_seconds %}{{ '%.0f'|format(item.duration_seconds) }}s · {% endif %}
+            {% if item.created_at %}{{ item.created_at.strftime('%Y-%m-%d') }}{% endif %}
+        </span>
+        {% if current_user.is_authenticated and (current_user.id == item.user_id or current_user.role == 'admin') %}
+        <form method="POST" action="{{ url_for('video_vouches.delete', vouch_id=item.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Remove video') }}</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}

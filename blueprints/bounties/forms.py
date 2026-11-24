@@ -5,6 +5,7 @@ from flask_babel import lazy_gettext as _l
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
 from models.bounty import MIN_PAID_BOUNTY_CAD, Bounty
+from utils.currency import CURRENCIES, CURRENCY_SYMBOLS, DEFAULT_CURRENCY
 
 
 def _category_choices():
@@ -48,20 +49,27 @@ class BountyForm(FlaskForm):
         DataRequired(message='Description is required'),
         Length(min=50, message='Please provide at least 50 characters')
     ])
-    reward_amount = DecimalField(_l('Reward Amount ($)'), validators=[
+    reward_amount = DecimalField(_l('Reward Amount'), validators=[
         NumberRange(min=0, max=100000, message='Reward must be between $0 and $100,000')
     ])
+    # Multi-currency: the currency the reward (and staged rewards)
+    # are denominated in. No FX conversion — amounts are recorded
+    # and shown as entered, in this currency. Default CAD.
+    currency = SelectField(_l('Currency'), choices=[
+        (code, f'{code} — {CURRENCY_SYMBOLS[code]}')
+        for code in CURRENCIES
+    ], default=DEFAULT_CURRENCY)
     # Phase 3 staged rewards (Paraform model — display only): optional
     # amounts per referral stage. No floor here — micro-rewards are
     # the point ($5 for a submitted referral). Payouts are NOT wired
     # (no live Stripe keys); completed stages are recorded as pending.
-    stage_submit_reward = DecimalField(_l('Reward when a referral is submitted ($)'), validators=[
+    stage_submit_reward = DecimalField(_l('Reward when a referral is submitted'), validators=[
         Optional(), NumberRange(min=0, max=100000, message='Stage reward must be between $0 and $100,000')
     ])
-    stage_interview_reward = DecimalField(_l('Reward when a candidate is interviewed ($)'), validators=[
+    stage_interview_reward = DecimalField(_l('Reward when a candidate is interviewed'), validators=[
         Optional(), NumberRange(min=0, max=100000, message='Stage reward must be between $0 and $100,000')
     ])
-    stage_hire_reward = DecimalField(_l('Reward when a hire is made ($)'), validators=[
+    stage_hire_reward = DecimalField(_l('Reward when a hire is made'), validators=[
         Optional(), NumberRange(min=0, max=100000, message='Stage reward must be between $0 and $100,000')
     ])
 

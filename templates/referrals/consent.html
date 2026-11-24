@@ -11,7 +11,7 @@
                     <h4>"{{ referral.bounty.title }}"</h4>
                     <p><em>"{{ referral.message }}"</em></p>
                     {% if referral.bounty.reward_amount and referral.bounty.reward_amount > 0 %}
-                    <p>Bounty: ${{ "{:,.0f}".format(referral.bounty.reward_amount) }}</p>
+                    <p>Bounty: {{ referral.bounty.reward_amount|money(referral.bounty.currency) }}</p>
                     {% else %}
                     <p><span class="badge bg-success">Community referral — no bounty</span></p>
                     {% endif %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Employer pledges - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Human-reviewed employer pledges</h1>
+    <p class="text-muted">
+        Employers pledge that no AI screens their applicants — a human
+        reads every application. Approving a pledge puts the
+        organization on the public register at /pledge and shows the
+        "Human-Reviewed" badge on its profiles and bounties. Revoking
+        removes it; the employer may re-pledge afterwards.
+        ({{ pending_count }} pending)
+    </p>
+    <div class="btn-group mb-3" role="group">
+        <a href="{{ url_for('admin.employer_pledges', status='pending') }}" class="btn btn-sm btn-outline-primary {% if status == 'pending' %}active{% endif %}">Pending</a>
+        <a href="{{ url_for('admin.employer_pledges', status='approved') }}" class="btn btn-sm btn-outline-primary {% if status == 'approved' %}active{% endif %}">Approved</a>
+        <a href="{{ url_for('admin.employer_pledges', status='revoked') }}" class="btn btn-sm btn-outline-primary {% if status == 'revoked' %}active{% endif %}">Revoked</a>
+        <a href="{{ url_for('admin.employer_pledges', status='') }}" class="btn btn-sm btn-outline-primary {% if not status %}active{% endif %}">All</a>
+    </div>
+    {% for pledge in pledges %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <p>
+                    <strong>{{ pledge.org_name }}</strong>
+                    — {{ pledge.status }}
+                    <span class="text-muted">({{ pledge.created_at.strftime('%Y-%m-%d %H:%M') if pledge.created_at else '—' }})</span>
+                </p>
+                <p class="text-muted">
+                    Submitted by {{ pledge.user.email if pledge.user else pledge.user_id }}
+                    {% if pledge.decided_by %}· decided by {{ pledge.decided_by.email }} on {{ pledge.decided_at.strftime('%Y-%m-%d %H:%M') if pledge.decided_at else '—' }}{% endif %}
+                </p>
+                <a href="{{ url_for('profile.public_profile', user_id=pledge.user_id) }}" class="btn btn-sm btn-outline-secondary">View profile</a>
+                {% if pledge.status == 'pending' %}
+                <form method="POST" action="{{ url_for('admin.approve_employer_pledge', id=pledge.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-success">Approve</button>
+                </form>
+                {% endif %}
+                {% if pledge.status in ('pending', 'approved') %}
+                <form method="POST" action="{{ url_for('admin.revoke_employer_pledge', id=pledge.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-danger">Revoke</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <p class="text-muted">No {{ status or 'employer' }} pledges.</p>
+    {% endfor %}
+</div>
+{% endblock %}

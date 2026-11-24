@@ -73,7 +73,9 @@ def complete_referral_for_match(match):
             referrer_id, 'referral_completed',
             f"Your referral for \"{bounty.title}\" is complete!",
             'The match was confirmed by both sides.',
-            link_url=f'/bounties/matches/{match.id}/confirmed',
+            # Built by hand, not url_for: this runs outside a request
+            # context (tests and background jobs call it directly).
+            link_url=f'/needs/matches/{match.id}/confirmed',
         )
 
     # Phase 3: a confirmed hire completes the 'hire' stage (recorded
@@ -129,7 +131,7 @@ def complete_referral_for_match(match):
                 'Your share led to a hire!',
                 f"You shared \"{bounty.title}\" and someone in your audience "
                 "referred the winning person.",
-                link_url=f'/bounties/{bounty.id}',
+                link_url=f'/needs/{bounty.url_slug}',
             )
             sharers_credited.append(share.user_id)
 

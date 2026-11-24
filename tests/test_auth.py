@@ -61,7 +61,7 @@ class TestAuthLogout:
         """Logged-in user is logged out."""
         r = logged_in_user.get('/auth/logout', follow_redirects=False)
         assert r.status_code == 302
-        assert '/bounties/' in r.location
+        assert '/needs/' in r.location
 
     def test_auth_index_redirects(self, client):
         """GET /auth/ redirects to login."""

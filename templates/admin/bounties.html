@@ -20,7 +20,7 @@
                             <span class="badge bg-warning">Unsecured</span>
                         {% endif %}
                     </td>
-                    <td>${{ bounty.reward_amount or 0 }}</td>
+                    <td>{{ (bounty.reward_amount or 0)|money(bounty.currency) }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('admin.approve_bounty', id=bounty.id) }}" style="display:inline">
                             <button class="btn btn-sm btn-success">Approve</button>

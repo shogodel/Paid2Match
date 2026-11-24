@@ -185,7 +185,7 @@ def _comment_json(comment):
             else (author.full_name if author else 'User')
         ),
         'author_url': url_for(
-            'profile.public_profile', user_id=comment.author_id
+            'profile.public_profile', user_id=author.handle or comment.author_id
         ),
         'avatar_url': profile.avatar_url if profile else None,
         'body': comment.body,
@@ -1014,7 +1014,7 @@ def follow(user_id):
         user_id, 'follow',
         f'{current_user.full_name} started following you',
         None, actor_id=current_user.id,
-        link_url=url_for('profile.public_profile', user_id=current_user.id),
+        link_url=url_for('profile.public_profile', user_id=current_user.handle or current_user.id),
     )
     db.session.commit()
     if _wants_json():

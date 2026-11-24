@@ -170,7 +170,7 @@
                         {% for row in earnings.per_need %}
                         <tr>
                             <td>
-                                <a href="{{ url_for('bounties.detail', id=row.bounty.id) }}">{{ row.bounty.title }}</a>
+                                <a href="{{ url_for('bounties.detail', slug_code=row.bounty.url_slug) }}">{{ row.bounty.title }}</a>
                             </td>
                             <td>{{ row.bounty.type_label }}</td>
                             <td>{{ row.referrals }}</td>

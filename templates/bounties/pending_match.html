@@ -37,7 +37,7 @@
                     <div class="mb-3">
                         <strong>{{ _('Reward:') }}</strong>
                         {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                            ${{ "{:,.2f}".format(bounty.reward_amount) }}
+                            {{ bounty.reward_amount|money(bounty.currency) }}
                         {% else %}
                             Free Need
                         {% endif %}
@@ -47,7 +47,7 @@
                     <a href="{{ url_for('messages.inbox') }}" class="btn btn-outline-primary">
                         <i class="fas fa-envelope"></i> {{ _('Send Message') }}
                     </a>
-                    <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-secondary">
+                    <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-secondary">
                         {{ _('Back to Need') }}
                     </a>
                 </div>

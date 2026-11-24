@@ -147,6 +147,11 @@
                         </a>
                     </li>
                     <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('staked_vouches.mine') }}">
+                            {{ icon('dollar-sign', 18) }} {{ _('My Stakes') }}
+                        </a>
+                    </li>
+                    <li class="nav-item d-lg-none">
                         <a class="nav-link" href="{{ url_for('auth.logout') }}">
                             {{ icon('log-out', 18) }} {{ _('Logout') }}
                         </a>
@@ -271,6 +276,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('profile.view') }}">{{ icon('user', 16) }} {{ _('Profile') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('social.saved') }}">{{ icon('bookmark', 16) }} {{ _('Saved') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('referrals.mine') }}">{{ icon('handshake', 16) }} {{ _('My Referrals') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('staked_vouches.mine') }}">{{ icon('dollar-sign', 16) }} {{ _('My Stakes') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('payments.payout_dashboard') }}">{{ icon('wallet', 16) }} {{ _('Payouts') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('social.analytics') }}">{{ icon('chart-line', 16) }} {{ _('Analytics') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('payments.pro_page') }}">{{ icon('star', 16) }} {{ _('Pro') }}</a></li>

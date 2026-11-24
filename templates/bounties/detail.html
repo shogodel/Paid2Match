@@ -36,7 +36,7 @@
                     <div class="d-flex align-items-center gap-3 my-3 flex-wrap">
                         <span class="bounty-reward fs-4">
                             {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                                ${{ "{:,.0f}".format(bounty.reward_amount) }}
+                                {{ bounty.reward_amount|money(bounty.currency) }}
                             {% else %}
                                 Free Need
                             {% endif %}
@@ -73,6 +73,15 @@
 
                     {% set compact = false %}
                     {% include 'partials/stage_rewards.html' %}
+
+                    {% if completed_match %}
+                    <div class="mt-4">
+                        <a href="{{ url_for('bounties.trail', slug_code=bounty.url_slug) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-route"></i> {{ _('See the Money Trail') }}
+                        </a>
+                        <span class="text-muted small ms-2">{{ _('Who posted, shared, referred — and what each person earned.') }}</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -108,6 +117,28 @@
             {% endif %}
 
             {% if current_user.is_authenticated and current_user.id != bounty.poster_id and bounty.status == 'open' %}
+            <div class="card mt-3" id="video-pitch">
+                <div class="card-body">
+                    {% if my_video_pitch %}
+                    <h4>{{ _('Your video pitch') }}</h4>
+                    {% set vv_items = [my_video_pitch] %}
+                    {% set vv_show_uploader = false %}
+                    {% set vv_show_bounty = false %}
+                    {% include 'partials/video_vouch_list.html' %}
+                    {% else %}
+                    <h4>{{ _('Pitch by video') }}</h4>
+                    <p class="text-muted mb-2">{{ _('Skip the text — pitch in 30 seconds on camera.') }}</p>
+                    {% set vv_kind = 'pitch' %}
+                    {% set vv_bounty_id = bounty.id %}
+                    {% set vv_next = url_for('bounties.detail', slug_code=bounty.url_slug) %}
+                    {% set vv_form_id = 'bounty' %}
+                    {% include 'partials/video_vouch_form.html' %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if current_user.is_authenticated and current_user.id != bounty.poster_id and bounty.status == 'open' %}
             <div class="card mt-3">
                 <div class="card-body">
                     <h4>{{ _('Know someone better?') }}</h4>
@@ -115,6 +146,33 @@
                     <a href="{{ url_for('referrals.new_referral', bounty_id=bounty.id) }}" class="btn btn-success">
                         <i class="fas fa-user-plus"></i> {{ _('Refer someone') }}
                     </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {# "Your network can close this": the logged-in viewer's own
+               connections closest to the right person for this need.
+               Hidden when there are no suggestions. #}
+            {% if network_suggestions %}
+            <div class="card mt-3" id="network-suggestions">
+                <div class="card-body">
+                    <h4>{{ _('People in your network who could help') }}</h4>
+                    <p class="text-muted mb-3">{{ _('Your connections closest to the right person for this need.') }}</p>
+                    <ul class="list-group list-group-flush">
+                        {% for suggestion in network_suggestions %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start gap-2 px-0">
+                            <div>
+                                <a href="{{ url_for('profile.public_profile', user_id=suggestion.user.id) }}" class="text-decoration-none fw-semibold">{{ suggestion.user.full_name }}</a>
+                                <div class="d-flex gap-1 flex-wrap mt-1">
+                                    {% for reason in suggestion.reasons %}
+                                    <span class="badge bg-light text-dark border">{{ reason }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <a href="{{ url_for('profile.public_profile', user_id=suggestion.user.id) }}" class="btn btn-outline-primary btn-sm flex-shrink-0">{{ _('View profile') }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
             {% endif %}
@@ -131,9 +189,12 @@
                 <div class="card-body">
                     <h5>{{ _('Posted by') }}</h5>
                     <p class="mb-1">
-                        <a href="{{ url_for('profile.public_profile', user_id=bounty.poster_id) }}" class="text-decoration-none">{{ bounty.poster.full_name }}</a>
+                        <a href="{{ url_for('profile.public_profile', user_id=bounty.poster.handle or bounty.poster_id) }}" class="text-decoration-none">{{ bounty.poster.full_name }}</a>
                         {% if has_active_pledge(bounty.poster_id) %}
                         <span class="badge bg-primary ms-1" title="{{ _('Pledged human-reviewed hiring — no AI screening, human response within 5 business days') }}">{{ icon('shield-check', 12) }} {{ _('Pledged') }}</span>
+                        {% endif %}
+                        {% if bounty.poster.has_approved_pledge %}
+                        <span class="badge bg-primary ms-1" title="{{ _('We pledge that no AI screens our applicants: a human reads every application.') }}">{{ icon('shield-check', 12) }} {{ _('Human-Reviewed') }}</span>
                         {% endif %}
                     </p>
                     {% set metrics = poster_reputation(bounty.poster_id) %}
@@ -144,7 +205,7 @@
                     <h5>{{ _('Reward') }}</h5>
                     <p class="fs-4 bounty-reward">
                         {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                            ${{ "{:,.0f}".format(bounty.reward_amount) }}
+                            {{ bounty.reward_amount|money(bounty.currency) }}
                         {% else %}
                             Free
                         {% endif %}
@@ -160,7 +221,7 @@
                         <div class="d-flex flex-column gap-2 mt-3">
                             {% if bounty.payment_status == 'unsecured' and bounty.reward_amount and bounty.reward_amount > 0 %}
                             <a href="{{ url_for('bounties.secure_payment', id=bounty.id) }}" class="btn btn-warning">
-                                <i class="fas fa-lock"></i> Secure This Bounty (${{ "%.2f"|format(bounty.reward_amount|float * 1.03) }})
+                                <i class="fas fa-lock"></i> Secure This Bounty ({{ (bounty.reward_amount|float * 1.03)|money(bounty.currency) }})
                             </a>
                             {% elif bounty.payment_status == 'secured' %}
                             <div class="alert alert-success w-100 mb-0">
@@ -215,6 +276,17 @@
                                     </small>
                                     <p class="mb-1 mt-2"><em>"{{ pitch.candidate_teaser }}"</em></p>
                                     <small class="text-muted">Referred {{ pitch.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                    {# Staked vouch from a pitch: the poster puts
+                                       money on the line behind this referrer
+                                       for this need. Recorded only — no money
+                                       moves. #}
+                                    <div class="mt-3">
+                                        {% set sv_candidate_id = pitch.hunter_id %}
+                                        {% set sv_bounty_id = bounty.id %}
+                                        {% set sv_next = url_for('bounties.detail', slug_code=bounty.url_slug) %}
+                                        {% set sv_form_id = 'pitch-' ~ pitch.id %}
+                                        {% include 'partials/staked_vouch_form.html' %}
+                                    </div>
                                 </div>
                                 <div class="d-flex flex-column gap-2 align-items-end">
                                     {% if pitch_referrals and pitch_referrals.get(pitch.id) %}
@@ -293,6 +365,50 @@
         </div>
     </div>
     {% endif %}
+
+    {# Staked vouches on this need — poster and admins only (a stake
+       names its candidate, so other visitors must not see them
+       while pitches are anonymous). The poster resolves each stake
+       from here once the outcome is known. #}
+    {% if need_stakes %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ _('Staked vouches') }} ({{ need_stakes|length }})</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">{{ _('Recorded commitments behind the people on this need — no money moved. Resolve each stake once the outcome is known.') }}</p>
+                    {% set sv_items = need_stakes %}
+                    {% set sv_show_voucher = true %}
+                    {% set sv_show_candidate = true %}
+                    {% set sv_show_bounty = false %}
+                    {% set sv_resolvable_ids = staked_resolvable_ids %}
+                    {% set sv_next = url_for('bounties.detail', slug_code=bounty.url_slug) %}
+                    {% include 'partials/staked_vouch_list.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if video_pitches %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ _('Video pitches') }} ({{ video_pitches|length }})</h4>
+                </div>
+                <div class="card-body">
+                    {% set vv_items = video_pitches %}
+                    {% set vv_show_uploader = true %}
+                    {% set vv_show_bounty = false %}
+                    {% include 'partials/video_vouch_list.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 {% if bounty.deadline %}
@@ -344,7 +460,7 @@
 <div class="bounty-sticky-cta d-lg-none">
     <span class="bounty-sticky-cta-reward">
         {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-        ${{ "{:,.0f}".format(bounty.reward_amount) }}
+        {{ bounty.reward_amount|money(bounty.currency) }}
         {% else %}
         {{ _('Free need') }}
         {% endif %}

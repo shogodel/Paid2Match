@@ -105,7 +105,7 @@
                             <td><small>{{ bounty.title[:40] }}...</small></td>
                             <td><span class="badge bg-primary">Recruitment</span></td>
                             <td><span class="badge bg-{{ 'success' if bounty.status=='open' else 'warning' }}">{{ bounty.status }}</span></td>
-                            <td><small>{% if bounty.reward_amount %}${{ "{:,.0f}".format(bounty.reward_amount) }}{% else %}Free{% endif %}</small></td>
+                            <td><small>{% if bounty.reward_amount %}{{ bounty.reward_amount|money(bounty.currency) }}{% else %}Free{% endif %}</small></td>
                         </tr>
                         {% endfor %}
                     </tbody>

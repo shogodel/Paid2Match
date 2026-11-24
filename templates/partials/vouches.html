@@ -13,7 +13,7 @@
     {% for endorsement in endorsements %}
     {% set e_profile = endorser_profiles.get(endorsement.endorser_id) if endorser_profiles else None %}
     <div class="vouch-row">
-        <a href="{{ url_for('profile.public_profile', user_id=endorsement.endorser.id) }}" aria-label="{{ endorsement.endorser.full_name }}">
+        <a href="{{ url_for('profile.public_profile', user_id=endorsement.endorser.handle or endorsement.endorser.id) }}" aria-label="{{ endorsement.endorser.full_name }}">
             {% if e_profile and e_profile.avatar_url %}
             <img src="{{ e_profile.avatar_url }}" alt="" class="avatar avatar-36">
             {% else %}
@@ -22,7 +22,7 @@
         </a>
         <div class="vouch-main">
             <div class="small">
-                <a href="{{ url_for('profile.public_profile', user_id=endorsement.endorser.id) }}" class="fw-bold text-decoration-none">{{ endorsement.endorser.full_name }}</a>
+                <a href="{{ url_for('profile.public_profile', user_id=endorsement.endorser.handle or endorsement.endorser.id) }}" class="fw-bold text-decoration-none">{{ endorsement.endorser.full_name }}</a>
                 {% if endorsement.endorser_trust_level %}· {{ endorsement.endorser_trust_level|level_label }}{% endif %}
                 {% if endorsement.created_at %}· {{ endorsement.created_at.strftime('%Y-%m-%d') }}{% endif %}
             </div>

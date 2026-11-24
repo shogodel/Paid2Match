@@ -1,18 +1,40 @@
 """User model."""
 from flask_login import UserMixin
+from sqlalchemy import event, select
+from sqlalchemy.orm import validates
 
 from extensions import db
 from models import generate_uuid, utc_now
+from utils.slugs import HANDLE_RE, handle_from_name, is_valid_handle
 
 
 class User(db.Model, UserMixin):
     """User account model."""
     __tablename__ = 'users'
 
+    @validates('handle')
+    def _validate_handle(self, key, value):
+        """Handles are 3–30 lowercase letters, digits, dots, dashes
+        and underscores. None is allowed here — the before_insert
+        event fills it in from the full name — but an explicitly
+        set bad handle is rejected at the model, not just the form."""
+        if value is None:
+            return value
+        if not is_valid_handle(value):
+            raise ValueError(
+                'handle must match '
+                f'{HANDLE_RE.pattern!r}, got {value!r}'
+            )
+        return value
+
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=True)
     full_name = db.Column(db.String(120), nullable=False)
+    # Nice URLs: /profile/<handle>. Auto-generated from the full
+    # name at insert (see the before_insert event at the bottom of
+    # this file); the user may change it during profile setup.
+    handle = db.Column(db.String(30), nullable=False, unique=True, index=True)
     role = db.Column(db.String(20), nullable=False, default='user')
     is_active = db.Column(db.Boolean, default=True)
     is_deleted = db.Column(db.Boolean, default=False)
@@ -49,6 +71,16 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return f'<User {self.email}>'
 
+    @property
+    def has_approved_pledge(self):
+        """True when the user has an approved human-reviewed employer
+        pledge (models/employer_pledge.py) — drives the
+        "Human-Reviewed" badge on profiles and bounty detail. This is
+        the human-reviewed pledge, not the M3 self-published Pledge
+        (utils.pledges.has_active_pledge covers that one)."""
+        from models.employer_pledge import EmployerPledge
+        return EmployerPledge.approved_for_user(self.id) is not None
+
     def soft_delete(self):
         self.is_deleted = True
         self.deleted_at = utc_now()
@@ -70,9 +102,38 @@ class User(db.Model, UserMixin):
             'id': self.id,
             'email': self.email,
             'full_name': self.full_name,
+            'handle': self.handle,
             'role': self.role,
             'is_active': self.is_active,
             'email_verified': self.email_verified,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_login': self.last_login.isoformat() if self.last_login else None
         }
+
+
+@event.listens_for(User, 'before_insert')
+def _ensure_handle(mapper, connection, target):
+    """Every user gets a handle at insert, generated from the full
+    name ('Test User' → 'test.user', digits appended on collision)
+    — so the /profile/<uuid> → /profile/<handle> redirect always
+    has somewhere to go, even for users who never open profile
+    setup. The uniqueness check runs on the event's connection,
+    never through the flushing session."""
+    if target.handle:
+        return
+    table = User.__table__
+
+    def _taken(handle):
+        # Siblings in the same flush are not in the DB yet (one
+        # batched INSERT), so check the pending objects too.
+        if any(
+            o is not target and o.handle == handle
+            for o in db.session.new
+            if isinstance(o, User)
+        ):
+            return True
+        return connection.execute(
+            select(table.c.id).where(table.c.handle == handle)
+        ).first() is not None
+
+    target.handle = handle_from_name(target.full_name or '', taken=_taken)

@@ -269,7 +269,7 @@ class TestPeopleSearch:
 
 class TestNeedPosts:
     def test_posting_a_need_creates_a_feed_post(self, client, logged_in_user, sample_user):
-        resp = client.post('/bounties/post', data={
+        resp = client.post('/needs/post', data={
             'title': 'Need a senior recruiter for a startup',
             'description': 'We are looking for a senior recruiter with startup experience and a strong network.',
             'bounty_type': 'recruitment',
@@ -287,7 +287,7 @@ class TestNeedPosts:
         assert post.body == bounty.description
 
     def test_posting_a_paid_need_creates_need_paid_post(self, client, logged_in_user, sample_user):
-        resp = client.post('/bounties/post', data={
+        resp = client.post('/needs/post', data={
             'title': 'Need a senior engineer, paid bounty',
             'description': 'We are looking for a senior engineer with a proven track record in fintech.',
             'bounty_type': 'recruitment',
@@ -331,7 +331,7 @@ class TestNeedPosts:
         from utils.feed import create_need_post
         post = create_need_post(sample_bounty)
         db.session.commit()
-        resp = client.post(f'/bounties/{sample_bounty.id}/edit', data={
+        resp = client.post(f'/needs/{sample_bounty.id}/edit', data={
             'title': sample_bounty.title,
             'description': 'Updated description for the synced post test — long enough to pass validation.',
             'bounty_type': 'recruitment',

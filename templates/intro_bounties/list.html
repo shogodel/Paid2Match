@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Intro bounties') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>{{ _('Intro bounties') }}</h2>
+    <p class="text-muted">{{ _('Get paid for a warm introduction — not just for a hire. Someone here will pay you to introduce them to the right person.') }}</p>
+    {% if intro_bounties %}
+    <ul class="list-group">
+        {% for bounty in intro_bounties %}
+        <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <a href="{{ url_for('intro_bounties.detail', intro_id=bounty.id) }}"><strong>{{ bounty.target_name }}</strong></a>
+                    {% if bounty.target_org %}
+                    <span class="text-muted">— {{ bounty.target_org }}</span>
+                    {% endif %}
+                    <div class="text-muted small">{{ bounty.context[:160] }}{% if bounty.context|length > 160 %}…{% endif %}</div>
+                    <small class="text-muted">{{ _('Posted by') }} <a href="{{ url_for('profile.public_profile', user_id=bounty.poster_id) }}">{{ bounty.poster.full_name }}</a> · {{ bounty.created_at.strftime('%b %d, %Y') if bounty.created_at else '' }}</small>
+                </div>
+                <span class="badge bg-success ms-2">{{ bounty.amount|money(bounty.currency) }}</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{{ _('No open intro bounties yet. Be the first to offer a reward for an introduction.') }}</p>
+    {% endif %}
+    <div class="mt-4">
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('intro_bounties.new') }}" class="btn btn-primary">{{ _('Post an intro bounty') }}</a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">{{ _('Sign in to post an intro bounty') }}</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

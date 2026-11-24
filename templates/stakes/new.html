@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from 'partials/icon.html' import icon %}
+{% block title %}{{ _('Stake on') }} {{ candidate.full_name }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 640px;">
+    <div class="profile-card">
+        <h4 class="profile-card-title">{{ _('Stake on') }} {{ candidate.full_name }}</h4>
+        <p class="text-muted">
+            {{ _('Put your own money on the line behind this person. If they flake, you lose the stake — that is what makes a staked vouch worth more than a click.') }}
+        </p>
+        {% if bounty %}
+        <p>
+            {{ _('For the need:') }} <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}">{{ bounty.title }}</a>
+        </p>
+        {% endif %}
+        {% if existing_stake %}
+        <div class="alert alert-warning">
+            {{ _('You already have an active stake of %(amount)s on this person%(need)s.',
+                 amount=existing_stake.amount|money(existing_stake.currency),
+                 need=_(' for this need') if bounty else '') }}
+            <a href="{{ url_for('staked_vouches.mine') }}">{{ _('See my stakes') }}</a>
+        </div>
+        {% else %}
+        {% set sv_candidate_id = candidate.id %}
+        {% set sv_bounty_id = bounty.id if bounty else none %}
+        {% set sv_next = url_for('profile.public_profile', user_id=candidate.handle or candidate.id) %}
+        {% set sv_form_id = 'new' %}
+        {% include 'partials/staked_vouch_form.html' %}
+        {% endif %}
+        <p class="text-muted small mt-3 mb-0">
+            {{ _('A stake is recorded only — no money moves and no payment is taken. The need\'s poster (or an admin) resolves the stake once the outcome is known: completed means released, flaked means forfeited, cancelled means returned.') }}
+        </p>
+    </div>
+</div>
+{% endblock %}

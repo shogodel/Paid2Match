@@ -24,7 +24,7 @@
                 <div class="card mb-2">
                     <div class="card-body py-2">
                         <div class="d-flex justify-content-between">
-                            <strong><a href="{{ url_for('profile.public_profile', user_id=comment.author.id) }}">{{ comment.author.full_name }}</a></strong>
+                            <strong><a href="{{ url_for('profile.public_profile', user_id=comment.author.handle or comment.author.id) }}">{{ comment.author.full_name }}</a></strong>
                             <small class="text-muted">{{ comment.created_at | relativetime }}</small>
                         </div>
                         <p class="mb-1">{{ comment.body | mention_links }}</p>
@@ -33,7 +33,7 @@
                         {% endif %}
                         {% for reply in comment.replies.filter_by(is_hidden=False).order_by('created_at').all() %}
                         <div class="ms-4 mt-2 border-start ps-3">
-                            <strong><a href="{{ url_for('profile.public_profile', user_id=reply.author.id) }}">{{ reply.author.full_name }}</a></strong>
+                            <strong><a href="{{ url_for('profile.public_profile', user_id=reply.author.handle or reply.author.id) }}">{{ reply.author.full_name }}</a></strong>
                             <small class="text-muted">{{ reply.created_at | relativetime }}</small>
                             <p class="mb-1">{{ reply.body | mention_links }}</p>
                         </div>

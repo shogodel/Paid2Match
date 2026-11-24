@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ bounty.target_name }} - {{ _('Intro bounty') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>{{ bounty.target_name }}</h2>
+    {% if bounty.target_org %}
+    <p class="text-muted">{{ bounty.target_org }}</p>
+    {% endif %}
+    <p>
+        <span class="badge bg-success fs-6">{{ bounty.amount|money(bounty.currency) }}</span>
+        {% if bounty.status == 'open' %}
+        <span class="badge bg-primary">{{ _('Open') }}</span>
+        {% elif bounty.status == 'claimed' %}
+        <span class="badge bg-warning text-dark">{{ _('Claimed') }}</span>
+        {% elif bounty.status == 'completed' %}
+        <span class="badge bg-secondary">{{ _('Completed') }}</span>
+        {% elif bounty.status == 'cancelled' %}
+        <span class="badge bg-secondary">{{ _('Cancelled') }}</span>
+        {% endif %}
+    </p>
+    <p>{{ bounty.context }}</p>
+    <p class="text-muted small">{{ _('Posted by') }} <a href="{{ url_for('profile.public_profile', user_id=bounty.poster_id) }}">{{ bounty.poster.full_name }}</a> · {{ bounty.created_at.strftime('%b %d, %Y') if bounty.created_at else '' }}</p>
+    {% if bounty.status == 'completed' %}
+    <div class="alert alert-info">{{ _('The intro was confirmed. The reward is recorded as owed and will be paid once payouts are available.') }}</div>
+    {% endif %}
+
+    {% if is_poster %}
+    <h4 class="mt-4">{{ _('Claims') }}</h4>
+    {% if claims %}
+    <ul class="list-group">
+        {% for claim in claims %}
+        <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <a href="{{ url_for('profile.public_profile', user_id=claim.claimer_id) }}"><strong>{{ claim.claimer.full_name }}</strong></a>
+                    {% if claim.status == 'pending' %}
+                    <span class="badge bg-warning text-dark">{{ _('Pending') }}</span>
+                    {% elif claim.status == 'confirmed' %}
+                    <span class="badge bg-success">{{ _('Confirmed') }}</span>
+                    {% elif claim.status == 'rejected' %}
+                    <span class="badge bg-secondary">{{ _('Rejected') }}</span>
+                    {% endif %}
+                    {% if claim.note %}
+                    <div class="text-muted small">{{ claim.note }}</div>
+                    {% endif %}
+                    <small class="text-muted">{{ claim.created_at.strftime('%b %d, %Y') if claim.created_at else '' }}</small>
+                </div>
+                {% if claim.status == 'pending' %}
+                <div class="d-flex gap-2">
+                    <form method="POST" action="{{ url_for('intro_bounties.confirm_claim', intro_id=bounty.id, claim_id=claim.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-success">{{ _('Confirm intro made') }}</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('intro_bounties.reject_claim', intro_id=bounty.id, claim_id=claim.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Reject') }}</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{{ _('No claims yet.') }}</p>
+    {% endif %}
+    {% if bounty.can_be_cancelled %}
+    <form method="POST" action="{{ url_for('intro_bounties.cancel', intro_id=bounty.id) }}" class="mt-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-danger">{{ _('Cancel intro bounty') }}</button>
+    </form>
+    {% endif %}
+    {% else %}
+    {% if claims %}
+    <h4 class="mt-4">{{ _('Your claims') }}</h4>
+    <ul class="list-group">
+        {% for claim in claims %}
+        <li class="list-group-item">
+            {% if claim.status == 'pending' %}
+            <span class="badge bg-warning text-dark">{{ _('Pending') }}</span>
+            {% elif claim.status == 'confirmed' %}
+            <span class="badge bg-success">{{ _('Confirmed') }}</span>
+            {% elif claim.status == 'rejected' %}
+            <span class="badge bg-secondary">{{ _('Rejected') }}</span>
+            {% endif %}
+            {% if claim.note %}
+            <span class="text-muted small">{{ claim.note }}</span>
+            {% endif %}
+            <small class="text-muted">{{ claim.created_at.strftime('%b %d, %Y') if claim.created_at else '' }}</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% if current_user.is_authenticated and bounty.status in ('open', 'claimed') %}
+    {% if my_pending_claim %}
+    <div class="alert alert-info mt-4">{{ _('Your claim is pending — the poster will confirm once the intro is made.') }}</div>
+    {% else %}
+    <h4 class="mt-4">{{ _('Can you make this intro?') }}</h4>
+    <form method="POST" action="{{ url_for('intro_bounties.claim', intro_id=bounty.id) }}">
+        {{ claim_form.hidden_tag() }}
+        <div class="mb-3">
+            {{ claim_form.note.label(class="form-label") }}
+            {{ claim_form.note(class="form-control", rows=3) }}
+            {% if claim_form.note.errors %}
+            <div class="text-danger">{% for error in claim_form.note.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        {{ claim_form.submit(class="btn btn-primary") }}
+    </form>
+    {% endif %}
+    {% elif not current_user.is_authenticated and bounty.status in ('open', 'claimed') %}
+    <div class="mt-4">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">{{ _('Sign in to claim this intro') }}</a>
+    </div>
+    {% endif %}
+    {% endif %}
+    <div class="mt-4">
+        <a href="{{ url_for('intro_bounties.index') }}" class="btn btn-outline-secondary">{{ _('Back to intro bounties') }}</a>
+    </div>
+</div>
+{% endblock %}

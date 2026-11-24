@@ -365,7 +365,7 @@ class TestCheckRoute:
     ):
         account = _link(sample_user)
         login_as(client, sample_user.email, 'TestPass123!')
-        profile_url = f'http://localhost/profile/{sample_user.id}'
+        profile_url = f'http://localhost/profile/{sample_user.handle}'
         with patch(
             'blueprints.profile.routes.verify_bio_link',
             return_value=(True, None),

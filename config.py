@@ -35,6 +35,20 @@ class Config:
     # Upload
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+
+    # Video vouches (30-second pitches/vouches). The upload route
+    # raises the per-request content limit to VIDEO_VOUCH_MAX_BYTES
+    # (the global 16MB cap stays for everything else). Default folder
+    # is <instance>/uploads/video-vouches — on the live container
+    # this MUST be a mounted volume or uploads are wiped on every
+    # rebuild; see docs/VIDEO_VOUCH_UPLOADS.md.
+    VIDEO_VOUCH_UPLOAD_FOLDER = os.getenv('VIDEO_VOUCH_UPLOAD_FOLDER') or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'instance', 'uploads', 'video-vouches',
+    )
+    VIDEO_VOUCH_MAX_SECONDS = 30
+    VIDEO_VOUCH_MAX_BYTES = 50 * 1024 * 1024  # 50MB
+    VIDEO_VOUCH_ALLOWED_EXTENSIONS = {'mp4', 'webm', 'mov'}
     
     # Redis (for caching/sessions)
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')

@@ -70,7 +70,7 @@
                     {{ icon('briefcase', 16) }}
                     <span class="flex-grow-1 text-truncate">{{ bounty.title }}</span>
                     {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                    <span class="bounty-nested-reward">${{ "{:,.0f}".format(bounty.reward_amount) }}</span>
+                    <span class="bounty-nested-reward">{{ bounty.reward_amount|money(bounty.currency) }}</span>
                     {% else %}
                     <span class="text-muted small">{{ _('Free') }}</span>
                     {% endif %}

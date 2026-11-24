@@ -178,7 +178,7 @@ class TestVerticals:
         assert bounty.skill_list == []
 
     def test_post_services_need_via_form(self, logged_in_user, app, sample_user):
-        r = logged_in_user.post('/bounties/post', data=_post_bounty_data(
+        r = logged_in_user.post('/needs/post', data=_post_bounty_data(
             bounty_type='services', category='home_services',
             skills='Plumbing, Drainage',
             title='Need a plumber for a bathroom reno',
@@ -194,7 +194,7 @@ class TestVerticals:
 
     def test_post_rejects_category_from_another_vertical(
             self, logged_in_user, app, sample_user):
-        r = logged_in_user.post('/bounties/post', data=_post_bounty_data(
+        r = logged_in_user.post('/needs/post', data=_post_bounty_data(
             bounty_type='services', category='trades',
             title='Need a plumber for a bathroom reno',
         ))
@@ -207,7 +207,7 @@ class TestVerticals:
     def test_edit_changes_vertical_category_skills(
             self, logged_in_user, app, sample_bounty):
         r = logged_in_user.post(
-            f'/bounties/{sample_bounty.id}/edit', data={
+            f'/needs/{sample_bounty.id}/edit', data={
                 'title': 'Updated Bounty Title Here',
                 'description': 'Updated description for the bounty, long enough to pass.',
                 'bounty_type': 'services',
@@ -229,11 +229,11 @@ class TestVerticals:
                              bounty_type='recruitment')
         _secured_paid_bounty(app, sample_user, title='Services need here',
                              bounty_type='services', category='home_services')
-        r = client.get('/bounties/services')
+        r = client.get('/needs/services')
         assert r.status_code == 200
         assert b'Services need here' in r.data
         assert b'Recruitment need here' not in r.data
-        r = client.get('/bounties/recruitment')
+        r = client.get('/needs/recruitment')
         assert r.status_code == 200
         assert b'Recruitment need here' in r.data
         assert b'Services need here' not in r.data
@@ -243,7 +243,7 @@ class TestVerticals:
                              bounty_type='recruitment')
         _secured_paid_bounty(app, sample_user, title='Services need here',
                              bounty_type='services')
-        r = client.get('/bounties/?bounty_type=services')
+        r = client.get('/needs/?bounty_type=services')
         assert b'Services need here' in r.data
         assert b'Recruitment need here' not in r.data
 
@@ -252,7 +252,7 @@ class TestVerticals:
                              bounty_type='services', category='home_services')
         _secured_paid_bounty(app, sample_user, title='Designer needed now',
                              bounty_type='services', category='creative_design')
-        r = client.get('/bounties/?category=home_services')
+        r = client.get('/needs/?category=home_services')
         assert b'Plumber needed now' in r.data
         assert b'Designer needed now' not in r.data
 
@@ -264,7 +264,7 @@ class TestVerticals:
             _secured_paid_bounty(app, sample_user, title=title,
                                  bounty_type='services',
                                  category='home_services')
-        r = client.get('/bounties/services')
+        r = client.get('/needs/services')
         assert r.status_code == 200
         assert b'Plumber needed in Laval' in r.data
         assert b'Electrician needed now' in r.data
@@ -282,7 +282,7 @@ class TestBoardSearch:
     def test_keyword_search_matches_title(self, client, app, sample_user):
         _secured_paid_bounty(app, sample_user, title='Python engineer wanted')
         _secured_paid_bounty(app, sample_user, title='Plumber needed now')
-        r = client.get('/bounties/?q=Python')
+        r = client.get('/needs/?q=Python')
         assert b'Python engineer wanted' in r.data
         assert b'Plumber needed now' not in r.data
 
@@ -292,7 +292,7 @@ class TestBoardSearch:
         bounty.description = 'We need someone fluent in Kubernetes for this role.'
         db.session.commit()
         _secured_paid_bounty(app, sample_user, title='Plumber needed now')
-        r = client.get('/bounties/?q=Kubernetes')
+        r = client.get('/needs/?q=Kubernetes')
         assert b'Engineer wanted' in r.data
         assert b'Plumber needed now' not in r.data
 
@@ -302,7 +302,7 @@ class TestBoardSearch:
                              skills='Python, Django')
         _secured_paid_bounty(app, sample_user, title='Plumber needed now',
                              skills='Plumbing')
-        r = client.get('/bounties/?skill=python')
+        r = client.get('/needs/?skill=python')
         assert b'Python engineer wanted' in r.data
         assert b'Plumber needed now' not in r.data
 
@@ -312,7 +312,7 @@ class TestBoardSearch:
                              bounty_type='recruitment', skills='Python')
         _secured_paid_bounty(app, sample_user, title='Sales rep wanted here',
                              bounty_type='recruitment', skills='Sales')
-        r = client.get('/bounties/recruitment?skill=Python')
+        r = client.get('/needs/recruitment?skill=Python')
         assert b'Python engineer wanted' in r.data
         assert b'Sales rep wanted here' not in r.data
 
@@ -320,7 +320,7 @@ class TestBoardSearch:
             self, logged_in_user, app, sample_user):
         # The audit's discarded field (§3.10): the post form collected
         # skills but Bounty had no column — it is saved now.
-        r = logged_in_user.post('/bounties/post', data=_post_bounty_data(
+        r = logged_in_user.post('/needs/post', data=_post_bounty_data(
             skills='Python, SQL, Leadership',
             title='Engineer with specific skills here',
         ), follow_redirects=False)
@@ -444,7 +444,7 @@ class TestChainAttribution:
         post = _need_post(app, bounty)
         share = _share(app, second_user, post)
         login_as(client, 'hunter@example.com', 'HunterPass123!')
-        r = client.post(f'/bounties/{bounty.id}/pitch', data={
+        r = client.post(f'/needs/{bounty.id}/pitch', data={
             'candidate_teaser': 'I am the right person for this need — five years of experience here.',
             'share_id': share.id,
         }, follow_redirects=False)

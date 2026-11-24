@@ -24,11 +24,11 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         # Every table the models declare exists after the upgrade.
         expected = set(db.metadata.tables.keys())
         assert expected <= tables, f'missing tables: {expected - tables}'
-        # The head revision is the Phase 3 discovery/trust migration.
+        # The head revision is the wins wall migration.
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()
-        assert version == 'phase3_discovery_trust'
+        assert version == 'wins_wall'
         # Columns match the models exactly for every table.
         for table in expected:
             actual_cols = {c['name'] for c in inspector.get_columns(table)}
@@ -102,6 +102,63 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         assert 'status' in {
             c['name'] for c in inspector.get_columns('stage_reward_events')
         }
+        # The employer pledge table exists with its key columns.
+        assert 'employer_pledges' in tables
+        assert 'org_name' in {
+            c['name'] for c in inspector.get_columns('employer_pledges')
+        }
+        assert 'decided_by_id' in {
+            c['name'] for c in inspector.get_columns('employer_pledges')
+        }
+        # The multi-currency column exists on bounties.
+        assert 'currency' in bounty_cols
+        # The video vouches table exists with its key columns.
+        assert 'video_vouches' in tables
+        assert 'filename' in {
+            c['name'] for c in inspector.get_columns('video_vouches')
+        }
+        assert 'duration_seconds' in {
+            c['name'] for c in inspector.get_columns('video_vouches')
+        }
+        # The nice URL columns exist.
+        assert 'slug' in bounty_cols
+        assert 'shortcode' in bounty_cols
+        assert 'handle' in {
+            c['name'] for c in inspector.get_columns('users')
+        }
+        # The intro bounty tables exist with their key columns.
+        assert 'intro_bounties' in tables
+        assert 'intro_claims' in tables
+        assert 'intro_reward_events' in tables
+        assert 'target_name' in {
+            c['name'] for c in inspector.get_columns('intro_bounties')
+        }
+        assert 'currency' in {
+            c['name'] for c in inspector.get_columns('intro_bounties')
+        }
+        assert 'decided_at' in {
+            c['name'] for c in inspector.get_columns('intro_claims')
+        }
+        assert 'claim_id' in {
+            c['name']
+            for c in inspector.get_columns('intro_reward_events')
+        }
+        # The staked vouches table exists with its key columns.
+        assert 'staked_vouches' in tables
+        assert 'voucher_id' in {
+            c['name'] for c in inspector.get_columns('staked_vouches')
+        }
+        assert 'resolved_by_id' in {
+            c['name'] for c in inspector.get_columns('staked_vouches')
+        }
+        # The win stories table exists with its key columns.
+        assert 'win_stories' in tables
+        assert 'role' in {
+            c['name'] for c in inspector.get_columns('win_stories')
+        }
+        assert 'body' in {
+            c['name'] for c in inspector.get_columns('win_stories')
+        }
 
         # The full chain downgrades cleanly back to base.
         flask_migrate.downgrade(revision='base')
@@ -122,7 +179,7 @@ def test_baseline_is_the_chain_root(tmp_path):
     )
     script = ScriptDirectory.from_config(cfg)
     heads = script.get_heads()
-    assert heads == ['phase3_discovery_trust'], f'multiple heads: {heads}'
+    assert heads == ['wins_wall'], f'multiple heads: {heads}'
     roots = [r for r in script.walk_revisions() if r.down_revision is None]
     assert len(roots) == 1
     assert roots[0].revision == 'baseline_create_all'

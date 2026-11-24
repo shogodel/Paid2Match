@@ -3,8 +3,16 @@ from flask_wtf import FlaskForm
 from flask_babel import lazy_gettext as _l
 from flask_wtf.file import FileField
 from wtforms import StringField, TextAreaField, SelectField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Length, Optional, URL
+from wtforms.validators import DataRequired, Length, Optional, Regexp, URL, ValidationError
 from wtforms.widgets import TextArea
+
+
+#: Shared by the handle field's Regexp message and the setup
+#: template's hint — one msgid for both.
+HANDLE_RULES = _l(
+    'Handles use 3–30 lowercase letters, numbers, dots, dashes '
+    'or underscores.'
+)
 
 
 class ProfileForm(FlaskForm):
@@ -59,6 +67,15 @@ class SetupForm(FlaskForm):
         validators=[DataRequired()]
     )
     display_name = StringField(_l('Display Name'), validators=[DataRequired(), Length(min=2, max=120)])
+    # Nice URLs: the handle is the /profile/<handle> address. The
+    # route prefills the generated suggestion; blank means "keep my
+    # current handle" (a handle was already generated at sign-up),
+    # so the field is Optional — format and uniqueness are only
+    # checked when the user types something.
+    handle = StringField(_l('Profile handle'), validators=[
+        Optional(),
+        Regexp(r'^[a-z0-9._-]{3,30}$', message=HANDLE_RULES),
+    ])
     headline = StringField(_l('Headline'), validators=[Optional(), Length(max=200)])
     bio = TextAreaField(_l('Bio'), validators=[Optional(), Length(max=2000)])
     location = StringField(_l('Location'), validators=[Optional(), Length(max=200)])
@@ -76,6 +93,18 @@ class SetupForm(FlaskForm):
     remote_ok = BooleanField(_l('Open to Remote Work'))
     relocation_assistance = BooleanField(_l('Needs Relocation Assistance'))
     submit = SubmitField(_l('Create Profile'))
+
+    def validate_handle(self, field):
+        """Uniqueness check (format is the Regexp above). Optional()
+        skips this validator when the field is blank."""
+        from flask_login import current_user
+        from models.user import User
+        if not field.data:
+            return
+        handle = field.data.strip()
+        existing = User.query.filter_by(handle=handle).first()
+        if existing and existing.id != current_user.id:
+            raise ValidationError(_l('That handle is already taken.'))
 
 
 class LinkedAccountForm(FlaskForm):

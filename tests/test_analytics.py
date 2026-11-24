@@ -30,13 +30,13 @@ class TestPostViews:
 class TestProfileViews:
     def test_profile_view_recorded_once_per_session(self, client, login_as, second_user, sample_user):
         login_as(client, 'second@example.com', 'SecondPass123!')
-        client.get(f'/profile/{sample_user.id}')
-        client.get(f'/profile/{sample_user.id}')
+        client.get(f'/profile/{sample_user.handle}')
+        client.get(f'/profile/{sample_user.handle}')
         assert ProfileView.query.filter_by(
             profile_user_id=sample_user.id, viewer_id=second_user.id).count() == 1
 
     def test_own_profile_view_not_recorded(self, client, logged_in_user, sample_user):
-        client.get(f'/profile/{sample_user.id}')
+        client.get(f'/profile/{sample_user.handle}')
         assert ProfileView.query.filter_by(profile_user_id=sample_user.id).count() == 0
 
     def test_profile_views_7d_counts_recent_only(self, app, sample_user, second_user):

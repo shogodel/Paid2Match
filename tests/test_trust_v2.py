@@ -158,7 +158,7 @@ class TestDoubleBlindRatings:
                       payout_status='pending')
         db.session.add(match)
         db.session.commit()
-        resp = client.post(f'/bounties/matches/{match.id}/rate',
+        resp = client.post(f'/needs/matches/{match.id}/rate',
                            data={'rating_primary': '5', 'rating_secondary': '5'},
                            follow_redirects=True)
         assert b'both sides have confirmed' in resp.data
@@ -169,9 +169,9 @@ class TestDoubleBlindRatings:
         bounty = _free_bounty(app, sample_user)
         match = _confirmed_match(app, bounty, sample_hunter, sample_user)
         data = {'rating_primary': '5', 'rating_secondary': '4'}
-        client.post(f'/bounties/matches/{match.id}/rate', data=data,
+        client.post(f'/needs/matches/{match.id}/rate', data=data,
                     follow_redirects=True)
-        resp = client.post(f'/bounties/matches/{match.id}/rate', data=data,
+        resp = client.post(f'/needs/matches/{match.id}/rate', data=data,
                            follow_redirects=True)
         assert b'already rated' in resp.data
         assert Review.query.filter_by(match_id=match.id).count() == 1
@@ -183,16 +183,16 @@ class TestDoubleBlindRatings:
         data = {'rating_primary': '5', 'rating_secondary': '5',
                 'comment': 'Great to work with!'}
         login_as(client, 'hunter@example.com', 'HunterPass123!')
-        client.post(f'/bounties/matches/{match.id}/rate', data=data,
+        client.post(f'/needs/matches/{match.id}/rate', data=data,
                     follow_redirects=True)
         # Only one side rated — the review is still hidden.
-        resp = client.get(f'/bounties/matches/{match.id}/confirmed')
+        resp = client.get(f'/needs/matches/{match.id}/confirmed')
         assert b'Great to work with!' not in resp.data
         login_as(client, 'testuser@example.com', 'TestPass123!')
-        resp = client.post(f'/bounties/matches/{match.id}/rate', data=data,
+        resp = client.post(f'/needs/matches/{match.id}/rate', data=data,
                            follow_redirects=True)
         assert b'now visible' in resp.data
-        resp = client.get(f'/bounties/matches/{match.id}/confirmed')
+        resp = client.get(f'/needs/matches/{match.id}/confirmed')
         assert b'Great to work with!' in resp.data
         notes = Notification.query.filter_by(type='review_visible').all()
         assert len(notes) == 2  # both sides notified
@@ -202,7 +202,7 @@ class TestDoubleBlindRatings:
         bounty = _free_bounty(app, sample_user)
         match = _confirmed_match(app, bounty, sample_hunter, sample_user)
         login_as(client, 'second@example.com', 'SecondPass123!')
-        resp = client.post(f'/bounties/matches/{match.id}/rate',
+        resp = client.post(f'/needs/matches/{match.id}/rate',
                            data={'rating_primary': '5', 'rating_secondary': '5'},
                            follow_redirects=True)
         assert b'Access denied' in resp.data
@@ -345,7 +345,7 @@ class TestSLA:
 
     def test_respond_to_pitch_sets_responded_at(self, client, logged_in_user,
                                                 app, sample_pitch):
-        resp = client.post(f'/bounties/pitches/{sample_pitch.id}/respond',
+        resp = client.post(f'/needs/pitches/{sample_pitch.id}/respond',
                            data={'response': 'interested'},
                            follow_redirects=True)
         assert resp.status_code == 200

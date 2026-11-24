@@ -42,20 +42,20 @@ class TestNotifyHelper:
 
 class TestRouteHooks:
     def test_pitch_notifies_poster(self, client, logged_in_hunter, sample_bounty, sample_user):
-        client.post(f'/bounties/{sample_bounty.id}/pitch', data={
+        client.post(f'/needs/{sample_bounty.id}/pitch', data={
             'candidate_teaser': TEASER,
         }, follow_redirects=True)
         assert Notification.query.filter_by(
             recipient_id=sample_user.id, type='referral_new').first() is not None
 
     def test_accept_notifies_referrer(self, client, logged_in_user, sample_pitch, sample_hunter):
-        client.post(f'/bounties/pitches/{sample_pitch.id}/respond',
+        client.post(f'/needs/pitches/{sample_pitch.id}/respond',
                     data={'response': 'interested'}, follow_redirects=True)
         assert Notification.query.filter_by(
             recipient_id=sample_hunter.id, type='referral_accepted').first() is not None
 
     def test_reject_notifies_referrer(self, client, logged_in_user, sample_pitch, sample_hunter):
-        client.post(f'/bounties/pitches/{sample_pitch.id}/respond',
+        client.post(f'/needs/pitches/{sample_pitch.id}/respond',
                     data={'response': 'pass'}, follow_redirects=True)
         assert Notification.query.filter_by(
             recipient_id=sample_hunter.id, type='referral_rejected').first() is not None
@@ -82,12 +82,12 @@ class TestRouteHooks:
                                         sample_hunter, sample_user):
         # Poster accepts, then both confirm.
         login_as(client, 'testuser@example.com', 'TestPass123!')
-        client.post(f'/bounties/pitches/{sample_pitch.id}/respond',
+        client.post(f'/needs/pitches/{sample_pitch.id}/respond',
                     data={'response': 'interested'}, follow_redirects=True)
         login_as(client, 'hunter@example.com', 'HunterPass123!')
-        client.post(f'/bounties/pitches/{sample_pitch.id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{sample_pitch.id}/confirm-match', follow_redirects=True)
         login_as(client, 'testuser@example.com', 'TestPass123!')
-        client.post(f'/bounties/pitches/{sample_pitch.id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{sample_pitch.id}/confirm-match', follow_redirects=True)
         assert Notification.query.filter_by(
             recipient_id=sample_hunter.id, type='match_confirmed').first() is not None
         assert Notification.query.filter_by(

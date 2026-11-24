@@ -3,6 +3,9 @@
 # (compose project at /home/bogdan/apps/docker-compose.yaml on the droplet).
 FROM python:3.12-slim
 WORKDIR /app
+# ffmpeg (ffprobe) for server-side enforcement of the 30s video-vouch limit.
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .

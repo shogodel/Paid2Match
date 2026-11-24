@@ -1,0 +1,72 @@
+{# Video pitch / vouch upload form. Expects:
+   vv_kind ('pitch'|'vouch'), vv_next (redirect target), vv_form_id
+   (unique suffix for element ids), plus one of: vv_bounty_id (fixed
+   need — bounty detail), vv_target_id (fixed person — public
+   profile), vv_bounties (need picker — own profile).
+   The JS check is a courtesy for the user; the server enforces the
+   limit with ffprobe (see blueprints/video_vouches/routes.py). #}
+<form method="POST" action="{{ url_for('video_vouches.upload') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="kind" value="{{ vv_kind }}">
+    <input type="hidden" name="next" value="{{ vv_next }}">
+    {% if vv_bounty_id %}<input type="hidden" name="bounty_id" value="{{ vv_bounty_id }}">{% endif %}
+    {% if vv_target_id %}<input type="hidden" name="target_user_id" value="{{ vv_target_id }}">{% endif %}
+    {% if vv_bounties is defined %}
+    <div class="mb-2">
+        <label class="form-label" for="vv-bounty-{{ vv_form_id }}">{{ _('Pitch for which need?') }}</label>
+        <select class="form-select form-select-sm" id="vv-bounty-{{ vv_form_id }}" name="bounty_id" required>
+            <option value="">{{ _('Choose a need…') }}</option>
+            {% for b in vv_bounties %}
+            <option value="{{ b.id }}">{{ b.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+    <div class="mb-2">
+        <label class="form-label" for="vv-file-{{ vv_form_id }}">{{ _('Video file') }}</label>
+        <input type="file" class="form-control form-control-sm" id="vv-file-{{ vv_form_id }}" name="video" accept="video/mp4,video/webm,video/quicktime" required
+               data-too-long="{{ _('That video is too long — keep it to %(max)s seconds or less.', max=config['VIDEO_VOUCH_MAX_SECONDS']) }}"
+               data-too-large="{{ _('That video is too large — keep it under %(size)s MB.', size=(config['VIDEO_VOUCH_MAX_BYTES'] // 1024 // 1024)) }}">
+        <div class="form-text">{{ _('%(max)s seconds max · MP4, WebM or MOV · under %(size)s MB', max=config['VIDEO_VOUCH_MAX_SECONDS'], size=(config['VIDEO_VOUCH_MAX_BYTES'] // 1024 // 1024)) }}</div>
+        <div class="text-danger small d-none mt-1" id="vv-error-{{ vv_form_id }}"></div>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary" id="vv-submit-{{ vv_form_id }}">{{ _('Upload video pitch') if vv_kind == 'pitch' else _('Upload video vouch') }}</button>
+</form>
+<script>
+(function() {
+    var input = document.getElementById('vv-file-{{ vv_form_id }}');
+    var submit = document.getElementById('vv-submit-{{ vv_form_id }}');
+    var error = document.getElementById('vv-error-{{ vv_form_id }}');
+    var maxSeconds = {{ config['VIDEO_VOUCH_MAX_SECONDS'] }};
+    var maxBytes = {{ config['VIDEO_VOUCH_MAX_BYTES'] }};
+    if (!input || !submit || !error) return;
+    input.addEventListener('change', function() {
+        error.classList.add('d-none');
+        error.textContent = '';
+        submit.disabled = false;
+        var file = input.files[0];
+        if (!file) return;
+        if (file.size > maxBytes) {
+            error.textContent = input.dataset.tooLarge;
+            error.classList.remove('d-none');
+            submit.disabled = true;
+            return;
+        }
+        // Client-side duration check: load just the metadata and
+        // refuse over-long videos before the upload starts.
+        var url = URL.createObjectURL(file);
+        var probe = document.createElement('video');
+        probe.preload = 'metadata';
+        probe.onloadedmetadata = function() {
+            URL.revokeObjectURL(url);
+            if (isFinite(probe.duration) && probe.duration > maxSeconds) {
+                error.textContent = input.dataset.tooLong;
+                error.classList.remove('d-none');
+                submit.disabled = true;
+            }
+        };
+        probe.onerror = function() { URL.revokeObjectURL(url); };
+        probe.src = url;
+    });
+})();
+</script>

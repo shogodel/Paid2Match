@@ -11,11 +11,11 @@
         <ul class="hiring-strip-list">
             {% for need in open_needs %}
             <li>
-                <a href="{{ url_for('bounties.detail', id=need.id) }}">{{ need.title }}</a>
+                <a href="{{ url_for('bounties.detail', slug_code=need.url_slug) }}">{{ need.title }}</a>
                 {% if need.is_free or need.is_free_bounty %}
                 <span class="badge bg-secondary ms-1">{{ _('Free need') }}</span>
                 {% elif need.reward_amount %}
-                <span class="bounty-reward ms-1">${{ "{:,.0f}".format(need.reward_amount) }}</span>
+                <span class="bounty-reward ms-1">{{ need.reward_amount|money(need.currency) }}</span>
                 {% endif %}
             </li>
             {% endfor %}

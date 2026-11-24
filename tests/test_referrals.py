@@ -131,14 +131,14 @@ class TestEndToEndCompletion:
         pitch_id = db.session.get(Referral, referral_id).pitch_id
         # 3. Poster accepts.
         login_as(client, 'testuser@example.com', 'TestPass123!')
-        client.post(f'/bounties/pitches/{pitch_id}/respond',
+        client.post(f'/needs/pitches/{pitch_id}/respond',
                     data={'response': 'interested'}, follow_redirects=True)
         assert db.session.get(Pitch, pitch_id).status == 'interested'
         # 4. Dual confirmation.
         login_as(client, 'second@example.com', 'SecondPass123!')
-        client.post(f'/bounties/pitches/{pitch_id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{pitch_id}/confirm-match', follow_redirects=True)
         login_as(client, 'testuser@example.com', 'TestPass123!')
-        client.post(f'/bounties/pitches/{pitch_id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{pitch_id}/confirm-match', follow_redirects=True)
 
         referral = db.session.get(Referral, referral_id)
         assert referral.status == 'completed'

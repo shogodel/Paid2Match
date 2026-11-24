@@ -793,7 +793,7 @@ class TestFailClosed:
     def test_secure_payment_fails_closed_when_disabled(self, client, logged_in_user,
                                                        app, sample_paid_bounty):
         app.config['STRIPE_ENABLED'] = False
-        resp = client.get(f'/bounties/{sample_paid_bounty.id}/secure-payment',
+        resp = client.get(f'/needs/{sample_paid_bounty.id}/secure-payment',
                           follow_redirects=True)
         assert b'Payments are currently unavailable' in resp.data
         bounty = db.session.get(Bounty, sample_paid_bounty.id)
@@ -812,7 +812,7 @@ class TestFailClosed:
         db.session.add(bounty)
         db.session.commit()
         db.session.refresh(bounty)
-        resp = client.get(f'/bounties/{bounty.id}/secure-third-party',
+        resp = client.get(f'/needs/{bounty.id}/secure-third-party',
                           follow_redirects=True)
         assert b'Payments are currently unavailable' in resp.data
         assert db.session.get(Bounty, bounty.id).payment_status == 'unsecured'
@@ -820,7 +820,7 @@ class TestFailClosed:
     def test_upgrade_fails_closed_when_disabled(self, client, logged_in_user,
                                                 app, sample_bounty):
         app.config['STRIPE_ENABLED'] = False
-        resp = client.post(f'/bounties/{sample_bounty.id}/upgrade',
+        resp = client.post(f'/needs/{sample_bounty.id}/upgrade',
                            data={'upgrade_type': 'highlight', 'duration_days': '7'},
                            follow_redirects=True)
         assert b'Payments are currently unavailable' in resp.data
@@ -831,7 +831,7 @@ class TestFailClosed:
                                                          app, sample_user):
         app.config['STRIPE_ENABLED'] = False
         bounty = _secured_paid_bounty(app, sample_user)
-        resp = client.post(f'/bounties/{bounty.id}/cancel-refund',
+        resp = client.post(f'/needs/{bounty.id}/cancel-refund',
                            follow_redirects=True)
         assert b'cannot be released right now' in resp.data
         bounty = db.session.get(Bounty, bounty.id)
@@ -841,7 +841,7 @@ class TestFailClosed:
     def test_cancel_refund_closes_unsecured_when_disabled(self, client, logged_in_user,
                                                           app, sample_paid_bounty):
         app.config['STRIPE_ENABLED'] = False
-        resp = client.post(f'/bounties/{sample_paid_bounty.id}/cancel-refund',
+        resp = client.post(f'/needs/{sample_paid_bounty.id}/cancel-refund',
                            follow_redirects=True)
         assert resp.status_code == 200
         assert db.session.get(Bounty, sample_paid_bounty.id).status == 'closed'
@@ -853,7 +853,7 @@ class TestFailClosed:
         with patch('stripe.PaymentIntent.retrieve', return_value=_mock_pi()), \
              patch('stripe.PaymentIntent.cancel') as cancel, \
              patch('stripe.Refund.create') as refund:
-            resp = client.post(f'/bounties/{bounty.id}/cancel-refund',
+            resp = client.post(f'/needs/{bounty.id}/cancel-refund',
                                follow_redirects=True)
         assert resp.status_code == 200
         cancel.assert_called_once_with('pi_test_escrow')
@@ -869,7 +869,7 @@ class TestFailClosed:
              patch('stripe.PaymentIntent.cancel') as cancel, \
              patch('stripe.Refund.create',
                    return_value=SimpleNamespace(id='re_1')) as refund:
-            resp = client.post(f'/bounties/{bounty.id}/cancel-refund',
+            resp = client.post(f'/needs/{bounty.id}/cancel-refund',
                                follow_redirects=True)
         assert resp.status_code == 200
         cancel.assert_not_called()
@@ -892,9 +892,9 @@ class TestConfirmMatchIntegration:
         db.session.commit()
         db.session.refresh(pitch)
         login_as(client, 'hunter@example.com', 'HunterPass123!')
-        client.post(f'/bounties/pitches/{pitch.id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{pitch.id}/confirm-match', follow_redirects=True)
         login_as(client, 'testuser@example.com', 'TestPass123!')
-        client.post(f'/bounties/pitches/{pitch.id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{pitch.id}/confirm-match', follow_redirects=True)
         match = Match.query.filter_by(pitch_id=pitch.id).first()
         assert float(match.platform_fee) == 200.0  # 20% of $1,000, not 12%
         assert match.payout_status == 'pending'  # no Connect account yet
@@ -910,8 +910,8 @@ class TestConfirmMatchIntegration:
         db.session.commit()
         db.session.refresh(pitch)
         login_as(client, 'hunter@example.com', 'HunterPass123!')
-        client.post(f'/bounties/pitches/{pitch.id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{pitch.id}/confirm-match', follow_redirects=True)
         login_as(client, 'testuser@example.com', 'TestPass123!')
-        client.post(f'/bounties/pitches/{pitch.id}/confirm-match', follow_redirects=True)
+        client.post(f'/needs/pitches/{pitch.id}/confirm-match', follow_redirects=True)
         match = Match.query.filter_by(pitch_id=pitch.id).first()
         assert match.payout_status == 'completed'

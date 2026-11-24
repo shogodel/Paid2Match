@@ -17,7 +17,7 @@
                     {% if bounty.payment_status == 'secured' %}
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i>
-                        {{ _('Your payment of') }} <strong>${{ "{:,.2f}".format(bounty.reward_amount) }}</strong> {{ _('is held by Stripe. Choose an option below:') }}
+                        {{ _('Your payment of') }} <strong>{{ bounty.reward_amount|money(bounty.currency) }}</strong> {{ _('is held by Stripe. Choose an option below:') }}
                     </div>
                     {% endif %}
                     
@@ -73,7 +73,7 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('bounties.detail', id=bounty.id) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left"></i> {{ _('Back to Need') }}
                     </a>
                 </div>

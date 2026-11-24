@@ -582,7 +582,7 @@ class TestMentions:
                 out = render_template_string(
                     "{{ t|mention_links }}",
                     t='Hi @Second and @Nobody <b>bold</b>')
-                assert f'/profile/{second_user.id}' in out
+                assert f'/profile/{second_user.handle}' in out
                 assert '@Second' in out
                 assert 'mention-link' in out
                 assert '@Nobody' in out  # unmatched stays plain text

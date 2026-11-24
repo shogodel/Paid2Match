@@ -268,7 +268,7 @@ class TestEndorsements:
             skill='Python',
         ).first() is not None
         # The endorsee's public profile shows it.
-        resp = client.get(f'/profile/{second_user.id}')
+        resp = client.get(f'/profile/{second_user.handle}')
         assert resp.status_code == 200
         assert b'Python' in resp.data
 

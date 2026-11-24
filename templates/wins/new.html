@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Share your win') }} - Paid2Match{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>{{ _('Share your win') }}</h2>
+    <p class="text-muted">{{ _('Tell the network what happened — in your own words.') }}</p>
+    <div class="alert alert-info">
+        {{ _('Only the people involved in a completed hire can share a story: the poster, the referrer, and the hired candidate. Each side gets one story per need.') }}
+    </div>
+    <p><strong>{{ _('Need') }}:</strong> <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}">{{ bounty.title }}</a></p>
+    <form method="POST" action="{{ url_for('wins.new_story', bounty_id=bounty.id) }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.role.label(class="form-label") }}
+            {{ form.role(class="form-select") }}
+            {% if form.role.errors %}
+            <div class="text-danger">{% for error in form.role.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.body.label(class="form-label") }}
+            {{ form.body(class="form-control", rows="5", maxlength="1000") }}
+            <div class="form-text">{{ _('What happened, in your own words (up to 1000 characters).') }}</div>
+            {% if form.body.errors %}
+            <div class="text-danger">{% for error in form.body.errors %}{{ error }}{% endfor %}</div>
+            {% endif %}
+        </div>
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('wins.wall') }}" class="btn btn-outline-secondary">{{ _('Back to the wins wall') }}</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,7 +1,8 @@
 """Bounties routes for Paid2Match."""
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, abort, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import desc, or_
 import stripe
@@ -19,7 +20,10 @@ from models.admin_settings import AdminSettings
 from models.bounty_upgrade import BountyUpgrade
 from models.review import Review, maybe_reveal_reviews
 from models.referral import Referral
+from models.staked_vouch import StakedVouch
 from models.user import User
+from models.video_vouch import VideoVouch
+from blueprints.staked_vouches.routes import can_resolve as _stake_can_resolve
 from utils.bumps import (
     create_recurring_bump,
     fulfill_boost,
@@ -28,8 +32,11 @@ from utils.bumps import (
 )
 from utils.chains import validate_share_for_referral
 from utils.feed import create_need_post
+from utils.money_trail import build_trail, completed_match_for
+from utils.network_match import suggest_connections_for_need
 from utils.notifications import notify
 from utils.pro import fulfill_pro_checkout, handle_subscription_event
+from utils.slugs import parse_slug_code
 from utils.payments import (
     cancel_authorization,
     compute_payout_amounts,
@@ -174,10 +181,50 @@ def board():
                         categories=Bounty.CATEGORIES)
 
 
-@bounties_bp.route('/<id>')
-def detail(id):
-    """GET /bounties/<id> - Bounty detail page."""
-    bounty = get_or_404(Bounty, id)
+def _resolve_bounty(slug_code):
+    """Look up a bounty by its URL segment — a '<slug>-<shortcode>'
+    pair, or a bare UUID (an old-style link). Returns
+    (bounty, stale): stale is True when the URL's slug part does
+    not match the canonical one, so the caller can 301 to its own
+    canonical URL. (None, False) when nothing matches."""
+    bounty = None
+    stale = False
+    try:
+        uuid.UUID(slug_code)
+        is_uuid = True
+    except ValueError:
+        is_uuid = False
+    if is_uuid:
+        bounty = db.session.get(Bounty, slug_code)
+        if bounty is not None:
+            stale = True
+    else:
+        slug_part, shortcode = parse_slug_code(slug_code)
+        if shortcode:
+            bounty = Bounty.query.filter_by(shortcode=shortcode).first()
+            if bounty is not None and slug_part != bounty.slug:
+                stale = True
+    return bounty, stale
+
+
+@bounties_bp.route('/<slug_code>')
+def detail(slug_code):
+    """GET /needs/<slug>-<shortcode> - Bounty detail page.
+
+    The trailing -XXXXXX shortcode identifies the need; a wrong
+    slug part 301s to the canonical URL (the slug never changes
+    after creation, so this mostly catches hand-typed URLs). A
+    bare UUID is an old-style link and 301s to the canonical URL
+    too. Anything else 404s.
+    """
+    bounty, stale = _resolve_bounty(slug_code)
+    if bounty is None:
+        abort(404)
+    if stale:
+        return redirect(
+            url_for('bounties.detail', slug_code=bounty.url_slug),
+            code=301,
+        )
 
     # Unsecured paid bounties are not public yet — only the poster may view
     # them (they need the page to secure payment). Everyone else goes back
@@ -189,26 +236,73 @@ def detail(id):
         return redirect(url_for('bounties.board'))
 
     if bounty.is_expired and bounty.status == 'open':
-        return redirect(url_for('bounties.expired', id=id))
-    
+        return redirect(url_for('bounties.expired', id=bounty.id))
+
     pitch_form = PitchForm()
-    
+
     pitches = []
     if current_user.is_authenticated and current_user.id == bounty.poster_id:
-        pitches = Pitch.query.filter_by(bounty_id=id).order_by(desc(Pitch.created_at)).all()
-    
+        pitches = Pitch.query.filter_by(bounty_id=bounty.id).order_by(desc(Pitch.created_at)).all()
+
     user_pitched = None
     if current_user.is_authenticated:
         user_pitched = Pitch.query.filter_by(
-            bounty_id=id,
+            bounty_id=bounty.id,
             hunter_id=current_user.id
         ).first()
-    
+
+    # "Your network can close this": the viewer's own connections
+    # closest to the right person for this need. Anonymous visitors
+    # have no network here, so they get no panel.
+    network_suggestions = (
+        suggest_connections_for_need(current_user, bounty)
+        if current_user.is_authenticated
+        else []
+    )
+
+    # Video pitches: the poster sees every video pitch for the need
+    # (like text pitches); anyone else sees only their own.
+    video_pitches = []
+    my_video_pitch = None
+    if current_user.is_authenticated and current_user.id == bounty.poster_id:
+        video_pitches = VideoVouch.query.filter_by(
+            bounty_id=bounty.id, kind='pitch', status='active'
+        ).order_by(desc(VideoVouch.created_at)).all()
+    elif current_user.is_authenticated:
+        my_video_pitch = VideoVouch.query.filter_by(
+            bounty_id=bounty.id, kind='pitch', status='active',
+            user_id=current_user.id,
+        ).order_by(desc(VideoVouch.created_at)).first()
+
+    # Staked vouches for this need — poster and admins only. A
+    # stake names its candidate, so showing stakes to other
+    # visitors would de-anonymise referrers whose pitches are
+    # still pending. The poster resolves them from here.
+    need_stakes = []
+    staked_resolvable_ids = set()
+    if current_user.is_authenticated and (
+        current_user.id == bounty.poster_id
+        or current_user.role == 'admin'
+    ):
+        need_stakes = StakedVouch.query.filter_by(
+            bounty_id=bounty.id
+        ).order_by(desc(StakedVouch.created_at)).all()
+        staked_resolvable_ids = {
+            s.id for s in need_stakes
+            if s.status == 'active'
+            and _stake_can_resolve(current_user, s)
+        }
+
     return render_template('bounties/detail.html',
                         bounty=bounty,
                         pitches=pitches,
                         pitch_form=pitch_form,
                         user_pitched=user_pitched,
+                        network_suggestions=network_suggestions,
+                        video_pitches=video_pitches,
+                        my_video_pitch=my_video_pitch,
+                        need_stakes=need_stakes,
+                        staked_resolvable_ids=staked_resolvable_ids,
                         # Phase 3: the referral behind each pitch, so
                         # the Message button opens the referral thread
                         # instead of the generic inbox.
@@ -231,20 +325,56 @@ def detail(id):
                         ),
                         # M4: the share this visit came through (from a
                         # share card) — the pitch form carries it on.
-                        share_id=request.args.get('share_id') or None)
+                        share_id=request.args.get('share_id') or None,
+                        # Money Trail: the detail page links to the
+                        # trail only once a hire has completed.
+                        completed_match=completed_match_for(bounty))
+
+
+@bounties_bp.route('/<slug_code>/trail')
+def trail(slug_code):
+    """GET /needs/<slug>-<shortcode>/trail - the Money Trail.
+
+    Public page showing the completed hire's full chain — who
+    posted, who shared, who referred, who got hired — and what
+    each person earned. A need with no completed hire yet gets an
+    honest empty state, not a 404. Same visibility rule as the
+    detail page: an unsecured paid need is visible to its poster
+    only.
+    """
+    bounty, stale = _resolve_bounty(slug_code)
+    if bounty is None:
+        abort(404)
+    if stale:
+        return redirect(
+            url_for('bounties.trail', slug_code=bounty.url_slug),
+            code=301,
+        )
+
+    if not bounty.is_publicly_visible and (
+        not current_user.is_authenticated or current_user.id != bounty.poster_id
+    ):
+        flash('This referral need is not public yet.', 'warning')
+        return redirect(url_for('bounties.board'))
+
+    return render_template(
+        'bounties/trail.html',
+        bounty=bounty,
+        trail=build_trail(bounty),
+    )
 
 
 @bounties_bp.route('/<id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit(id):
-    """GET /bounties/<id>/edit - Edit existing bounty
-    POST /bounties/<id>/edit - Update bounty
+    """GET /needs/<id>/edit - Edit existing bounty
+    POST /needs/<id>/edit - Update bounty
     """
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     form = BountyForm(obj=bounty)
     
@@ -261,6 +391,7 @@ def edit(id):
         bounty.skills = (form.skills.data or '').strip() or None
         bounty.bounty_direction = form.bounty_direction.data
         bounty.reward_amount = form.reward_amount.data or None
+        bounty.currency = form.currency.data or 'CAD'
         # Phase 3: staged rewards are display-only declarations
         # (recorded as pending when a stage completes; no payout).
         bounty.stage_submit_reward = form.stage_submit_reward.data or None
@@ -281,7 +412,7 @@ def edit(id):
                 post.post_type = 'need_paid'
             db.session.commit()
         flash('Referral need updated successfully!', 'success')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     return render_template('bounties/edit.html', form=form, bounty=bounty)
 
@@ -289,8 +420,8 @@ def edit(id):
 @bounties_bp.route('/post', methods=['GET', 'POST'])
 @login_required
 def post():
-    """GET /bounties/post - Show post form
-    POST /bounties/post - Create new bounty
+    """GET /needs/post - Show post form
+    POST /needs/post - Create new bounty
     """
     from models.bounty_payment_agreement import BountyPaymentAgreement
     from models.user import User
@@ -314,6 +445,7 @@ def post():
             skills=(form.skills.data or '').strip() or None,
             bounty_direction=form.bounty_direction.data,
             reward_amount=reward or None,
+            currency=form.currency.data or 'CAD',
             # Phase 3 staged rewards (display only — see
             # models/staged_reward.py).
             stage_submit_reward=form.stage_submit_reward.data or None,
@@ -340,7 +472,7 @@ def post():
             bounty.payment_status = 'unsecured'
             db.session.commit()
             flash('Referral need created!', 'success')
-            return redirect(url_for('bounties.detail', id=bounty.id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
         if bounty.payer_type == 'poster':
             flash('Referral need created! Secure payment to publish it.', 'success')
@@ -351,11 +483,11 @@ def post():
                 payer_user = User.query.filter_by(email=payer_username).first()
                 if not payer_user:
                     flash(f'User "{payer_username}" not found. Referral need created without invitation.', 'warning')
-                    return redirect(url_for('bounties.detail', id=bounty.id))
+                    return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
                 
                 if payer_user.id == current_user.id:
                     flash('You cannot invite yourself. Referral need created.', 'warning')
-                    return redirect(url_for('bounties.detail', id=bounty.id))
+                    return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
                 
                 agreement = BountyPaymentAgreement(
                     bounty_id=bounty.id,
@@ -370,7 +502,7 @@ def post():
             else:
                 flash('Referral need created! Invite someone to pay to proceed.', 'success')
             
-            return redirect(url_for('bounties.detail', id=bounty.id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     return render_template('bounties/post.html', form=form)
 
@@ -378,20 +510,20 @@ def post():
 @bounties_bp.route('/<id>/payment-link')
 @login_required
 def payment_link(id):
-    """GET /bounties/<id>/payment-link - Get shareable payment link for third-party payment."""
+    """GET /needs/<id>/payment-link - Get shareable payment link for third-party payment."""
     bounty = get_or_404(Bounty, id)
 
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     if bounty.payer_type != 'third_party':
         flash('This need does not use third-party payment', 'warning')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     if bounty.payment_status == 'secured':
         flash('Payment already secured', 'info')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     payment_url = url_for('bounties.secure_third_party', id=bounty.id, _external=True)
 
@@ -401,7 +533,7 @@ def payment_link(id):
 @bounties_bp.route('/<id>/pitch', methods=['POST'])
 @login_required
 def pitch(id):
-    """POST /bounties/<id>/pitch - Submit a pitch."""
+    """POST /needs/<id>/pitch - Submit a pitch."""
     bounty = get_or_404(Bounty, id)
     form = PitchForm()
 
@@ -413,7 +545,7 @@ def pitch(id):
     # Can't refer on your own bounty
     if bounty.poster_id == current_user.id:
         flash('You cannot refer someone for your own referral need', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     # Already referred?
     existing = Pitch.query.filter_by(
@@ -422,7 +554,7 @@ def pitch(id):
     ).first()
     if existing:
         flash('You have already referred someone for this need', 'warning')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     if form.validate_on_submit():
         # M4: the share this referral came through (from the detail
@@ -452,30 +584,30 @@ def pitch(id):
             f'New referral for "{bounty.title}"',
             f'{current_user.full_name} referred someone.',
             actor_id=current_user.id,
-            link_url=url_for('bounties.detail', id=bounty.id),
+            link_url=url_for('bounties.detail', slug_code=bounty.url_slug),
         )
         db.session.commit()
         flash('Referral submitted! The poster will be notified.', 'success')
 
-    return redirect(url_for('bounties.detail', id=id))
+    return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
 
 @bounties_bp.route('/pitches/<pitch_id>/respond', methods=['POST'])
 @login_required
 def respond_to_pitch(pitch_id):
-    """POST /bounties/pitches/<pitch_id>/respond - Accept or reject a pitch."""
+    """POST /needs/pitches/<pitch_id>/respond - Accept or reject a pitch."""
     pitch = get_or_404(Pitch, pitch_id)
     bounty = get_or_404(Bounty, pitch.bounty_id)
 
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=bounty.id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     response = request.form.get('response')
 
     if response not in ('interested', 'pass'):
         flash('Invalid response', 'danger')
-        return redirect(url_for('bounties.detail', id=bounty.id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     pitch.status = 'interested' if response == 'interested' else 'rejected'
     pitch.employer_response = request.form.get('employer_response') or None
@@ -507,7 +639,7 @@ def respond_to_pitch(pitch_id):
             f'Your referral for "{bounty.title}" was accepted',
             'Details are now revealed — discuss next steps.',
             actor_id=employer.id,
-            link_url=url_for('bounties.detail', id=bounty.id),
+            link_url=url_for('bounties.detail', slug_code=bounty.url_slug),
         )
         db.session.commit()
 
@@ -520,27 +652,27 @@ def respond_to_pitch(pitch_id):
         f'Your referral for "{bounty.title}" was passed',
         'The poster chose another referral for this need.',
         actor_id=current_user.id,
-        link_url=url_for('bounties.detail', id=bounty.id),
+        link_url=url_for('bounties.detail', slug_code=bounty.url_slug),
     )
     db.session.commit()
     flash('Referral passed.', 'info')
-    return redirect(url_for('bounties.detail', id=bounty.id))
+    return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
 
 @bounties_bp.route('/pitches/<pitch_id>/confirm-match', methods=['POST'])
 @login_required
 def confirm_match(pitch_id):
-    """POST /bounties/pitches/<pitch_id>/confirm-match - Confirm a match placement."""
+    """POST /needs/pitches/<pitch_id>/confirm-match - Confirm a match placement."""
     pitch = get_or_404(Pitch, pitch_id)
     bounty = get_or_404(Bounty, pitch.bounty_id)
 
     if current_user.id not in (pitch.hunter_id, bounty.poster_id):
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=bounty.id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     if pitch.status != 'interested':
         flash('This referral has not been accepted yet.', 'warning')
-        return redirect(url_for('bounties.detail', id=bounty.id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     match = Match.query.filter_by(pitch_id=pitch_id).first()
     if not match:
@@ -634,7 +766,7 @@ def confirm_match(pitch_id):
 @bounties_bp.route('/matches/<match_id>/pending')
 @login_required
 def pending_match(match_id):
-    """GET /bounties/matches/<match_id>/pending - Show pending match confirmation."""
+    """GET /needs/matches/<match_id>/pending - Show pending match confirmation."""
     match = get_or_404(Match, match_id)
     if current_user.id not in (match.hunter_id, match.employer_id):
         flash('Access denied', 'danger')
@@ -648,7 +780,7 @@ def pending_match(match_id):
 @bounties_bp.route('/matches/<match_id>/confirmed')
 @login_required
 def confirmed_match(match_id):
-    """GET /bounties/matches/<match_id>/confirmed - Show confirmed match."""
+    """GET /needs/matches/<match_id>/confirmed - Show confirmed match."""
     match = get_or_404(Match, match_id)
     if current_user.id not in (match.hunter_id, match.employer_id):
         flash('Access denied', 'danger')
@@ -675,7 +807,7 @@ def confirmed_match(match_id):
 @bounties_bp.route('/matches/<match_id>/rate', methods=['GET', 'POST'])
 @login_required
 def rate_match(match_id):
-    """GET/POST /bounties/matches/<match_id>/rate - Rate the other party
+    """GET/POST /needs/matches/<match_id>/rate - Rate the other party
     after a confirmed match. Double-blind: reviews are revealed only
     once both sides have rated, or after 14 days."""
     match = get_or_404(Match, match_id)
@@ -742,7 +874,7 @@ def rate_match(match_id):
 @bounties_bp.route('/matches/<match_id>/dispute', methods=['GET', 'POST'])
 @login_required
 def file_dispute(match_id):
-    """GET/POST /bounties/matches/<match_id>/dispute - File a dispute on
+    """GET/POST /needs/matches/<match_id>/dispute - File a dispute on
     a match. One open dispute per match; the admin resolve flow already
     exists (see admin routes)."""
     match = get_or_404(Match, match_id)
@@ -783,7 +915,7 @@ def file_dispute(match_id):
 
 @bounties_bp.route('/recruitment')
 def recruitment_board():
-    """GET /bounties/recruitment - Recruitment bounties only."""
+    """GET /needs/recruitment - Recruitment bounties only."""
     page = request.args.get('page', 1, type=int)
     per_page = 12
     now = datetime.now(timezone.utc)
@@ -803,7 +935,7 @@ def recruitment_board():
 
 @bounties_bp.route('/services')
 def services_board():
-    """GET /bounties/services - Services-referral needs only (M4
+    """GET /needs/services - Services-referral needs only (M4
     vertical #2: refer a service provider — a plumber, a designer —
     to someone who needs them)."""
     page = request.args.get('page', 1, type=int)
@@ -855,7 +987,7 @@ def _apply_filters(query):
 @bounties_bp.route('/<id>/secure-payment')
 @login_required
 def secure_payment(id):
-    """GET /bounties/<id>/secure-payment - Create Stripe Checkout for paid bounty.
+    """GET /needs/<id>/secure-payment - Create Stripe Checkout for paid bounty.
     
     NEW LOGIC: User posts for free, pays when ready to secure.
     Amount: bounty_amount + 3% transaction fee
@@ -865,15 +997,15 @@ def secure_payment(id):
 
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     if not bounty.reward_amount or bounty.reward_amount == 0:
         flash('This need is free — no payment needed', 'info')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     if bounty.payment_status == 'secured':
         flash('Payment already secured', 'info')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     # M2: fail closed — when payments are disabled, a paid need cannot
     # be secured at all (the old free passthrough marked it secured
@@ -881,11 +1013,11 @@ def secure_payment(id):
     # features instead of giving them away.
     if not stripe_enabled():
         flash('Payments are currently unavailable — this need cannot be secured right now.', 'warning')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     base_url = request.host_url.rstrip('/')
-    success_url = f'{base_url}{url_for("bounties.detail", id=id)}?paid=1'
-    cancel_url = f'{base_url}{url_for("bounties.detail", id=id)}'
+    success_url = f'{base_url}{url_for("bounties.detail", slug_code=bounty.url_slug)}?paid=1'
+    cancel_url = f'{base_url}{url_for("bounties.detail", slug_code=bounty.url_slug)}'
 
     bounty_amount = float(bounty.reward_amount)
     transaction_fee = bounty_amount * 0.03
@@ -911,7 +1043,7 @@ def secure_payment(id):
 
     if not checkout_url:
         flash('Stripe is not configured. Please ask an admin to add Stripe API keys.', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     return redirect(checkout_url)
 
@@ -919,24 +1051,24 @@ def secure_payment(id):
 @bounties_bp.route('/<id>/secure-third-party', methods=['GET', 'POST'])
 @login_required
 def secure_third_party(id):
-    """GET/POST /bounties/<id>/secure-third-party - Third party secures payment for bounty."""
+    """GET/POST /needs/<id>/secure-third-party - Third party secures payment for bounty."""
     from models.bounty_payment_agreement import BountyPaymentAgreement
     
     bounty = get_or_404(Bounty, id)
 
     if bounty.payer_type != 'third_party':
         flash('This need does not require third-party payment', 'warning')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     if bounty.payment_status == 'secured':
         flash('Payment already secured', 'info')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     # M2: fail closed — when payments are disabled, a paid need cannot
     # be secured at all (see secure_payment).
     if not stripe_enabled():
         flash('Payments are currently unavailable — this need cannot be secured right now.', 'warning')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     agreement = BountyPaymentAgreement.query.filter_by(
         bounty_id=id,
@@ -956,12 +1088,12 @@ def secure_third_party(id):
             return redirect(url_for('bounties.invitation', agreement_id=pending.id))
         
         flash('You have not been invited to pay for this need.', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     if request.method == 'POST':
         base_url = request.host_url.rstrip('/')
-        success_url = f'{base_url}{url_for("bounties.detail", id=id)}?paid=1'
-        cancel_url = f'{base_url}{url_for("bounties.detail", id=id)}'
+        success_url = f'{base_url}{url_for("bounties.detail", slug_code=bounty.url_slug)}?paid=1'
+        cancel_url = f'{base_url}{url_for("bounties.detail", slug_code=bounty.url_slug)}'
 
         bounty_amount = float(bounty.reward_amount)
         transaction_fee = bounty_amount * 0.03
@@ -988,7 +1120,7 @@ def secure_third_party(id):
 
         if not checkout_url:
             flash('Stripe is not configured.', 'danger')
-            return redirect(url_for('bounties.detail', id=id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
         return redirect(checkout_url)
 
@@ -998,7 +1130,7 @@ def secure_third_party(id):
 @bounties_bp.route('/invitation/<agreement_id>', methods=['GET', 'POST'])
 @login_required
 def invitation(agreement_id):
-    """GET/POST /bounties/invitation/<agreement_id> - View and respond to payment invitation."""
+    """GET/POST /needs/invitation/<agreement_id> - View and respond to payment invitation."""
     from models.bounty_payment_agreement import BountyPaymentAgreement
     
     agreement = get_or_404(BountyPaymentAgreement, agreement_id)
@@ -1006,13 +1138,13 @@ def invitation(agreement_id):
     
     if agreement.payer_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=bounty.id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     if agreement.status != 'pending':
         if agreement.status == 'accepted':
             return redirect(url_for('bounties.secure_third_party', id=bounty.id))
         flash(f'Invitation already {agreement.status}', 'info')
-        return redirect(url_for('bounties.detail', id=bounty.id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     if request.method == 'POST':
         action = request.form.get('action')
@@ -1032,7 +1164,7 @@ def invitation(agreement_id):
 @bounties_bp.route('/my-invitations')
 @login_required
 def my_invitations():
-    """GET /bounties/my-invitations - View all payment invitations."""
+    """GET /needs/my-invitations - View all payment invitations."""
     from models.bounty_payment_agreement import BountyPaymentAgreement
     
     pending_invitations = BountyPaymentAgreement.query.filter_by(
@@ -1110,7 +1242,7 @@ def _handle_m3_checkout(session, session_id, m3_kind, metadata, logger):
 @bounties_bp.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
     """
-    POST /bounties/stripe-webhook - Handle Stripe webhook events.
+    POST /needs/stripe-webhook - Handle Stripe webhook events.
     
     Following Stripe best practices:
     - Always verify webhook signature when webhook secret is configured
@@ -1273,7 +1405,7 @@ def stripe_webhook():
                 bounty.poster_id, 'payment_secured',
                 f'Payment secured for "{bounty.title}"',
                 'Your referral need is now public — people can refer.',
-                link_url=url_for('bounties.detail', id=bounty.id),
+                link_url=url_for('bounties.detail', slug_code=bounty.url_slug),
             )
             db.session.commit()
     
@@ -1341,12 +1473,12 @@ def api_list():
 
 @bounties_bp.route('/<id>/expired')
 def expired(id):
-    """GET /bounties/<id>/expired - Show expired bounty options."""
+    """GET /needs/<id>/expired - Show expired bounty options."""
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     from datetime import datetime, timedelta
     now_date = (datetime.now() + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M')
@@ -1357,12 +1489,12 @@ def expired(id):
 @bounties_bp.route('/<id>/repost', methods=['POST'])
 @login_required
 def repost(id):
-    """POST /bounties/<id>/repost - Repost an expired bounty with new deadline."""
+    """POST /needs/<id>/repost - Repost an expired bounty with new deadline."""
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     new_deadline = request.form.get('deadline')
     if not new_deadline:
@@ -1382,18 +1514,18 @@ def repost(id):
     db.session.commit()
     
     flash('Referral need reposted with new deadline!', 'success')
-    return redirect(url_for('bounties.detail', id=id))
+    return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
 
 @bounties_bp.route('/<id>/cancel-refund', methods=['POST'])
 @login_required
 def cancel_refund(id):
-    """POST /bounties/<id>/cancel-refund - Cancel bounty and refund payment minus fees."""
+    """POST /needs/<id>/cancel-refund - Cancel bounty and refund payment minus fees."""
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     # M2: fail closed — when payments are disabled and a payment was
     # secured, refuse: the Stripe authorization cannot be cancelled
@@ -1403,7 +1535,7 @@ def cancel_refund(id):
     if not stripe_enabled():
         if bounty.payment_status == 'secured':
             flash('Payments are currently unavailable — the secured payment cannot be released right now. Please try again later.', 'warning')
-            return redirect(url_for('bounties.detail', id=id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
         bounty.status = 'closed'
         db.session.commit()
         flash('Need cancelled.', 'info')
@@ -1422,12 +1554,12 @@ def cancel_refund(id):
             )
             if not _refund_id:
                 flash(f'Refund failed: {refund_error}', 'danger')
-                return redirect(url_for('bounties.detail', id=id))
+                return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
         else:
             ok, error = cancel_authorization(bounty.stripe_payment_intent)
             if not ok:
                 flash(f'Could not release the payment: {error}', 'danger')
-                return redirect(url_for('bounties.detail', id=id))
+                return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
         bounty.payment_status = 'refunded'
 
     bounty.status = 'closed'
@@ -1439,7 +1571,7 @@ def cancel_refund(id):
 
 @bounties_bp.route('/check-expired')
 def check_expired():
-    """GET /bounties/check-expired - Mark expired bounties and return count."""
+    """GET /needs/check-expired - Mark expired bounties and return count."""
     if not current_user.is_authenticated:
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -1456,14 +1588,14 @@ def check_expired():
 @bounties_bp.route('/<id>/upgrade', methods=['GET', 'POST'])
 @login_required
 def upgrade(id):
-    """GET /bounties/<id>/upgrade - Show upgrade options
-    POST /bounties/<id>/upgrade - Process upgrade selection
+    """GET /needs/<id>/upgrade - Show upgrade options
+    POST /needs/<id>/upgrade - Process upgrade selection
     """
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     if request.method == 'POST':
         upgrade_type = request.form.get('upgrade_type')
@@ -1484,7 +1616,7 @@ def upgrade(id):
         # be bought at all (the old branch activated them for free).
         if not stripe_enabled():
             flash('Payments are currently unavailable — upgrades cannot be purchased right now.', 'warning')
-            return redirect(url_for('bounties.detail', id=id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
         total_price = price_per_day * duration_days
         
         base_url = request.host_url.rstrip('/')
@@ -1510,7 +1642,7 @@ def upgrade(id):
 
         if not checkout_url:
             flash('Stripe is not configured', 'danger')
-            return redirect(url_for('bounties.detail', id=id))
+            return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
         return redirect(checkout_url)
 
@@ -1522,12 +1654,12 @@ def upgrade(id):
 @bounties_bp.route('/<id>/upgrade-success')
 @login_required
 def upgrade_success(id):
-    """GET /bounties/<id>/upgrade-success - Confirmation page after upgrade payment."""
+    """GET /needs/<id>/upgrade-success - Confirmation page after upgrade payment."""
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     upgrade_type = request.args.get('upgrade_type')
     days = request.args.get('days', type=int)
@@ -1539,18 +1671,18 @@ def upgrade_success(id):
     else:
         flash('Upgrade pending. Payment may still be processing.', 'info')
     
-    return redirect(url_for('bounties.detail', id=id))
+    return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
 
 @bounties_bp.route('/<id>/upgrade/extend', methods=['POST'])
 @login_required
 def extend_upgrade(id):
-    """POST /bounties/<id>/upgrade/extend - Extend an existing upgrade."""
+    """POST /needs/<id>/upgrade/extend - Extend an existing upgrade."""
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     upgrade_type = request.form.get('upgrade_type')
     additional_days = request.form.get('duration_days', type=int)
@@ -1572,7 +1704,7 @@ def extend_upgrade(id):
     # extended at all (the old branch extended them for free).
     if not stripe_enabled():
         flash('Payments are currently unavailable — upgrades cannot be extended right now.', 'warning')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
     base_url = request.host_url.rstrip('/')
     success_url = f'{base_url}{url_for("bounties.upgrade_success", id=id, upgrade_type=upgrade_type)}?days={additional_days}&extend=true'
@@ -1598,7 +1730,7 @@ def extend_upgrade(id):
     
     if not checkout_url:
         flash('Stripe is not configured', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     return redirect(checkout_url)
 
@@ -1606,18 +1738,18 @@ def extend_upgrade(id):
 @bounties_bp.route('/<id>/close', methods=['GET', 'POST'])
 @login_required
 def close(id):
-    """GET /bounties/<id>/close - Show close bounty confirmation
-    POST /bounties/<id>/close - Close bounty with option to refund or reuse payment
+    """GET /needs/<id>/close - Show close bounty confirmation
+    POST /needs/<id>/close - Close bounty with option to refund or reuse payment
     """
     bounty = get_or_404(Bounty, id)
     
     if bounty.poster_id != current_user.id:
         flash('Access denied', 'danger')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     if bounty.status in ['completed', 'closed']:
         flash('This need is already closed', 'info')
-        return redirect(url_for('bounties.detail', id=id))
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
     
     if request.method == 'POST':
         close_action = request.form.get('close_action', 'close')

@@ -24,6 +24,7 @@
                     {% set tier_info = verification_tier %}
                     {% include 'partials/verification_badge.html' %}
                     {% if pledge and pledge.status == 'active' %}<span class="post-trust-badge" title="{{ _('Pledged human-reviewed hiring — no AI screening, human response within 5 business days') }}">{{ icon('shield-check', 20) }}{{ _('Pledged') }}</span>{% endif %}
+                    {% if current_user.has_approved_pledge %}<span class="post-trust-badge" title="{{ _('We pledge that no AI screens our applicants: a human reads every application.') }}">{{ icon('shield-check', 20) }}{{ _('Human-Reviewed') }}</span>{% endif %}
                 </h1>
                 <p class="profile-headline">{{ profile.headline or _('No headline added yet') }}</p>
                 <div class="profile-meta-line">
@@ -194,13 +195,74 @@
             {% set vouches_own = true %}
             {% include 'partials/vouches.html' %}
 
+            {# Video pitches: mine, with the upload form. A pitch
+               needs a need, so the form offers a picker of open
+               needs I could pitch for. #}
+            <div class="profile-card" id="video-pitches">
+                <h5 class="profile-card-title">{{ _('My video pitches') }}</h5>
+                <p class="text-muted small">{{ _('Pitch yourself in 30 seconds — pick a need, record a video, and the poster sees you, not a CV.') }}</p>
+                {% if my_video_pitches %}
+                    {% set vv_items = my_video_pitches %}
+                    {% set vv_show_uploader = false %}
+                    {% set vv_show_bounty = true %}
+                    {% include 'partials/video_vouch_list.html' %}
+                {% else %}
+                    <p class="text-muted small mb-2">{{ _('No video pitches yet.') }}</p>
+                {% endif %}
+                {% if pitchable_bounties %}
+                    {% set vv_kind = 'pitch' %}
+                    {% set vv_bounties = pitchable_bounties %}
+                    {% set vv_next = url_for('profile.view') %}
+                    {% set vv_form_id = 'own' %}
+                    {% include 'partials/video_vouch_form.html' %}
+                {% endif %}
+            </div>
+
+            {# Video vouches received — people who vouched for me on
+               camera. (The vouch form lives on other people's
+               profiles.) #}
+            <div class="profile-card" id="video-vouches">
+                <h5 class="profile-card-title">{{ _('Video vouches') }}</h5>
+                <p class="text-muted small">{{ _('People who vouched for you on camera.') }}</p>
+                {% if video_vouches_received %}
+                    {% set vv_items = video_vouches_received %}
+                    {% set vv_show_uploader = true %}
+                    {% set vv_uploader_label = _('Vouched by') %}
+                    {% set vv_show_bounty = false %}
+                    {% include 'partials/video_vouch_list.html' %}
+                {% else %}
+                    <p class="text-muted small mb-0">{{ _('No video vouches yet.') }}</p>
+                {% endif %}
+            </div>
+
+            {# Staked vouches: the active stakes I placed — money I
+               put on the line behind other people. Recorded only,
+               no money moved. The full list (placed + received)
+               lives on the My Stakes page. #}
+            <div class="profile-card" id="staked-vouches">
+                <h5 class="profile-card-title">{{ _('My staked vouches') }}</h5>
+                <p class="text-muted small">{{ _('Active stakes you placed — trust backed by money, not just clicks.') }}</p>
+                {% if my_active_stakes %}
+                    {% set sv_items = my_active_stakes %}
+                    {% set sv_show_voucher = false %}
+                    {% set sv_show_candidate = true %}
+                    {% set sv_show_bounty = true %}
+                    {% set sv_resolvable_ids = staked_resolvable_ids %}
+                    {% set sv_next = url_for('profile.view') %}
+                    {% include 'partials/staked_vouch_list.html' %}
+                {% else %}
+                    <p class="text-muted small mb-2">{{ _('No active stakes. Stake on someone from their profile — if they flake, you lose the stake.') }}</p>
+                {% endif %}
+                <a href="{{ url_for('staked_vouches.mine') }}" class="btn btn-sm btn-outline-primary">{{ _('See all my stakes') }}</a>
+            </div>
+
             {% if open_breaches %}
             <div class="profile-card border-warning">
                 <h5 class="profile-card-title text-warning">{{ _('Referrals waiting for your reply') }}</h5>
                 <p class="small text-muted">{{ _('You have 5 business days to answer a referral. Unanswered referrals past their deadline suspend your trust badge.') }}</p>
                 {% for breach in open_breaches %}
                 <p class="small mb-1">
-                    <a href="{{ url_for('bounties.detail', id=breach.bounty.id) }}">{{ breach.bounty.title }}</a>
+                    <a href="{{ url_for('bounties.detail', slug_code=breach.bounty.url_slug) }}">{{ breach.bounty.title }}</a>
                     — due {{ breach.due_at.strftime('%Y-%m-%d') }}
                 </p>
                 {% endfor %}

@@ -24,7 +24,7 @@
                             <td><strong>{{ _('Reward:') }}</strong></td>
                             <td>
                                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                                    ${{ "{:,.2f}".format(bounty.reward_amount) }} CAD
+                                    {{ bounty.reward_amount|money(bounty.currency) }}
                                 {% else %}
                                     Free Need
                                 {% endif %}
@@ -34,9 +34,9 @@
                             <td><strong>Platform Fee{% if match.payout_amount and match.platform_fee %} ({{ "{:.0f}".format(match.platform_fee / match.payout_amount * 100) }}%){% endif %}:</strong></td>
                             <td>
                                 {% if match.platform_fee %}
-                                    ${{ "{:,.2f}".format(match.platform_fee) }} CAD
+                                    {{ match.platform_fee|money(bounty.currency) }}
                                 {% else %}
-                                    $0.00
+                                    {{ 0|money(bounty.currency) }}
                                 {% endif %}
                             </td>
                         </tr>
@@ -44,9 +44,9 @@
                             <td><strong>{{ _('Net Payout:') }}</strong></td>
                             <td>
                                 {% if match.payout_amount and match.platform_fee %}
-                                    ${{ "{:,.2f}".format(match.payout_amount - match.platform_fee) }} CAD
+                                    {{ (match.payout_amount - match.platform_fee)|money(bounty.currency) }}
                                 {% else %}
-                                    $0.00
+                                    {{ 0|money(bounty.currency) }}
                                 {% endif %}
                             </td>
                         </tr>

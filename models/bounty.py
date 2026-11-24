@@ -3,8 +3,11 @@ import math
 from datetime import datetime, timedelta, timezone
 from extensions import db
 from flask_babel import lazy_gettext as _l
+from sqlalchemy import event, select
 from sqlalchemy.orm import validates
 from models import generate_uuid, utc_now
+from utils.currency import DEFAULT_CURRENCY, format_money, validate_currency
+from utils.slugs import slugify, unique_shortcode
 
 # Phase 3: the minimum bounty on a PAID referral need (CAD). A paid
 # need must state a bounty of at least $50 — no more $0 "paid" needs.
@@ -66,6 +69,12 @@ class Bounty(db.Model):
             )
         return value
 
+    @validates('currency')
+    def _validate_currency(self, key, value):
+        """Multi-currency: only CAD/EUR/USD, stored uppercased. The
+        validator also normalises legacy lowercase codes ('cad')."""
+        return validate_currency(value)
+
     @validates('reward_amount')
     def _validate_reward_amount(self, key, value):
         """Phase 3 bounty floor: a positive reward below the floor is
@@ -82,9 +91,26 @@ class Bounty(db.Model):
             )
         return value
 
+    @validates('title')
+    def _set_slug_from_title(self, key, value):
+        """The slug is set once, from the first title — it never
+        changes afterwards, so a need's URL stays stable when the
+        poster edits the title (the detail route 301s a stale slug
+        to the canonical URL, but a stable slug means old links
+        keep working as-is)."""
+        if value and not self.slug:
+            self.slug = slugify(value)
+        return value
+
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     poster_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, index=True)
     title = db.Column(db.String(200), nullable=False)
+    # Nice URLs: /needs/<slug>-<shortcode>. The slug is set once
+    # from the title (see the title validator above); the shortcode
+    # is the stable identifier the detail route looks up (see the
+    # before_insert event at the bottom of this file).
+    slug = db.Column(db.String(120), nullable=False, index=True)
+    shortcode = db.Column(db.String(6), nullable=False, unique=True, index=True)
     description = db.Column(db.Text, nullable=False)
     bounty_type = db.Column(db.String(30), nullable=False)
     bounty_direction = db.Column(db.String(30), nullable=False, default='seeking_opportunity')
@@ -95,6 +121,10 @@ class Bounty(db.Model):
     # saved — Bounty had no column for it (audit §3.10).
     skills = db.Column(db.Text, nullable=True)
     reward_amount = db.Column(db.Numeric(12, 2), nullable=True)
+    # Multi-currency: the currency the reward (and staged rewards)
+    # are denominated in. No FX conversion anywhere — amounts are
+    # recorded and shown as entered, in this currency.
+    currency = db.Column(db.String(3), nullable=False, default=DEFAULT_CURRENCY)
     transaction_fee = db.Column(db.Numeric(12, 2), nullable=True)
     # Phase 3 staged rewards (Paraform model — display only, see
     # models/staged_reward.py): optional amounts the poster declares
@@ -132,6 +162,16 @@ class Bounty(db.Model):
         return f'<Bounty {self.title}>'
 
     @property
+    def url_slug(self):
+        """The detail URL's path segment: '<slug>-<shortcode>'.
+        Falls back to the id for objects not flushed yet (no slug
+        assigned) — the detail route 301s a bare UUID to the
+        canonical URL once the row exists."""
+        if self.slug and self.shortcode:
+            return f'{self.slug}-{self.shortcode}'
+        return self.id
+
+    @property
     def type_label(self):
         """Human label for the vertical ('Recruitment', 'Services')."""
         return self.BOUNTY_TYPE_LABELS.get(self.bounty_type, self.bounty_type)
@@ -155,7 +195,7 @@ class Bounty(db.Model):
     @property
     def display_name(self):
         dir_label = self.VALID_DIRECTIONS_DISPLAY.get(self.bounty_direction, self.bounty_direction)
-        amount_str = f"${float(self.reward_amount):,.0f}" if self.reward_amount and self.reward_amount > 0 else "Free"
+        amount_str = format_money(self.reward_amount, self.currency) if self.reward_amount and self.reward_amount > 0 else "Free"
         return f"{dir_label} — {amount_str}"
 
     @property
@@ -336,6 +376,7 @@ class Bounty(db.Model):
             'category': self.category,
             'skills': self.skills,
             'reward_amount': float(self.reward_amount) if self.reward_amount else None,
+            'currency': self.currency,
             'stage_submit_reward': float(self.stage_submit_reward) if self.stage_submit_reward else None,
             'stage_interview_reward': float(self.stage_interview_reward) if self.stage_interview_reward else None,
             'stage_hire_reward': float(self.stage_hire_reward) if self.stage_hire_reward else None,
@@ -350,3 +391,35 @@ class Bounty(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+
+@event.listens_for(Bounty, 'before_insert')
+def _ensure_slug_and_shortcode(mapper, connection, target):
+    """Model-level generation — not just the form route: tests and
+    scripts create Bounty objects directly. The slug usually comes
+    from the title validator; this is the backstop for rows whose
+    title was set without it. The shortcode is generated here
+    because uniqueness needs a DB lookup (done on the event's
+    connection, never through the flushing session). On a full
+    slug+shortcode collision the shortcode is regenerated — the
+    slug is allowed to repeat, the shortcode is what identifies
+    the need."""
+    if not target.slug:
+        target.slug = slugify(target.title or '')
+    table = Bounty.__table__
+
+    def _taken(code):
+        # Siblings in the same flush are not in the DB yet (one
+        # batched INSERT), so check the pending objects too.
+        if any(
+            o is not target and o.shortcode == code
+            for o in db.session.new
+            if isinstance(o, Bounty)
+        ):
+            return True
+        return connection.execute(
+            select(table.c.id).where(table.c.shortcode == code)
+        ).first() is not None
+
+    if not target.shortcode or _taken(target.shortcode):
+        target.shortcode = unique_shortcode(_taken)

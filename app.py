@@ -168,6 +168,11 @@ def create_app(config_name: str = None) -> Flask:
     from utils.trust import level_label
     app.jinja_env.filters['level_label'] = level_label
 
+    # Multi-currency: {{ amount|money(currency) }} renders an amount
+    # as entered, e.g. CA$1,000.00 — no FX conversion anywhere.
+    from utils.currency import format_money
+    app.jinja_env.filters['money'] = format_money
+
     # Phase 3: the Lucide icon for a notification type, used by the
     # shared notification-item partial (bell panel + full page).
     from utils.notifications import notification_icon
@@ -218,20 +223,33 @@ def create_app(config_name: str = None) -> Flask:
     from blueprints.auth import auth_bp
     from blueprints.profile import profile_bp
     from blueprints.bounties import bounties_bp
+    from blueprints.bounties.legacy import legacy_bounties_bp
     from blueprints.messages import messages_bp
     from blueprints.admin import admin_bp
     from blueprints.social import social_bp
     from blueprints.referrals import referrals_bp
     from blueprints.payments import payments_bp
+    from blueprints.pledge import pledge_bp
+    from blueprints.video_vouches import video_vouches_bp
+    from blueprints.intro_bounties import intro_bounties_bp
+    from blueprints.staked_vouches import staked_vouches_bp
+    from blueprints.wins import wins_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(bounties_bp, url_prefix='/bounties')
+    app.register_blueprint(bounties_bp, url_prefix='/needs')
+    # Old /bounties/* URLs 301 to their /needs/* equivalents.
+    app.register_blueprint(legacy_bounties_bp, url_prefix='/bounties')
     app.register_blueprint(messages_bp, url_prefix='/messages')
     app.register_blueprint(profile_bp, url_prefix='/profile')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(social_bp, url_prefix='/social')
     app.register_blueprint(referrals_bp, url_prefix='/referrals')
     app.register_blueprint(payments_bp)
+    app.register_blueprint(pledge_bp, url_prefix='/pledge')
+    app.register_blueprint(video_vouches_bp, url_prefix='/video-vouches')
+    app.register_blueprint(intro_bounties_bp, url_prefix='/intros')
+    app.register_blueprint(staked_vouches_bp, url_prefix='/stakes')
+    app.register_blueprint(wins_bp, url_prefix='/wins')
 
     # M1: unread notification count for the navbar badge. Phase 3:
     # the bell panel also needs the latest items (with actor avatars),
@@ -401,6 +419,14 @@ def create_app(config_name: str = None) -> Flask:
             }
         
         stats = app.config[cache_key]
+
+        # Live paid-out counter: per-currency totals of completed
+        # payouts, computed fresh on every request (not cached with
+        # the stats above — the counter must move the moment a
+        # payout completes). Three separate figures, never a blend.
+        from utils.paid_out import paid_out_totals
+        paid_out = paid_out_totals()
+
         featured = db.session.query(Bounty).filter(
             Bounty.status == 'open',
             Bounty.publicly_visible_filter()
@@ -436,6 +462,7 @@ def create_app(config_name: str = None) -> Flask:
         liked_ids, shared_ids = _liked_and_shared_ids(post_ids)
 
         return render_template('index.html',
+                          paid_out=paid_out,
                           total_users=stats['total_users'],
                           total_bounties=stats['total_bounties'],
                           total_rewards=stats['total_rewards'],
