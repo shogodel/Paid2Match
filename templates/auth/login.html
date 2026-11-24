@@ -20,6 +20,7 @@
                     {% if not (config.get('GOOGLE_CLIENT_ID') and config.get('GOOGLE_CLIENT_SECRET')) and not (config.get('GITHUB_CLIENT_ID') and config.get('GITHUB_CLIENT_SECRET')) %}
                     <div class="alert alert-warning mb-0">{{ _('Sign-in is not available right now — please check back soon.') }}</div>
                     {% endif %}
+                    <p class="text-center mt-3 mb-0"><a href="{{ url_for('help_page') }}">{{ _("Can't sign in? Get help") }}</a></p>
                 </div>
             </div>
         </div>

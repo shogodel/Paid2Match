@@ -348,6 +348,11 @@ def create_app(config_name: str = None) -> Flask:
         served from cache when a navigation fails."""
         return render_template('offline.html')
 
+    @app.route('/help')
+    def help_page():
+        """Public help page — sign-in recovery and support contact."""
+        return render_template('help.html')
+
     # Index route - landing page with cached stats
     @app.route('/')
     def index():

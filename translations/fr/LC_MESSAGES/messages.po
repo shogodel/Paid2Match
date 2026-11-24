@@ -4086,6 +4086,44 @@ msgstr ""
 "paiement."
 
 # Navigation
+msgid "Help"
+msgstr "Aide"
+
+msgid "Can't sign in?"
+msgstr "Impossible de vous connecter ?"
+
+msgid "Paid2Match signs you in with Google or GitHub — there is no password to reset."
+msgstr "Paid2Match vous connecte avec Google ou GitHub — il n’y a aucun mot de passe à réinitialiser."
+
+msgid "Try your other sign-in method."
+msgstr "Essayez votre autre méthode de connexion."
+
+msgid "If your GitHub account uses the same email address as your Google account, signing in with GitHub opens the same Paid2Match account."
+msgstr "Si votre compte GitHub utilise la même adresse e-mail que votre compte Google, vous connecter avec GitHub ouvre le même compte Paid2Match."
+
+msgid "Lost access to both?"
+msgstr "Vous avez perdu l’accès aux deux ?"
+
+msgid "Email support@paid2match.work from the email address on your Paid2Match account. Tell us what happened and we will verify you and relink your account."
+msgstr "Écrivez à support@paid2match.work depuis l’adresse e-mail de votre compte Paid2Match. Dites-nous ce qui s’est passé et nous vous vérifierons et relierons votre compte."
+
+msgid "Tip: while you still have access, sign in with the other method using the same email — that adds it as a backup way in."
+msgstr "Astuce : tant que vous avez encore accès, connectez-vous avec l’autre méthode en utilisant la même adresse e-mail — cela l’ajoute comme moyen de secours."
+
+msgid "Contact support"
+msgstr "Contacter le support"
+
+msgid "We reply within a few business days."
+msgstr "Nous répondons sous quelques jours ouvrables."
+
+msgid "Can't sign in? Get help"
+msgstr "Impossible de vous connecter ? Obtenez de l’aide"
+
+msgid "Backup sign-in"
+msgstr "Connexion de secours"
+
+msgid "Signed in with Google or GitHub? Sign in with the other one using the same email to add it as a backup way in."
+msgstr "Connecté avec Google ou GitHub ? Connectez-vous avec l’autre en utilisant la même adresse e-mail pour l’ajouter comme moyen de secours."
 #~ msgid "Home"
 #~ msgstr "Accueil"
 

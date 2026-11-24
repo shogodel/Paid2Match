@@ -5,6 +5,7 @@
 {% block content %}
 <div class="container py-5">
     <h1>Manage Users</h1>
+    <p class="text-muted">Change email is for account recovery: only use it after verifying the user by email (they write in from the address on their account).</p>
     {% if pagination %}
         <table class="table">
             <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Email</th><th>Founding</th><th>Actions</th></tr></thead>
@@ -34,6 +35,11 @@
                             <button class="btn btn-sm btn-outline-primary">
                                 {{ 'Remove founding' if user.founding_referrer else 'Make founding' }}
                             </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.change_user_email', id=user.id) }}" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="email" name="new_email" placeholder="New email" required class="form-control form-control-sm d-inline-block" style="width: 180px">
+                            <button class="btn btn-sm btn-outline-secondary">Change email</button>
                         </form>
                     </td>
                 </tr>

@@ -4070,6 +4070,44 @@ msgstr ""
 " de pagos."
 
 # Navigation
+msgid "Help"
+msgstr "Ayuda"
+
+msgid "Can't sign in?"
+msgstr "¿No puedes iniciar sesión?"
+
+msgid "Paid2Match signs you in with Google or GitHub — there is no password to reset."
+msgstr "Paid2Match te permite iniciar sesión con Google o GitHub; no hay ninguna contraseña que restablecer."
+
+msgid "Try your other sign-in method."
+msgstr "Prueba tu otro método de inicio de sesión."
+
+msgid "If your GitHub account uses the same email address as your Google account, signing in with GitHub opens the same Paid2Match account."
+msgstr "Si tu cuenta de GitHub usa la misma dirección de correo electrónico que tu cuenta de Google, iniciar sesión con GitHub abre la misma cuenta de Paid2Match."
+
+msgid "Lost access to both?"
+msgstr "¿Perdiste el acceso a ambas?"
+
+msgid "Email support@paid2match.work from the email address on your Paid2Match account. Tell us what happened and we will verify you and relink your account."
+msgstr "Escribe a support@paid2match.work desde la dirección de correo electrónico de tu cuenta de Paid2Match. Cuéntanos qué pasó y verificaremos tu identidad y volveremos a vincular tu cuenta."
+
+msgid "Tip: while you still have access, sign in with the other method using the same email — that adds it as a backup way in."
+msgstr "Consejo: mientras aún tengas acceso, inicia sesión con el otro método usando el mismo correo electrónico; así lo añades como forma de acceso alternativa."
+
+msgid "Contact support"
+msgstr "Contactar con soporte"
+
+msgid "We reply within a few business days."
+msgstr "Respondemos en unos pocos días laborables."
+
+msgid "Can't sign in? Get help"
+msgstr "¿No puedes iniciar sesión? Obtén ayuda"
+
+msgid "Backup sign-in"
+msgstr "Inicio de sesión alternativo"
+
+msgid "Signed in with Google or GitHub? Sign in with the other one using the same email to add it as a backup way in."
+msgstr "¿Iniciaste sesión con Google o GitHub? Inicia sesión con el otro usando el mismo correo electrónico para añadirlo como forma de acceso alternativa."
 #~ msgid "Home"
 #~ msgstr "Inicio"
 

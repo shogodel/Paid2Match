@@ -33,6 +33,7 @@ from utils.moderation import (
     maybe_restore_after_dismiss,
 )
 from utils.notifications import notify
+from email_validator import validate_email, EmailNotValidError
 from utils.payments import get_platform_fee_percent, record_manual_payout
 from werkzeug.security import generate_password_hash
 
@@ -251,6 +252,47 @@ def verify_user_email(id):
     user.email_verified_at = datetime.now(timezone.utc)
     db.session.commit()
     flash(f'Email verified for {user.email}', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin_bp.route('/users/<id>/change-email', methods=['POST'])
+@admin_required
+def change_user_email(id):
+    """POST /admin/users/<id>/change-email - Change a user's email.
+
+    Account-recovery tool: support uses this after verifying the user
+    by email (the user writes in from the address on their account).
+    The new address is marked unverified — the next OAuth sign-in
+    re-verifies it against the provider. The change is audit-logged.
+    """
+    user = get_or_404(User, id)
+    new_email = request.form.get('new_email', '').strip().lower()
+    try:
+        validate_email(new_email, check_deliverability=False)
+    except EmailNotValidError:
+        flash('Please enter a valid email address.', 'danger')
+        return redirect(url_for('admin.users'))
+    if new_email == user.email:
+        flash('That is already the user\'s email address.', 'info')
+        return redirect(url_for('admin.users'))
+    if User.query.filter_by(email=new_email).first():
+        flash('That email address is already in use.', 'danger')
+        return redirect(url_for('admin.users'))
+    old_email = user.email
+    user.email = new_email
+    user.email_verified = False
+    user.email_verified_at = None
+    db.session.commit()
+
+    AuditLog.log(
+        admin_id=current_user.id,
+        action='change_user_email',
+        target_type='user',
+        target_id=id,
+        details=f'Changed email from {old_email} to {new_email} (account recovery)'
+    )
+
+    flash(f'Email changed from {old_email} to {new_email}.', 'success')
     return redirect(url_for('admin.users'))
 
 
