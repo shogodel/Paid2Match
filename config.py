@@ -97,6 +97,17 @@ class Config:
     # button is hidden and /auth/facebook/* redirects to login.
     FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID')
     FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET')
+
+    # Kill-switch for the Facebook button: the Meta app stays in
+    # Development mode until business verification passes, and while
+    # it does, strangers hitting "Continue with Facebook" get a
+    # dev-mode error. The button only renders when this is true.
+    # Set FACEBOOK_LOGIN_ENABLED=true in the environment (and
+    # recreate the container) once the app is Live. The
+    # /auth/facebook/* routes keep working regardless — this flag
+    # only controls the button's visibility.
+    FACEBOOK_LOGIN_ENABLED = os.getenv(
+        'FACEBOOK_LOGIN_ENABLED', 'false').lower() in ('1', 'true', 'yes')
     
     MAPBOX_ACCESS_TOKEN = os.getenv('MAPBOX_ACCESS_TOKEN')
     

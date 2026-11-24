@@ -1332,11 +1332,15 @@ msgstr "Réessayer"
 msgid "Welcome Back"
 msgstr "Bon retour"
 
-#: templates/auth/login.html:12
+#: templates/auth/login.html:14
 msgid "Sign in with Google, GitHub, or Facebook — no password needed."
 msgstr ""
 "Connectez-vous avec Google, GitHub ou Facebook — aucun mot de passe "
 "nécessaire."
+
+#: templates/auth/login.html:16
+msgid "Sign in with Google or GitHub — no password needed."
+msgstr "Connectez-vous avec Google ou GitHub — aucun mot de passe nécessaire."
 
 #: templates/auth/login.html:15
 msgid "Continue with Google"

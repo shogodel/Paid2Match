@@ -1287,8 +1287,12 @@ msgstr ""
 msgid "Welcome Back"
 msgstr ""
 
-#: templates/auth/login.html:12
+#: templates/auth/login.html:14
 msgid "Sign in with Google, GitHub, or Facebook — no password needed."
+msgstr ""
+
+#: templates/auth/login.html:16
+msgid "Sign in with Google or GitHub — no password needed."
 msgstr ""
 
 #: templates/auth/login.html:15

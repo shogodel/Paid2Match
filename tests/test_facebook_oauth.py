@@ -20,9 +20,11 @@ def _mock_resp(status=200, json_data=None):
 
 
 def _configure_facebook(app):
-    """Pretend Facebook OAuth is configured (test credentials only)."""
+    """Pretend Facebook OAuth is configured (test credentials only),
+    with the login button enabled."""
     app.config['FACEBOOK_CLIENT_ID'] = 'test-facebook-client-id'
     app.config['FACEBOOK_CLIENT_SECRET'] = 'test-facebook-client-secret'
+    app.config['FACEBOOK_LOGIN_ENABLED'] = True
 
 
 def _set_state(client, state='test-state'):
@@ -115,6 +117,21 @@ class TestFacebookButton:
         assert resp.status_code == 200
         assert b'Continue with Facebook' in resp.data
         assert b'/auth/facebook/login' in resp.data
+        assert b'Sign in with Google, GitHub, or Facebook' in resp.data
+
+    def test_button_hidden_when_flag_off(self, app, client):
+        # Credentials configured but the kill-switch off (the Meta
+        # app is still in Development until business verification
+        # passes): no button, no Facebook in the intro line.
+        app.config['FACEBOOK_CLIENT_ID'] = 'test-facebook-client-id'
+        app.config['FACEBOOK_CLIENT_SECRET'] = 'test-facebook-client-secret'
+        assert not app.config.get('FACEBOOK_LOGIN_ENABLED')
+        resp = client.get('/auth/login')
+        assert resp.status_code == 200
+        assert b'Continue with Facebook' not in resp.data
+        assert b'/auth/facebook/login' not in resp.data
+        assert b'Sign in with Google or GitHub' in resp.data
+        assert b'Sign in with Google, GitHub, or Facebook' not in resp.data
 
 
 class TestFacebookCallbackCreate:
