@@ -1048,8 +1048,8 @@ msgstr "Continuer avec Google"
 msgid "Continue with GitHub"
 msgstr "Continuer avec GitHub"
 
-msgid "Sign in with Google or GitHub — no password needed."
-msgstr "Connectez-vous avec Google ou GitHub — aucun mot de passe nécessaire."
+msgid "Sign in with Google, GitHub, or Facebook — no password needed."
+msgstr "Connectez-vous avec Google, GitHub ou Facebook — aucun mot de passe nécessaire."
 
 msgid "Sign-in is not available right now — please check back soon."
 msgstr "La connexion n'est pas disponible pour le moment — veuillez revenir bientôt."
@@ -4092,14 +4092,14 @@ msgstr "Aide"
 msgid "Can't sign in?"
 msgstr "Impossible de vous connecter ?"
 
-msgid "Paid2Match signs you in with Google or GitHub — there is no password to reset."
-msgstr "Paid2Match vous connecte avec Google ou GitHub — il n’y a aucun mot de passe à réinitialiser."
+msgid "Paid2Match signs you in with Google, GitHub, or Facebook — there is no password to reset."
+msgstr "Paid2Match vous connecte avec Google, GitHub ou Facebook — il n’y a aucun mot de passe à réinitialiser."
 
 msgid "Try your other sign-in method."
 msgstr "Essayez votre autre méthode de connexion."
 
-msgid "If your GitHub account uses the same email address as your Google account, signing in with GitHub opens the same Paid2Match account."
-msgstr "Si votre compte GitHub utilise la même adresse e-mail que votre compte Google, vous connecter avec GitHub ouvre le même compte Paid2Match."
+msgid "If two of your accounts use the same email address, signing in with either one opens the same Paid2Match account."
+msgstr "Si deux de vos comptes utilisent la même adresse e-mail, vous connecter avec l’un ou l’autre ouvre le même compte Paid2Match."
 
 msgid "Lost access to both?"
 msgstr "Vous avez perdu l’accès aux deux ?"
@@ -4896,3 +4896,57 @@ msgstr "Connecté avec Google ou GitHub ? Connectez-vous avec l’autre en utili
 #~ " nous vous suggérerons des personnes "
 #~ "près de chez vous."
 
+
+msgid "Continue with Facebook"
+msgstr "Continuer avec Facebook"
+
+msgid "Last updated: November 23, 2026"
+msgstr "Dernière mise à jour : 23 novembre 2026"
+
+msgid "This page is available in English only."
+msgstr "Cette page est disponible en anglais seulement."
+
+msgid "What we collect"
+msgstr "Ce que nous recueillons"
+
+msgid "What we use it for"
+msgstr "À quoi nous les utilisons"
+
+msgid "Your choices"
+msgstr "Vos choix"
+
+msgid "Data deletion"
+msgstr "Suppression des données"
+
+msgid "Contact"
+msgstr "Contact"
+
+msgid "What Paid2Match is"
+msgstr "Ce qu’est Paid2Match"
+
+msgid "Accounts"
+msgstr "Comptes"
+
+msgid "Referral needs and fees"
+msgstr "Besoins de recommandation et frais"
+
+msgid "Pro and boosts"
+msgstr "Pro et boosts"
+
+msgid "Behaviour"
+msgstr "Comportement"
+
+msgid "Content"
+msgstr "Contenu"
+
+msgid "Liability"
+msgstr "Responsabilité"
+
+msgid "Changes"
+msgstr "Modifications"
+
+msgid "What we use"
+msgstr "Ce que nous utilisons"
+
+msgid "Your choice"
+msgstr "Votre choix"

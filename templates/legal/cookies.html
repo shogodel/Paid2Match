@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Cookie Policy') }} - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="mb-1">{{ _('Cookie Policy') }}</h1>
+            <p class="text-muted">{{ _('Last updated: November 23, 2026') }}</p>
+            <p class="text-muted"><em>{{ _('This page is available in English only.') }}</em></p>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>Paid2Match uses a small number of cookies and local storage to work. We do not use third-party advertising cookies.</p>
+
+                    <h2 class="h5 mt-4">{{ _('What we use') }}</h2>
+                    <ul>
+                        <li>Session cookie — keeps you signed in.</li>
+                        <li>CSRF token cookie — protects forms against forgery.</li>
+                        <li>Language preference — remembers your EN / FR / ES choice.</li>
+                        <li>Service-worker cache — stores the app shell and icons on your device so the site loads fast and works offline (PWA). You can clear it in your browser settings.</li>
+                        <li>Sign-in providers — when you use "Continue with Google", "Continue with GitHub", or "Continue with Facebook", that provider sets its own cookies under its own policies.</li>
+                    </ul>
+
+                    <h2 class="h5 mt-4">{{ _('Your choice') }}</h2>
+                    <p>You can block cookies in your browser settings, but the site needs the session cookie to keep you signed in.</p>
+
+                    <h2 class="h5 mt-4">{{ _('Contact') }}</h2>
+                    <p class="mb-0"><a href="mailto:support@paid2match.work">support@paid2match.work</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

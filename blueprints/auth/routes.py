@@ -1,10 +1,11 @@
 """Authentication routes for Paid2Match.
 
-OAuth-only: sign-in is Google or GitHub ("Continue with Google" /
-"Continue with GitHub"). There is no email/password registration or
-login — the provider verifies the email, so accounts created or matched
-through OAuth are marked email_verified. Client id/secret for each
-provider come from the environment only (config.py).
+OAuth-only: sign-in is Google, GitHub, or Facebook ("Continue with
+Google" / "Continue with GitHub" / "Continue with Facebook"). There is
+no email/password registration or login — the provider verifies the
+email, so accounts created or matched through OAuth are marked
+email_verified. Client id/secret for each provider come from the
+environment only (config.py).
 """
 import secrets
 from datetime import datetime, timezone
@@ -14,6 +15,12 @@ from werkzeug.security import generate_password_hash
 
 from extensions import db
 from models.user import User
+from utils.facebook_oauth import (
+    exchange_facebook_code,
+    facebook_authorize_url,
+    facebook_available,
+    fetch_facebook_userinfo,
+)
 from utils.google_oauth import (
     google_available,
     google_authorize_url,
@@ -35,8 +42,9 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login')
 def login():
-    """GET /auth/login - OAuth-only sign-in page (Google / GitHub).
-    Signing in with a provider also creates the account on first use.
+    """GET /auth/login - OAuth-only sign-in page (Google / GitHub /
+    Facebook). Signing in with a provider also creates the account on
+    first use.
     """
     if current_user.is_authenticated:
         return redirect(url_for('bounties.board'))
@@ -65,8 +73,9 @@ def _is_safe_url(target: str) -> bool:
 def _complete_oauth_login(email, full_name):
     """Find-or-create the user for a provider-verified email, log them
     in, and return the post-login redirect response. Shared by the
-    Google and GitHub callbacks. Returns (response, error) — error is
-    a flash message when the account cannot be used (deactivated)."""
+    Google, GitHub, and Facebook callbacks. Returns (response, error)
+    — error is a flash message when the account cannot be used
+    (deactivated)."""
     now = datetime.now(timezone.utc)
     user = User.query.filter_by(email=email).first()
     if user:
@@ -276,6 +285,82 @@ def github_callback():
         or (profile.get('login') or '').strip()
         or email.split('@')[0]
     )
+    response, error = _complete_oauth_login(email, full_name)
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('auth.login'))
+    return response
+
+
+@auth_bp.route('/facebook/login')
+def facebook_login():
+    """GET /auth/facebook/login - Start Facebook sign-in ("Continue
+    with Facebook"). Redirects to Facebook's authorize endpoint with a
+    random state token stored in the session."""
+    if current_user.is_authenticated:
+        return redirect(url_for('bounties.board'))
+
+    if not facebook_available():
+        flash('Facebook sign-in is not available right now — please try Google instead.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    state = oauth_state_token()
+    session['facebook_oauth_state'] = state
+    authorize_url = facebook_authorize_url(
+        url_for('auth.facebook_callback', _external=True), state
+    )
+    return redirect(authorize_url)
+
+
+@auth_bp.route('/facebook/callback')
+def facebook_callback():
+    """GET /auth/facebook/callback - Handle Facebook's redirect after
+    sign-in. Verifies the state token, exchanges the code for an access
+    token, reads the user's Facebook profile, then logs them into the
+    matching account (creating it, already verified, when there is none
+    — Facebook has already verified the email).
+
+    Facebook only shares an email when the user granted the email
+    permission and the account has a confirmed email address — people
+    who signed up with a phone number may have none. With no email the
+    login fails cleanly with a message pointing at Google or GitHub;
+    accounts are never created without an email."""
+    if current_user.is_authenticated:
+        return redirect(url_for('bounties.board'))
+
+    if request.args.get('error'):
+        flash('Facebook sign-in was cancelled or failed — please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    # One-time state check (CSRF): the token must match the one stored
+    # when the sign-in started.
+    expected_state = session.pop('facebook_oauth_state', None)
+    if not expected_state or request.args.get('state') != expected_state:
+        flash('That Facebook sign-in link is invalid or has expired — please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    code = request.args.get('code')
+    if not code:
+        flash('Facebook did not return a sign-in code — please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    redirect_uri = url_for('auth.facebook_callback', _external=True)
+    token, error = exchange_facebook_code(code, redirect_uri)
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('auth.login'))
+
+    userinfo, error = fetch_facebook_userinfo(token)
+    if error:
+        flash(error, 'danger')
+        return redirect(url_for('auth.login'))
+
+    email = (userinfo.get('email') or '').lower().strip()
+    if not email:
+        flash("Facebook did not share an email address for this account — please sign in with Google or GitHub instead.", 'danger')
+        return redirect(url_for('auth.login'))
+
+    full_name = (userinfo.get('name') or '').strip() or email.split('@')[0]
     response, error = _complete_oauth_login(email, full_name)
     if error:
         flash(error, 'danger')

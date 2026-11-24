@@ -353,6 +353,21 @@ def create_app(config_name: str = None) -> Flask:
         """Public help page — sign-in recovery and support contact."""
         return render_template('help.html')
 
+    @app.route('/privacy')
+    def privacy():
+        """Public privacy policy page."""
+        return render_template('legal/privacy.html')
+
+    @app.route('/terms')
+    def terms():
+        """Public terms of service page."""
+        return render_template('legal/terms.html')
+
+    @app.route('/cookie-policy')
+    def cookie_policy():
+        """Public cookie policy page."""
+        return render_template('legal/cookies.html')
+
     # Index route - landing page with cached stats
     @app.route('/')
     def index():

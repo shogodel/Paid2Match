@@ -343,9 +343,9 @@
                     <div class="footer-title">{{ _('Legal') }}</div>
                     <ul class="footer-links">
                         <li><a href="{{ url_for('help_page') }}">{{ _('Help') }}</a></li>
-                        <li><a href="#">{{ _('Privacy Policy') }}</a></li>
-                        <li><a href="#">{{ _('Terms of Service') }}</a></li>
-                        <li><a href="#">{{ _('Cookie Policy') }}</a></li>
+                        <li><a href="{{ url_for('privacy') }}">{{ _('Privacy Policy') }}</a></li>
+                        <li><a href="{{ url_for('terms') }}">{{ _('Terms of Service') }}</a></li>
+                        <li><a href="{{ url_for('cookie_policy') }}">{{ _('Cookie Policy') }}</a></li>
                     </ul>
                 </div>
             </div>

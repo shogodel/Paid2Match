@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Privacy Policy') }} - Paid2Match{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="mb-1">{{ _('Privacy Policy') }}</h1>
+            <p class="text-muted">{{ _('Last updated: November 23, 2026') }}</p>
+            <p class="text-muted"><em>{{ _('This page is available in English only.') }}</em></p>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>Paid2Match (paid2match.work) is a social network for hiring referrals. This policy explains what we collect and what we do with it.</p>
+
+                    <h2 class="h5 mt-4">{{ _('What we collect') }}</h2>
+                    <ul>
+                        <li>Account information: your name and email address. If you sign in with Google, GitHub, or Facebook, we receive your verified email address and name from that provider.</li>
+                        <li>Profile information you choose to add: headline, bio, website and social links, avatar, skills, and location.</li>
+                        <li>Content you create: posts, comments, polls, referrals (bounties), pitches, messages, endorsements, and reviews.</li>
+                        <li>Trust and activity data: karma, trust score, verification tier, profile views, post views, and referral outcomes — the data the trust system runs on.</li>
+                        <li>Payment information: payments and payouts run through Stripe (Stripe Checkout and Stripe Connect Express). We do not store your card numbers. Stripe handles that data under its own privacy policy.</li>
+                        <li>Technical data: the cookies and local storage the site needs to work (see Cookie Policy), and basic server logs.</li>
+                    </ul>
+
+                    <h2 class="h5 mt-4">{{ _('What we use it for') }}</h2>
+                    <ul>
+                        <li>To run the service: accounts, feeds, spaces, referrals, and payouts.</li>
+                        <li>To keep the community trustworthy: verification tiers, the pledge wall, response-time (SLA) tracking, moderation, and disputes.</li>
+                        <li>To contact you about your account, a referral, or a payout. We do not sell your personal information.</li>
+                    </ul>
+
+                    <h2 class="h5 mt-4">{{ _('Your choices') }}</h2>
+                    <p>You can edit or delete your profile content, deactivate your account, or delete your account (self-service — confirm by typing DELETE; your data is anonymized on deletion).</p>
+                    <p>If you are in Quebec, you can ask us for access to, or correction of, your personal information by writing to <a href="mailto:support@paid2match.work">support@paid2match.work</a>.</p>
+
+                    <h2 class="h5 mt-4">{{ _('Data deletion') }}</h2>
+                    <p>You can delete your account at any time in Settings → Delete account (confirm by typing DELETE). Your personal data is anonymized on deletion.</p>
+                    <p>You can also ask us to delete your data by emailing <a href="mailto:support@paid2match.work">support@paid2match.work</a> from the email address on your Paid2Match account.</p>
+
+                    <h2 class="h5 mt-4">{{ _('Contact') }}</h2>
+                    <p class="mb-0"><a href="mailto:support@paid2match.work">support@paid2match.work</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

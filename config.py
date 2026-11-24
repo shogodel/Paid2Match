@@ -75,6 +75,14 @@ class Config:
     # the Google button is hidden and /auth/google/* redirects to login.
     GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+
+    # Facebook sign-in ("Continue with Facebook") — OAuth 2.0 client
+    # from the Meta app (developers.facebook.com, Facebook Login
+    # product, scopes public_profile + email). From the environment
+    # only — never hardcoded, never in the DB. When unset, the Facebook
+    # button is hidden and /auth/facebook/* redirects to login.
+    FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID')
+    FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET')
     
     MAPBOX_ACCESS_TOKEN = os.getenv('MAPBOX_ACCESS_TOKEN')
     
