@@ -265,3 +265,57 @@ def test_services_bounty_inserts_on_migrated_db(tmp_path):
             "AND name = 'bounties'"
         )).scalar()
         assert 'ck_bounties_bounty_type' not in ddl
+
+
+def test_upgrade_tolerates_live_db_without_recruitment_check(tmp_path):
+    """Regression (2026-11-24 deploy): the live database never got
+    ck_bounties_bounty_type — its alembic version was stamped to
+    recruitment_only_v2 by direct SQL (phantom-revision fix), so
+    that migration never ran there. The drop migration must not
+    fail when the constraint is absent."""
+    db_file = tmp_path / 'live_db_no_check.db'
+    test_app = create_app('testing', config_overrides={
+        'SQLALCHEMY_DATABASE_URI': f'sqlite:///{db_file}',
+    })
+    with test_app.app_context():
+        flask_migrate.upgrade(revision='wins_wall')
+        # Simulate the live DB: remove the constraint the stamp
+        # skipped creating, then run the rest of the chain.
+        from alembic.migration import MigrationContext
+        from alembic.operations import Operations
+        conn = db.engine.connect()
+        ctx = MigrationContext.configure(conn)
+        ops = Operations(ctx)
+        with ops.batch_alter_table('bounties') as batch_op:
+            batch_op.drop_constraint(
+                'ck_bounties_bounty_type', type_='check'
+            )
+        conn.close()
+        flask_migrate.upgrade()
+        version = db.session.execute(
+            text('SELECT version_num FROM alembic_version')
+        ).scalar()
+        assert version == 'money_audit_fixes'
+        # And a services bounty still inserts on the upgraded DB.
+        from models.user import User
+        from models.bounty import Bounty
+        user = User(
+            email='no-check-mig@example.com', full_name='No Check Mig',
+            role='user', is_active=True, email_verified=True,
+        )
+        db.session.add(user)
+        db.session.commit()
+        bounty = Bounty(
+            poster_id=user.id,
+            title='Need an electrician for a panel upgrade in Laval',
+            description='Looking for a licensed electrician for a '
+                        'panel upgrade, available next month.',
+            bounty_type='services',
+            bounty_direction='seeking_opportunity',
+            status='open',
+            payment_status='released',
+            location='Laval, QC',
+        )
+        db.session.add(bounty)
+        db.session.commit()
+        assert db.session.get(Bounty, bounty.id).bounty_type == 'services'

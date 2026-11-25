@@ -22,6 +22,7 @@ and wrong for services, so it goes.
 """
 
 from alembic import op
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -32,10 +33,21 @@ depends_on = None
 
 
 def upgrade():
-    with op.batch_alter_table('bounties', schema=None) as batch_op:
-        batch_op.drop_constraint(
-            'ck_bounties_bounty_type', type_='check'
-        )
+    # The live database never got this constraint: its alembic
+    # version was stamped to recruitment_only_v2 by direct SQL
+    # (phantom-revision fix, 2026-11-22), so that migration never
+    # ran there and `DROP CONSTRAINT` fails with "constraint does
+    # not exist". Drop only when the constraint is actually present.
+    bind = op.get_bind()
+    existing = {
+        c['name']
+        for c in inspect(bind).get_check_constraints('bounties')
+    }
+    if 'ck_bounties_bounty_type' in existing:
+        with op.batch_alter_table('bounties', schema=None) as batch_op:
+            batch_op.drop_constraint(
+                'ck_bounties_bounty_type', type_='check'
+            )
 
 
 def downgrade():
