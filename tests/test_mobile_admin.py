@@ -148,3 +148,23 @@ class TestAdminMobileCss:
         r = client.get('/sw.js')
         assert r.status_code == 200
         assert 'p2m-v3' in r.data.decode()
+
+
+class TestAdminLinkInMobileMenu:
+    """The Admin link used to live only in the desktop avatar dropdown
+    (d-none d-lg-block), so on a phone there was no way to reach /admin
+    at all — the mobile hamburger menu had every account link except
+    Admin. Regression: the mobile menu carries it for admins only."""
+
+    def test_admin_sees_admin_link_in_mobile_menu(
+            self, logged_in_admin):
+        r = logged_in_admin.get('/')
+        assert r.status_code == 200
+        body = r.data.decode()
+        assert 'class="nav-link" href="/admin/"' in body
+
+    def test_regular_user_sees_no_admin_link(
+            self, logged_in_user):
+        r = logged_in_user.get('/')
+        assert r.status_code == 200
+        assert '/admin' not in r.data.decode()

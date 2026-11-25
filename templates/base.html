@@ -152,6 +152,13 @@
                             {{ icon('dollar-sign', 18) }} {{ _('My Stakes') }}
                         </a>
                     </li>
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+                            {{ icon('settings', 18) }} {{ _('Admin') }}
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item d-lg-none">
                         <a class="nav-link" href="{{ url_for('auth.logout') }}">
                             {{ icon('log-out', 18) }} {{ _('Logout') }}
