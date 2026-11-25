@@ -52,7 +52,7 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body{% if request.path.startswith('/admin') %} class="admin-page"{% endif %}>
     {% if current_user.is_authenticated %}
         {% set my_profile = current_user.profiles.first() %}
     {% else %}
@@ -298,6 +298,24 @@
             </div>
         </div>
     </nav>
+
+    {# Mobile-only admin section nav (d-lg-none keeps desktop untouched):
+       every admin section one tap away without the avatar menu. #}
+    {% if current_user.is_authenticated and current_user.role == 'admin' and request.path.startswith('/admin') %}
+    <nav class="admin-subnav d-lg-none" aria-label="Admin sections">
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-subnav-link{% if request.endpoint == 'admin.dashboard' %} active{% endif %}"{% if request.endpoint == 'admin.dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+        <a href="{{ url_for('admin.users') }}" class="admin-subnav-link{% if request.endpoint == 'admin.users' %} active{% endif %}"{% if request.endpoint == 'admin.users' %} aria-current="page"{% endif %}>Users</a>
+        <a href="{{ url_for('admin.bounties') }}" class="admin-subnav-link{% if request.endpoint == 'admin.bounties' %} active{% endif %}"{% if request.endpoint == 'admin.bounties' %} aria-current="page"{% endif %}>Opportunities</a>
+        <a href="{{ url_for('admin.disputes') }}" class="admin-subnav-link{% if request.endpoint == 'admin.disputes' %} active{% endif %}"{% if request.endpoint == 'admin.disputes' %} aria-current="page"{% endif %}>Disputes</a>
+        <a href="{{ url_for('admin.payouts') }}" class="admin-subnav-link{% if request.endpoint == 'admin.payouts' %} active{% endif %}"{% if request.endpoint == 'admin.payouts' %} aria-current="page"{% endif %}>Payouts</a>
+        <a href="{{ url_for('admin.reports') }}" class="admin-subnav-link{% if request.endpoint == 'admin.reports' %} active{% endif %}"{% if request.endpoint == 'admin.reports' %} aria-current="page"{% endif %}>Reports</a>
+        <a href="{{ url_for('admin.verifications') }}" class="admin-subnav-link{% if request.endpoint == 'admin.verifications' %} active{% endif %}"{% if request.endpoint == 'admin.verifications' %} aria-current="page"{% endif %}>Verifications</a>
+        <a href="{{ url_for('admin.pledges') }}" class="admin-subnav-link{% if request.endpoint == 'admin.pledges' %} active{% endif %}"{% if request.endpoint == 'admin.pledges' %} aria-current="page"{% endif %}>Pledges</a>
+        <a href="{{ url_for('admin.employer_pledges') }}" class="admin-subnav-link{% if request.endpoint == 'admin.employer_pledges' %} active{% endif %}"{% if request.endpoint == 'admin.employer_pledges' %} aria-current="page"{% endif %}>Employer Pledges</a>
+        <a href="{{ url_for('admin.linked_accounts') }}" class="admin-subnav-link{% if request.endpoint == 'admin.linked_accounts' %} active{% endif %}"{% if request.endpoint == 'admin.linked_accounts' %} aria-current="page"{% endif %}>Linked Accounts</a>
+        <a href="{{ url_for('admin.settings') }}" class="admin-subnav-link{% if request.endpoint == 'admin.settings' %} active{% endif %}"{% if request.endpoint == 'admin.settings' %} aria-current="page"{% endif %}>Settings</a>
+    </nav>
+    {% endif %}
 
     <!-- Main Content -->
     <main>

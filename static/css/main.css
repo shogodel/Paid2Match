@@ -2448,3 +2448,145 @@ input[type="password"]::placeholder {
 @media (max-width: 991.98px) {
     .bounty-detail-page { padding-bottom: 72px !important; }
 }
+
+/* ---------------- Admin on mobile ----------------
+   The admin panel is used on a phone (Remus checks it from his).
+   Desktop layout is untouched: every rule below is scoped to
+   .admin-page or to a max-width media query. */
+
+/* Admin section nav (mobile only — the element carries d-lg-none).
+   A horizontally scrollable strip under the main navbar so every
+   admin section is one tap away without going through the avatar
+   menu and the dashboard. */
+.admin-subnav {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--p2m-surface);
+    border-bottom: 1px solid var(--p2m-border);
+    white-space: nowrap;
+}
+.admin-subnav::-webkit-scrollbar { display: none; }
+.admin-subnav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    color: var(--p2m-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.admin-subnav-link.active {
+    background-color: var(--p2m-primary);
+    color: var(--p2m-on-primary);
+}
+
+/* Action forms inside admin table cells sit side by side on desktop.
+   (Replaces the old inline style="display:inline".) */
+.admin-action-form { display: inline; }
+input.admin-email-input { width: 180px !important; }
+
+/* Chart.js canvas on the admin dashboard: never wider than its card.
+   Chart.js sizes the canvas itself on desktop; this only bites when
+   the CDN is slow or the viewport is very narrow (320px). */
+#activityChart { max-width: 100%; }
+
+@media (max-width: 767.98px) {
+    /* 44px minimum tap targets across the admin panel. */
+    .admin-page .btn { min-height: 44px; }
+    .admin-page .form-control,
+    .admin-page .form-select { min-height: 44px; }
+    .admin-page .input-group .btn { min-height: 44px; }
+
+    /* Payouts status filter: let the buttons wrap instead of
+       sticking 2px past the right edge at 360px and below. */
+    .admin-filter-group { flex-wrap: wrap; }
+    .admin-filter-group .btn { flex: 1 1 auto; }
+
+    /* Stacked admin tables: each row becomes a labelled card.
+       Applied to tables carrying .table-stack-mobile; every td
+       needs a data-label attribute (see the admin templates). */
+    .table-stack-mobile { display: block; border: 0; }
+    .table-stack-mobile > thead { display: none; }
+    .table-stack-mobile > tbody,
+    .table-stack-mobile > tbody > tr,
+    .table-stack-mobile > tbody > tr > td { display: block; width: 100%; }
+    .table-stack-mobile > tbody > tr {
+        border: 1px solid var(--p2m-border);
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background-color: var(--p2m-surface);
+    }
+    .table-stack-mobile > tbody > tr > td {
+        border: 0;
+        padding: 0.3rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.75rem;
+        overflow-wrap: anywhere;
+        text-align: right;
+    }
+    .table-stack-mobile > tbody > tr > td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--p2m-text-muted);
+        flex-shrink: 0;
+        text-align: left;
+    }
+    /* The actions cell stacks its forms full-width. */
+    .table-stack-mobile > tbody > tr > td[data-label="Actions"] {
+        display: block;
+        text-align: left;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--p2m-border);
+        margin-top: 0.25rem;
+    }
+    .table-stack-mobile > tbody > tr > td[data-label="Actions"]::before {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .table-stack-mobile > tbody > tr > td[data-label="Actions"] form {
+        display: block !important;
+        margin: 0 0 0.5rem;
+    }
+    .table-stack-mobile > tbody > tr > td[data-label="Actions"] .btn {
+        width: 100%;
+    }
+    .table-stack-mobile > tbody > tr > td[data-label="Actions"] .admin-email-input {
+        width: 100% !important;
+    }
+    .table-stack-mobile > tbody > tr > td[data-label="Actions"] input[type="text"],
+    .table-stack-mobile > tbody > tr > td[data-label="Actions"] input[type="email"] {
+        width: 100%;
+    }
+    /* Any other cell holding a form (e.g. payouts "Manual payout")
+       stacks the same way instead of squeezing the form beside its
+       label. */
+    .table-stack-mobile > tbody > tr > td:has(form) {
+        display: block;
+        text-align: left;
+    }
+    .table-stack-mobile > tbody > tr > td:has(form)::before {
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    .table-stack-mobile > tbody > tr > td:has(form) form {
+        display: block;
+        margin: 0;
+    }
+}
+
+/* The two icon buttons in the top navbar (theme toggle, hamburger)
+   were 40px tall on mobile — 44px like everything else tappable. */
+@media (max-width: 767.98px) {
+    .navbar-toggler,
+    .nav-icon-btn { min-height: 44px; min-width: 44px; }
+}

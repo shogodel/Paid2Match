@@ -67,6 +67,7 @@
                     <a href="{{ url_for('admin.users') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 {% if recent_users %}
+                <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <thead><tr>
                         <th>Name</th><th>Email</th><th>Role</th><th>Joined</th>
@@ -82,6 +83,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
                 {% else %}
                 <div class="card-body text-muted">No users yet.</div>
                 {% endif %}
@@ -95,9 +97,10 @@
                     <a href="{{ url_for('admin.bounties') }}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 {% if recent_bounties %}
+                <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <thead><tr>
-                        <th>Title</th><th>Status</th><th>Reward</th>
+                        <th>Title</th><th>Type</th><th>Status</th><th>Reward</th>
                     </tr></thead>
                     <tbody>
                         {% for bounty in recent_bounties %}
@@ -110,6 +113,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
                 {% else %}
                 <div class="card-body text-muted">No referral needs yet.</div>
                 {% endif %}

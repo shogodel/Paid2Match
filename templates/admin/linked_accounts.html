@@ -9,19 +9,19 @@
         <a href="{{ url_for('admin.linked_accounts', manual=0) }}" class="btn btn-sm {{ 'btn-primary' if not manual_only else 'btn-outline-primary' }}">All pending</a>
     </div>
     {% if accounts %}
-    <table class="table">
+    <table class="table table-stack-mobile">
         <thead><tr><th>User</th><th>Platform</th><th>Link</th><th>Method</th><th>Requested</th><th>Actions</th></tr></thead>
         <tbody>
         {% for account in accounts %}
         <tr>
-            <td>{{ account.user.full_name or account.user.email }}<br><span class="text-muted small">{{ account.user.email }}</span></td>
-            <td>{{ account.platform|title }}</td>
-            <td><a href="{{ account.url }}" target="_blank" rel="noopener">{{ account.handle or account.url }}</a>
+            <td data-label="User">{{ account.user.full_name or account.user.email }}<br><span class="text-muted small">{{ account.user.email }}</span></td>
+            <td data-label="Platform">{{ account.platform|title }}</td>
+            <td data-label="Link"><a href="{{ account.url }}" target="_blank" rel="noopener">{{ account.handle or account.url }}</a>
                 {% if account.verification_code %}<br><code>{{ account.verification_code }}</code>{% endif %}
             </td>
-            <td>{{ account.method }}</td>
-            <td>{{ account.created_at.strftime('%b %d, %Y') if account.created_at }}</td>
-            <td>
+            <td data-label="Method">{{ account.method }}</td>
+            <td data-label="Requested">{{ account.created_at.strftime('%b %d, %Y') if account.created_at }}</td>
+            <td data-label="Actions">
                 <form method="POST" action="{{ url_for('admin.approve_linked_account', id=account.id) }}" class="d-inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-success">Approve</button>

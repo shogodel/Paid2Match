@@ -11,7 +11,7 @@
         payout you already made — it marks the payout completed and
         notifies the referrer.
     </p>
-    <div class="btn-group mb-3" role="group">
+    <div class="btn-group admin-filter-group mb-3" role="group">
         <a href="{{ url_for('admin.payouts') }}" class="btn btn-sm btn-outline-primary {% if not status %}active{% endif %}">All</a>
         {% for s in ['pending', 'processing', 'completed', 'failed'] %}
         <a href="{{ url_for('admin.payouts', status=s) }}" class="btn btn-sm btn-outline-primary {% if status == s %}active{% endif %}">{{ s|title }}</a>
@@ -22,7 +22,7 @@
     <div class="card mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table mb-0">
+                <table class="table table-stack-mobile mb-0">
                     <thead>
                         <tr>
                             <th>Referrer</th>
@@ -40,24 +40,24 @@
                     <tbody>
                         {% for payout in payouts %}
                         <tr>
-                            <td>{{ payout.referrer.email if payout.referrer else payout.referrer_id }}</td>
-                            <td>
+                            <td data-label="Referrer">{{ payout.referrer.email if payout.referrer else payout.referrer_id }}</td>
+                            <td data-label="Kind">
                                 {% if payout.kind == 'chain_share' %}
                                 <span class="badge bg-info text-dark" title="The sharer's cut of a two-level chain">Chain share</span>
                                 {% else %}
                                 <span class="badge bg-secondary">Referral</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-label="Need">
                                 <a href="{{ url_for('bounties.confirmed_match', match_id=payout.match_id) }}">
                                     {{ payout.match.bounty.title if payout.match and payout.match.bounty else '—' }}
                                 </a>
                             </td>
-                            <td>${{ "{:,.2f}".format(payout.gross_amount) }}</td>
-                            <td>${{ "{:,.2f}".format(payout.platform_fee) }}</td>
-                            <td><strong>${{ "{:,.2f}".format(payout.amount) }} CAD</strong></td>
-                            <td>{{ payout.method|title }}</td>
-                            <td>
+                            <td data-label="Reward">${{ "{:,.2f}".format(payout.gross_amount) }}</td>
+                            <td data-label="Fee">${{ "{:,.2f}".format(payout.platform_fee) }}</td>
+                            <td data-label="Amount"><strong>${{ "{:,.2f}".format(payout.amount) }} CAD</strong></td>
+                            <td data-label="Method">{{ payout.method|title }}</td>
+                            <td data-label="Status">
                                 <span class="badge bg-{{ {'pending': 'warning', 'processing': 'info', 'completed': 'success', 'failed': 'danger'}.get(payout.status, 'secondary') }}">
                                     {{ payout.status|title }}
                                 </span>
@@ -68,8 +68,8 @@
                                 <div class="small text-muted">Ref: {{ payout.manual_reference }}</div>
                                 {% endif %}
                             </td>
-                            <td>{{ payout.created_at.strftime('%Y-%m-%d') if payout.created_at else '—' }}</td>
-                            <td>
+                            <td data-label="Date">{{ payout.created_at.strftime('%Y-%m-%d') if payout.created_at else '—' }}</td>
+                            <td data-label="Manual payout">
                                 {% if payout.status in ('pending', 'failed') %}
                                 <form method="POST" action="{{ url_for('admin.record_manual_payout_route', match_id=payout.match_id) }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -102,7 +102,7 @@
     <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table mb-0">
+                <table class="table table-stack-mobile mb-0">
                     <thead>
                         <tr>
                             <th>Need</th>
@@ -115,21 +115,21 @@
                     <tbody>
                         {% for match in completed_matches %}
                         <tr>
-                            <td>
+                            <td data-label="Need">
                                 <a href="{{ url_for('bounties.confirmed_match', match_id=match.id) }}">
                                     {{ match.bounty.title if match.bounty else '—' }}
                                 </a>
                             </td>
-                            <td>{{ match.hunter.email if match.hunter else match.hunter_id }}</td>
-                            <td>
+                            <td data-label="Referrer">{{ match.hunter.email if match.hunter else match.hunter_id }}</td>
+                            <td data-label="Net due">
                                 {% if match.payout_amount and match.platform_fee is not none %}
                                 ${{ "{:,.2f}".format(match.payout_amount - match.platform_fee) }} CAD
                                 {% else %}
                                 —
                                 {% endif %}
                             </td>
-                            <td>{{ match.confirmed_at.strftime('%Y-%m-%d') if match.confirmed_at else '—' }}</td>
-                            <td>
+                            <td data-label="Confirmed">{{ match.confirmed_at.strftime('%Y-%m-%d') if match.confirmed_at else '—' }}</td>
+                            <td data-label="Manual payout">
                                 <form method="POST" action="{{ url_for('admin.record_manual_payout_route', match_id=match.id) }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="input-group input-group-sm mb-1">

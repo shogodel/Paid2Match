@@ -6,27 +6,27 @@
 <div class="container py-5">
     <h1>Manage Opportunities</h1>
     {% if pagination %}
-        <table class="table">
+        <table class="table table-stack-mobile">
             <thead><tr><th>Title</th><th>Status</th><th>Payment</th><th>Reward</th><th>Actions</th></tr></thead>
             <tbody>
                 {% for bounty in bounties %}
                 <tr>
-                    <td>{{ bounty.title }}</td>
-                    <td>{{ bounty.status }}</td>
-                    <td>
+                    <td data-label="Title">{{ bounty.title }}</td>
+                    <td data-label="Status">{{ bounty.status }}</td>
+                    <td data-label="Payment">
                         {% if bounty.payment_status == 'secured' %}
                             <span class="badge bg-success">Secured</span>
                         {% else %}
                             <span class="badge bg-warning">Unsecured</span>
                         {% endif %}
                     </td>
-                    <td>{{ (bounty.reward_amount or 0)|money(bounty.currency) }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('admin.approve_bounty', id=bounty.id) }}" style="display:inline">
+                    <td data-label="Reward">{{ (bounty.reward_amount or 0)|money(bounty.currency) }}</td>
+                    <td data-label="Actions">
+                        <form method="POST" action="{{ url_for('admin.approve_bounty', id=bounty.id) }}" class="admin-action-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-success">Approve</button>
                         </form>
-                        <form method="POST" action="{{ url_for('admin.reject_bounty', id=bounty.id) }}" style="display:inline">
+                        <form method="POST" action="{{ url_for('admin.reject_bounty', id=bounty.id) }}" class="admin-action-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-danger">Reject</button>
                         </form>
