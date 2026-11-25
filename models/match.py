@@ -9,6 +9,15 @@ class Match(db.Model):
     """Matched bounty-hunter pair."""
     __tablename__ = 'matches'
 
+    # One match per pitch: two simultaneous confirmations must not
+    # create two matches for one referral — each match releases the
+    # same escrow, so a duplicate would pay the referrer twice.
+    # pitch_id is nullable (legacy rows); NULLs stay distinct under
+    # a unique constraint in both Postgres and SQLite.
+    __table_args__ = (
+        db.UniqueConstraint('pitch_id', name='uq_matches_pitch_id'),
+    )
+
     VALID_PAYOUT_STATUSES = ['pending', 'processing', 'completed', 'failed']
 
     # Allowed payout transitions. 'failed' can go back to 'pending' or

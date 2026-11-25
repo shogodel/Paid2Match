@@ -9,6 +9,7 @@ and bookmark/save (the Phase 1 deferral this phase closes).
 import gettext
 import json
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 from extensions import db
@@ -101,6 +102,40 @@ class TestPWA:
         assert '/auth/' in body
         assert '/api/' in body
 
+    def test_precache_entries_exist_on_disk(self, app):
+        """Every URL the service worker precaches must exist: a
+        single missing entry makes cache.addAll() reject and the
+        whole SW install fails, so the PWA never works offline.
+        (Nov 2026 audit: 15 entries, all present.)"""
+        sw_path = os.path.join(app.root_path, 'static', 'sw.js')
+        with open(sw_path) as f:
+            sw = f.read()
+        block = re.search(r'PRECACHE_URLS\s*=\s*\[(.*?)\]', sw, re.S)
+        assert block, 'PRECACHE_URLS not found in sw.js'
+        urls = re.findall(r"'(/[^']*)'", block.group(1))
+        assert len(urls) >= 10, f'only {len(urls)} precache URLs parsed'
+        static = os.path.join(app.root_path, 'static')
+        for url in urls:
+            if url.startswith('/static/'):
+                rel = url[len('/static/'):]
+                assert os.path.exists(os.path.join(static, rel)), url
+            else:
+                assert url == '/offline', f'unexpected precache URL: {url}'
+
+    def test_manifest_icons_have_stated_sizes(self, app):
+        """The manifest promises 192/512/maskable sizes; a file at
+        the wrong size is ignored by the browser at install time."""
+        from PIL import Image
+        static = os.path.join(app.root_path, 'static')
+        for filename, size in (
+            ('img/icon-192.png', (192, 192)),
+            ('img/icon-512.png', (512, 512)),
+            ('img/icon-maskable-512.png', (512, 512)),
+            ('img/apple-touch-icon-180.png', (180, 180)),
+        ):
+            with Image.open(os.path.join(static, filename)) as img:
+                assert img.size == size, f'{filename}: {img.size}'
+
     def test_offline_page_renders(self, client):
         r = client.get('/offline')
         assert r.status_code == 200
@@ -141,6 +176,118 @@ class TestI18n:
         # Plurals survive compilation.
         assert fr.ngettext('%(num)s comment', '%(num)s comments', 2) == \
             '%(num)s commentaires'
+
+    def test_fr_es_catalogs_have_no_untranslated_or_fuzzy(self):
+        """FR/ES must be complete: an untranslated entry renders
+        English to a French/Spanish user, and a fuzzy entry is
+        ignored by gettext entirely. Parsed with real Babel — a
+        regex .po parser miscounts obsolete #~ entries. (Nov 2026
+        i18n sweep: 232 strings wrapped in _() across messages,
+        payments, referrals, bounties, profile, errors and social
+        templates; FR/ES went from 95 untranslated + 137 fuzzy to
+        zero of each.)"""
+        from babel.messages.pofile import read_po
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for lang in ('fr', 'es'):
+            path = os.path.join(
+                root, 'translations', lang, 'LC_MESSAGES', 'messages.po')
+            with open(path, 'rb') as f:
+                catalog = read_po(f)
+            untranslated, fuzzy = [], []
+            for message in catalog:
+                if not message.id:
+                    continue
+                strings = (message.string if isinstance(
+                    message.string, (tuple, list)) else (message.string,))
+                if any(not s for s in strings):
+                    untranslated.append(message.id)
+                if message.fuzzy:
+                    fuzzy.append(message.id)
+            assert not untranslated, \
+                f'{lang} untranslated: {untranslated[:5]}'
+            assert not fuzzy, f'{lang} fuzzy: {fuzzy[:5]}'
+
+    def test_translated_format_strings_format_cleanly(self):
+        """A translated %-format string must accept the same
+        placeholders as its msgid: a lone '%' in a translation
+        (e.g. '30 %' where the msgid has '%(pct)s%%') raises
+        ValueError at render time. Regression for the Nov 2026
+        i18n sweep, which caught exactly that in the fee strings."""
+        import re
+        from babel.messages.pofile import read_po
+        placeholder_re = re.compile(r'%\((\w+)\)[sd]')
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for lang in ('fr', 'es'):
+            path = os.path.join(
+                root, 'translations', lang, 'LC_MESSAGES', 'messages.po')
+            with open(path, 'rb') as f:
+                catalog = read_po(f)
+            errors = []
+            for message in catalog:
+                if not message.id or message.fuzzy or not message.string:
+                    continue
+                ids = (message.id if isinstance(message.id, tuple)
+                       else (message.id,))
+                strings = (message.string if isinstance(
+                    message.string, (tuple, list)) else (message.string,))
+                for msgid, msgstr in zip(ids, strings):
+                    names = placeholder_re.findall(msgid)
+                    if not names:
+                        continue
+                    try:
+                        msgstr % {name: 1 for name in names}
+                    except Exception as exc:  # noqa: BLE001 - reported
+                        errors.append((msgid, msgstr, repr(exc)))
+            assert not errors, f'{lang} format errors: {errors[:3]}'
+
+    def test_newly_translated_strings_in_catalogs(self):
+        fr = self._catalog('fr')
+        assert fr.gettext('Inbox') == 'Boîte de réception'
+        assert fr.gettext('Delete Account') == 'Supprimer le compte'
+        assert fr.gettext('Bump packs') == 'Packs de relances'
+        assert fr.gettext('Page Not Found') == 'Page introuvable'
+        assert fr.gettext('My payouts') == 'Mes versements'
+        assert fr.ngettext(
+            '%(num)s bump', '%(num)s bumps', 2) == '%(num)s relances'
+        es = self._catalog('es')
+        assert es.gettext('Inbox') == 'Bandeja de entrada'
+        assert es.gettext('Delete Account') == 'Eliminar cuenta'
+        assert es.gettext('Page Not Found') == 'Página no encontrada'
+        assert es.ngettext(
+            '%(num)s bump', '%(num)s bumps', 2) == '%(num)s impulsos'
+
+    def test_newly_translated_pages_render_in_french(
+            self, client, logged_in_user):
+        """Pages the Nov 2026 i18n sweep wrapped must actually
+        render translated — a wrapped string with a missing catalog
+        entry would silently render English."""
+        client.get('/set-language/fr')
+        _clear_babel_locale_cache()
+        cases = [
+            ('/messages/', ['Boîte de réception',
+                            'Aucun message pour l’instant.']),
+            ('/messages/sent', ['Messages envoyés',
+                                'Aucun message envoyé.']),
+            ('/messages/compose', ['Rédiger un message', 'Envoyer']),
+            ('/payments/pro', ['Paid2Match Pro', '9 $/mois',
+                               'Membres atteints']),
+            ('/payments/payouts',
+             ['Mes versements',
+              '30 pour cent de la part du recommandeur']),
+            ('/auth/delete-account', ['Supprimer le compte',
+                                      'Avertissement :']),
+            ('/referrals/mine', ['Recommandations que j’ai faites']),
+        ]
+        for url, needles in cases:
+            r = client.get(url)
+            assert r.status_code == 200, url
+            body = r.data.decode()
+            for needle in needles:
+                assert needle in body, f'{url}: missing {needle!r}'
+        # The 404 page is translated too.
+        r = client.get('/no-such-page-xyz')
+        assert r.status_code == 404
+        assert 'Page introuvable' in r.data.decode()
 
     def test_homepage_differs_in_french(self, client):
         en = client.get('/').data

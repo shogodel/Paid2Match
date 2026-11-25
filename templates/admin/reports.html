@@ -36,10 +36,12 @@
                 {% if report.status == 'open' and can_act %}
                 <div class="d-flex gap-2 mt-2">
                     <form method="POST" action="{{ url_for('admin.resolve_report', id=report.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="dismiss">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">Dismiss</button>
                     </form>
                     <form method="POST" action="{{ url_for('admin.resolve_report', id=report.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="hide">
                         <button type="submit" class="btn btn-sm btn-warning">Hide content + uphold</button>
                     </form>

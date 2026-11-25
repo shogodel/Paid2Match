@@ -54,8 +54,12 @@ def can_endorse(endorser, endorsee_id, skill):
             f'You have used your {ENDORSEMENTS_PER_MONTH} endorsements '
             'for this month.'
         )
-    existing = Endorsement.query.filter_by(
-        endorser_id=endorser.id, endorsee_id=endorsee_id, skill=skill
+    existing = Endorsement.query.filter(
+        Endorsement.endorser_id == endorser.id,
+        Endorsement.endorsee_id == endorsee_id,
+        # Case-insensitive: 'Python' and 'python' are the same skill —
+        # an exact-match check let one endorser vouch twice for it.
+        func.lower(Endorsement.skill) == (skill or '').lower(),
     ).first()
     if existing is not None:
         return False, 'You already endorsed this person for that skill.'

@@ -23,9 +23,11 @@
             <td>{{ account.created_at.strftime('%b %d, %Y') if account.created_at }}</td>
             <td>
                 <form method="POST" action="{{ url_for('admin.approve_linked_account', id=account.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-success">Approve</button>
                 </form>
                 <form method="POST" action="{{ url_for('admin.reject_linked_account', id=account.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="text" name="admin_note" placeholder="Reason (optional)" class="form-control form-control-sm d-inline w-auto">
                     <button type="submit" class="btn btn-sm btn-danger">Reject</button>
                 </form>

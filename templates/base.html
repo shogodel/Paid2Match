@@ -107,6 +107,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('bounties.recruitment_board') }}">{{ _('Recruitment') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('bounties.services_board') }}">{{ _('Services') }}</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('social.pledges') }}">{{ _('Human-reviewed hiring pledge') }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pledge.register') }}">{{ _('Employer pledge register') }}</a></li>
                         </ul>
                     </li>
                     {% if current_user.is_authenticated %}
@@ -341,6 +342,9 @@
                         </a></li>
                         <li><a href="{{ url_for('social.pledges') }}">
                             <i class="fas fa-handshake me-2"></i>{{ _('Human-reviewed hiring pledge') }}
+                        </a></li>
+                        <li><a href="{{ url_for('pledge.register') }}">
+                            <i class="fas fa-shield-alt me-2"></i>{{ _('Employer pledge register') }}
                         </a></li>
                     </ul>
                 </div>

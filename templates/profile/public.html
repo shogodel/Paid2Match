@@ -47,9 +47,10 @@
                     <span class="label-unfollow">{{ _('Unfollow') }}</span>
                 </button>
                 <a href="{{ url_for('messages.compose') }}" class="btn btn-outline-primary">
-                    {{ icon('mail', 16) }} Message
+                    {{ icon('mail', 16) }} {{ _('Message') }}
                 </a>
                 <form method="POST" action="{{ url_for('social.block_user', user_id=user.id) }}" class="js-block-user d-inline" data-user-id="{{ user.id }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-warning btn-sm">{{ _('Block') }}</button>
                 </form>
                 <a href="{{ url_for('social.report', target_type='profile', target_id=user.id) }}" class="btn btn-outline-danger btn-sm">{{ _('Report') }}</a>
@@ -238,34 +239,34 @@
             <div class="profile-card">
                 <h5 class="profile-card-title">{{ _('About') }}</h5>
                 {% if profile.bio %}
-                    <p>{{ profile.bio | replace('\n', '<br>') | safe }}</p>
+                    <p>{{ profile.bio | nl2br }}</p>
                 {% else %}
                     <p class="text-muted">{{ _('No bio added yet.') }}</p>
                 {% endif %}
                 <div class="mt-3">
                     <span class="skill-badge" style="font-size: 1rem;">
                         {% if profile.profile_type == 'business' %}
-                            {{ icon('building-2', 16) }} Business
+                            {{ icon('building-2', 16) }} {{ _('Business') }}
                         {% elif profile.profile_type == 'hr_professional' %}
-                            {{ icon('user', 16) }} HR Professional
+                            {{ icon('user', 16) }} {{ _('HR Professional') }}
                         {% elif profile.profile_type == 'worker' %}
-                            {{ icon('hard-hat', 16) }} Worker
+                            {{ icon('hard-hat', 16) }} {{ _('Worker') }}
                         {% elif profile.profile_type == 'independent' %}
-                            {{ icon('user', 16) }} Independent
+                            {{ icon('user', 16) }} {{ _('Independent') }}
                         {% endif %}
                     </span>
                 </div>
                 {% if profile.remote_ok %}
                     <div class="mt-3">
                         <span class="btn btn-outline-success btn-sm">
-                            {{ icon('globe', 14) }} Open to Remote Work
+                            {{ icon('globe', 14) }} {{ _('Open to Remote Work') }}
                         </span>
                     </div>
                 {% endif %}
                 {% if profile.relocation_assistance %}
                     <div class="mt-2">
                         <span class="btn btn-outline-info btn-sm">
-                            {{ icon('map-pin', 14) }} Needs Relocation Assistance
+                            {{ icon('map-pin', 14) }} {{ _('Needs Relocation Assistance') }}
                         </span>
                     </div>
                 {% endif %}

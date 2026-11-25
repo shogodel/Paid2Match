@@ -12,7 +12,7 @@
                 <h5 class="mb-1">{{ card.platform|title }}</h5>
                 {% if card.account %}
                     {% if card.status == 'verified' %}
-                    <span class="badge bg-success">Verified{% if card.expires_at %} until {{ card.expires_at.strftime('%b %d, %Y') }}{% endif %}</span>
+                    <span class="badge bg-success">{{ _('Verified') }}{% if card.expires_at %} {{ _('until %(date)s', date=card.expires_at.strftime('%b %d, %Y')) }}{% endif %}</span>
                     {% elif card.status == 'expired' %}
                     <span class="badge bg-warning text-dark">{{ _('Expired — re-verify') }}</span>
                     {% elif card.status == 'pending' %}
@@ -25,19 +25,21 @@
             {% if card.account %}
             <p class="mb-2">
                 <a href="{{ card.account.url }}" target="_blank" rel="noopener">{{ card.account.handle or card.account.url }}</a>
-                {% if card.account.admin_note %}<br><span class="text-muted small">Note from admin: {{ card.account.admin_note }}</span>{% endif %}
+                {% if card.account.admin_note %}<br><span class="text-muted small">{{ _('Note from admin:') }} {{ card.account.admin_note }}</span>{% endif %}
             </p>
             {% if card.account.status == 'pending' %}
-            <p class="text-muted small">Method: {{ card.account.verification_method }}.
-                {% if card.account.verification_method == 'bio_link' %}Add a link to your Paid2Match profile ({{ profile_url }}) on your {{ card.platform }} page, then check it.{% endif %}
-                {% if card.account.verification_method == 'code' %}Post this code on your {{ card.platform }} page: <code>{{ card.account.verification_code }}</code>{% endif %}
+            <p class="text-muted small">{{ _('Method:') }} {{ card.account.verification_method }}.
+                {% if card.account.verification_method == 'bio_link' %}{{ _('Add a link to your Paid2Match profile (%(url)s) on your %(platform)s page, then check it.', url=profile_url, platform=card.platform) }}{% endif %}
+                {% if card.account.verification_method == 'code' %}{{ _('Post this code on your %(platform)s page:', platform=card.platform) }} <code>{{ card.account.verification_code }}</code>{% endif %}
             </p>
             <div class="d-flex gap-2 flex-wrap">
                 <form method="POST" action="{{ url_for('profile.check_linked_account', account_id=card.account.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-primary">{{ _('Check now') }}</button>
                 </form>
                 {% if not card.account.manual_review %}
                 <form method="POST" action="{{ url_for('profile.request_manual_review', account_id=card.account.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Ask for a manual review') }}</button>
                 </form>
                 {% else %}
@@ -47,22 +49,25 @@
             {% endif %}
             <div class="d-flex gap-2 flex-wrap mt-2">
                 <form method="POST" action="{{ url_for('profile.set_link_visibility', account_id=card.account.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="input-group input-group-sm">
                         <select name="visibility" class="form-select">
+                            {% set vis_labels = {'public': _('Public'), 'followers': _('Followers'), 'hidden': _('Hidden')} %}
                             {% for v in ['public', 'followers', 'hidden'] %}
-                            <option value="{{ v }}" {{ 'selected' if card.account.visibility == v }}>{{ v|title }}</option>
+                            <option value="{{ v }}" {{ 'selected' if card.account.visibility == v }}>{{ vis_labels[v] }}</option>
                             {% endfor %}
                         </select>
                         <button type="submit" class="btn btn-outline-secondary">{{ _('Set visibility') }}</button>
                     </div>
                 </form>
                 <form method="POST" action="{{ url_for('profile.unlink_account', account_id=card.account.id) }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Unlink this account? It will no longer count toward your trust score.')">{{ _('Unlink') }}</button>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('{{ _('Unlink this account? It will no longer count toward your trust score.') }}')">{{ _('Unlink') }}</button>
                 </form>
             </div>
             {% else %}
             {% if card.oauth_available %}
-            <a href="{{ url_for('profile.linked_oauth_start', platform=card.platform) }}" class="btn btn-sm btn-primary mb-2">Connect with {{ card.platform|title }}</a>
+            <a href="{{ url_for('profile.linked_oauth_start', platform=card.platform) }}" class="btn btn-sm btn-primary mb-2">{{ _('Connect with %(platform)s', platform=card.platform|title) }}</a>
             {% endif %}
             <form method="POST" action="{{ url_for('profile.add_linked_account', platform=card.platform) }}">
                 {{ card.form.hidden_tag() }}

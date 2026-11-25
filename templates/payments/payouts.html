@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}My payouts{% endblock %}
+{% block title %}{{ _('My payouts') }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <h1 class="mb-4"><i class="fas fa-wallet"></i> My payouts</h1>
+    <h1 class="mb-4"><i class="fas fa-wallet"></i> {{ _('My payouts') }}</h1>
 
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h6 class="text-muted">Paid out</h6>
+                    <h6 class="text-muted">{{ _('Paid out') }}</h6>
                     <h3 class="mb-0">${{ "{:,.2f}".format(total_paid) }} CAD</h3>
                 </div>
             </div>
@@ -18,7 +18,7 @@
         <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h6 class="text-muted">Pending / processing</h6>
+                    <h6 class="text-muted">{{ _('Pending / processing') }}</h6>
                     <h3 class="mb-0">${{ "{:,.2f}".format(total_pending) }} CAD</h3>
                 </div>
             </div>
@@ -26,12 +26,12 @@
         <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h6 class="text-muted">Payout setup</h6>
+                    <h6 class="text-muted">{{ _('Payout setup') }}</h6>
                     {% if account and account.is_ready %}
-                    <h5 class="mb-0 text-success"><i class="fas fa-check-circle"></i> Ready</h5>
+                    <h5 class="mb-0 text-success"><i class="fas fa-check-circle"></i> {{ _('Ready') }}</h5>
                     {% else %}
-                    <h5 class="mb-0 text-warning"><i class="fas fa-exclamation-triangle"></i> Not set up</h5>
-                    <a href="{{ url_for('payments.connect_status') }}" class="btn btn-sm btn-primary mt-2">Set up payouts</a>
+                    <h5 class="mb-0 text-warning"><i class="fas fa-exclamation-triangle"></i> {{ _('Not set up') }}</h5>
+                    <a href="{{ url_for('payments.connect_status') }}" class="btn btn-sm btn-primary mt-2">{{ _('Set up payouts') }}</a>
                     {% endif %}
                 </div>
             </div>
@@ -42,11 +42,11 @@
         <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h6 class="text-muted">Earned from shares</h6>
+                    <h6 class="text-muted">{{ _('Earned from shares') }}</h6>
                     <h3 class="mb-0">${{ "{:,.2f}".format(earnings.chain_paid) }} CAD</h3>
-                    <small class="text-muted">Your cut when a share of yours led to a hire (30% of the referrer's share).</small>
+                    <small class="text-muted">{{ _("Your cut when a share of yours led to a hire (30 percent of the referrer's share).") }}</small>
                     {% if earnings.chain_pending > 0 %}
-                    <div class="small">${{ "{:,.2f}".format(earnings.chain_pending) }} CAD pending</div>
+                    <div class="small">${{ "{:,.2f}".format(earnings.chain_pending) }} {{ _('CAD pending') }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -54,10 +54,10 @@
         <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h6 class="text-muted">Referrals</h6>
+                    <h6 class="text-muted">{{ _('Referrals') }}</h6>
                     <h3 class="mb-0">{{ earnings.referrals_total + earnings.direct_pitches_total }}</h3>
                     <small class="text-muted">
-                        {{ earnings.matches_total }} matches · {{ earnings.completed_matches }} completed
+                        {{ _('%(matches)s matches · %(completed)s completed', matches=earnings.matches_total, completed=earnings.completed_matches) }}
                     </small>
                     <div class="small mt-1">
                         {% for status, count in earnings.referrals_by_status.items() %}
@@ -70,10 +70,10 @@
         <div class="col-md-4">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h6 class="text-muted">Earned from referrals</h6>
+                    <h6 class="text-muted">{{ _('Earned from referrals') }}</h6>
                     <h3 class="mb-0">${{ "{:,.2f}".format(earnings.referral_paid) }} CAD</h3>
                     {% if earnings.referral_pending > 0 %}
-                    <div class="small">${{ "{:,.2f}".format(earnings.referral_pending) }} CAD pending</div>
+                    <div class="small">${{ "{:,.2f}".format(earnings.referral_pending) }} {{ _('CAD pending') }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -87,14 +87,14 @@
                 <table class="table mb-0">
                     <thead>
                         <tr>
-                            <th>Need</th>
-                            <th>Kind</th>
-                            <th>Reward</th>
-                            <th>Platform fee</th>
-                            <th>You receive</th>
-                            <th>Method</th>
-                            <th>Status</th>
-                            <th>Date</th>
+                            <th>{{ _('Need') }}</th>
+                            <th>{{ _('Kind') }}</th>
+                            <th>{{ _('Reward') }}</th>
+                            <th>{{ _('Platform fee') }}</th>
+                            <th>{{ _('You receive') }}</th>
+                            <th>{{ _('Method') }}</th>
+                            <th>{{ _('Status') }}</th>
+                            <th>{{ _('Date') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -108,9 +108,9 @@
                             </td>
                             <td>
                                 {% if payout.kind == 'chain_share' %}
-                                <span class="badge bg-info text-dark" title="Your cut for a share that led to a hire">Chain share</span>
+                                <span class="badge bg-info text-dark" title="{{ _('Your cut for a share that led to a hire') }}">{{ _('Chain share') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">Referral</span>
+                                <span class="badge bg-secondary">{{ _('Referral') }}</span>
                                 {% endif %}
                             </td>
                             <td>${{ "{:,.2f}".format(payout.gross_amount) }}</td>
@@ -125,7 +125,7 @@
                                 <div class="small text-muted">{{ payout.failure_reason }}</div>
                                 {% endif %}
                                 {% if payout.manual_reference %}
-                                <div class="small text-muted">Ref: {{ payout.manual_reference }}</div>
+                                <div class="small text-muted">{{ _('Ref:') }} {{ payout.manual_reference }}</div>
                                 {% endif %}
                             </td>
                             <td>{{ payout.created_at.strftime('%Y-%m-%d') if payout.created_at else '—' }}</td>
@@ -133,7 +133,7 @@
                                 {% if payout.status in ('pending', 'failed') and payout.method == 'stripe' %}
                                 <form method="POST" action="{{ url_for('payments.retry_payout', payout_id=payout.id) }}" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">Retry</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">{{ _('Retry') }}</button>
                                 </form>
                                 {% endif %}
                             </td>
@@ -146,24 +146,23 @@
     </div>
     {% else %}
     <div class="alert alert-info">
-        No payouts yet. When a referral you made is confirmed by both
-        sides, your payout will appear here.
+        {{ _('No payouts yet. When a referral you made is confirmed by both sides, your payout will appear here.') }}
     </div>
     {% endif %}
 
     {% if earnings.per_need %}
-    <h3 class="mt-5 mb-3">Per-need stats</h3>
+    <h3 class="mt-5 mb-3">{{ _('Per-need stats') }}</h3>
     <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table mb-0">
                     <thead>
                         <tr>
-                            <th>Need</th>
-                            <th>Vertical</th>
-                            <th>Referrals</th>
-                            <th>Matches</th>
-                            <th>Earned</th>
+                            <th>{{ _('Need') }}</th>
+                            <th>{{ _('Vertical') }}</th>
+                            <th>{{ _('Referrals') }}</th>
+                            <th>{{ _('Matches') }}</th>
+                            <th>{{ _('Earned') }}</th>
                         </tr>
                     </thead>
                     <tbody>

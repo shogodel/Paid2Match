@@ -11,7 +11,7 @@
                     <h4 class="mb-0"><i class="fas fa-handshake"></i> {{ _('Payment Invitation') }}</h4>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">{{ agreement.inviter.username }} has invited you to pay for a referral need:</p>
+                    <p class="text-muted">{{ _('%(name)s has invited you to pay for a referral need:', name=agreement.inviter.username) }}</p>
                     
                     <div class="card bg-light mb-3">
                         <div class="card-body">
@@ -30,7 +30,7 @@
                     
                     {% if agreement.message %}
                     <div class="alert alert-info">
-                        <strong>Message from {{ agreement.inviter.username }}:</strong><br>
+                        <strong>{{ _('Message from %(name)s:', name=agreement.inviter.username) }}</strong><br>
                         {{ agreement.message }}
                     </div>
                     {% endif %}
@@ -54,9 +54,10 @@
                     </div>
                     
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="d-grid gap-2">
                             <button type="submit" name="action" value="accept" class="btn btn-success btn-lg">
-                                <i class="fas fa-check"></i> Accept & Pay {{ (bounty.reward_amount * 1.03)|money(bounty.currency) }}
+                                <i class="fas fa-check"></i> {{ _('Accept & Pay %(amount)s', amount=(bounty.reward_amount * 1.03)|money(bounty.currency)) }}
                             </button>
                             <button type="submit" name="action" value="decline" class="btn btn-outline-danger">
                                 <i class="fas fa-times"></i> {{ _('Decline') }}

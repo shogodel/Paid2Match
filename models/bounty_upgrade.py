@@ -1,6 +1,9 @@
 """BountyUpgrade model for premium placement features."""
 import uuid
 from datetime import datetime, timezone
+
+from flask_babel import lazy_gettext as _l
+
 from extensions import db
 
 
@@ -18,25 +21,25 @@ class BountyUpgrade(db.Model):
 
     UPGRADE_TYPES = {
         'highlight': {
-            'name': 'Highlight',
+            'name': _l('Highlight'),
             'price_per_day': 1.00,
-            'badge': '⭐ Highlighted',
+            'badge': _l('⭐ Highlighted'),
             'badge_class': 'bg-warning text-dark',
-            'description': 'Yellow highlight background, top of board placement'
+            'description': _l('Yellow highlight background, top of board placement')
         },
         'urgent': {
-            'name': 'Urgent',
+            'name': _l('Urgent'),
             'price_per_day': 2.00,
-            'badge': '🔥 Urgent',
+            'badge': _l('🔥 Urgent'),
             'badge_class': 'bg-danger',
-            'description': 'Red urgent badge, priority placement, shows in Urgent filter'
+            'description': _l('Red urgent badge, priority placement, shows in Urgent filter')
         },
         'featured': {
-            'name': 'Featured',
+            'name': _l('Featured'),
             'price_per_day': 3.00,
-            'badge': '✨ Featured',
+            'badge': _l('✨ Featured'),
             'badge_class': 'bg-warning',
-            'description': 'Appears on ALL boards, homepage featured section, top placement'
+            'description': _l('Appears on ALL boards, homepage featured section, top placement')
         }
     }
 

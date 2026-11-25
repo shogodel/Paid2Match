@@ -1,7 +1,7 @@
-"""WSGI entry point for uWSGI.
+"""WSGI entry point for gunicorn (see the Dockerfile CMD).
 
 This module creates the Flask application instance for WSGI servers.
-uWSGI imports 'app' from this module to serve the application.
+Gunicorn imports 'app' from this module to serve the application.
 
 Environment Variables:
     FLASK_ENV: 'production' (default), 'development', 'staging', 'testing'

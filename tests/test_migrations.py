@@ -15,8 +15,14 @@ from extensions import db
 
 def test_full_chain_upgrades_and_downgrades(tmp_path):
     db_file = tmp_path / 'migration_chain.db'
-    test_app = create_app('testing')
-    test_app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_file}'
+    # The URI must reach create_app() via config_overrides:
+    # Flask-SQLAlchemy creates its engines eagerly in db.init_app(),
+    # so setting SQLALCHEMY_DATABASE_URI on the app afterwards is
+    # silently ignored and the migration would run against the
+    # shared test database instead of this tmp file.
+    test_app = create_app('testing', config_overrides={
+        'SQLALCHEMY_DATABASE_URI': f'sqlite:///{db_file}',
+    })
     with test_app.app_context():
         flask_migrate.upgrade()
         inspector = inspect(db.engine)
@@ -24,11 +30,22 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         # Every table the models declare exists after the upgrade.
         expected = set(db.metadata.tables.keys())
         assert expected <= tables, f'missing tables: {expected - tables}'
-        # The head revision is the wins wall migration.
+        # The head revision is the money_audit_fixes
+        # migration.
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()
-        assert version == 'wins_wall'
+        assert version == 'money_audit_fixes'
+        # Prove the migration really ran on THIS file (not the
+        # shared test DB): read the version straight out of the
+        # tmp file with a fresh sqlite3 connection, bypassing the
+        # app engine entirely.
+        import sqlite3
+        with sqlite3.connect(db_file) as conn:
+            file_version = conn.execute(
+                'SELECT version_num FROM alembic_version'
+            ).fetchone()[0]
+        assert file_version == 'money_audit_fixes'
         # Columns match the models exactly for every table.
         for table in expected:
             actual_cols = {c['name'] for c in inspector.get_columns(table)}
@@ -159,6 +176,26 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         assert 'body' in {
             c['name'] for c in inspector.get_columns('win_stories')
         }
+        # The money-audit table exists with its key columns, and the
+        # duplicate-proof unique constraints exist on matches and
+        # payouts.
+        assert 'stripe_event_logs' in tables
+        assert 'event_id' in {
+            c['name'] for c in inspector.get_columns('stripe_event_logs')
+        }
+        assert 'event_type' in {
+            c['name'] for c in inspector.get_columns('stripe_event_logs')
+        }
+        match_uniques = {
+            c['name']
+            for c in inspector.get_unique_constraints('matches')
+        }
+        assert 'uq_matches_pitch_id' in match_uniques
+        payout_uniques = {
+            c['name']
+            for c in inspector.get_unique_constraints('payouts')
+        }
+        assert 'uq_payouts_match_kind' in payout_uniques
 
         # The full chain downgrades cleanly back to base.
         flask_migrate.downgrade(revision='base')
@@ -179,7 +216,52 @@ def test_baseline_is_the_chain_root(tmp_path):
     )
     script = ScriptDirectory.from_config(cfg)
     heads = script.get_heads()
-    assert heads == ['wins_wall'], f'multiple heads: {heads}'
+    assert heads == ['money_audit_fixes'], (
+        f'multiple heads: {heads}'
+    )
     roots = [r for r in script.walk_revisions() if r.down_revision is None]
     assert len(roots) == 1
     assert roots[0].revision == 'baseline_create_all'
+
+
+def test_services_bounty_inserts_on_migrated_db(tmp_path):
+    """Regression: recruitment_only_v2 added a CHECK constraint
+    (bounty_type = 'recruitment') that M4's services vertical never
+    dropped, so on a migrated database a services bounty failed at
+    the DB layer — while the rest of the suite (db.create_all, no
+    constraint) happily created them. A services bounty must insert
+    on a database that ran the full chain."""
+    db_file = tmp_path / 'services_migrated.db'
+    test_app = create_app('testing', config_overrides={
+        'SQLALCHEMY_DATABASE_URI': f'sqlite:///{db_file}',
+    })
+    with test_app.app_context():
+        flask_migrate.upgrade()
+        from models.user import User
+        from models.bounty import Bounty
+        user = User(
+            email='services-mig@example.com', full_name='Services Mig',
+            role='user', is_active=True, email_verified=True,
+        )
+        db.session.add(user)
+        db.session.commit()
+        bounty = Bounty(
+            poster_id=user.id,
+            title='Need a plumber for a bathroom refit in Laval',
+            description='Looking for a licensed plumber for a full '
+                        'bathroom refit, available next month.',
+            bounty_type='services',
+            bounty_direction='seeking_opportunity',
+            status='open',
+            payment_status='released',
+            location='Laval, QC',
+        )
+        db.session.add(bounty)
+        db.session.commit()
+        assert db.session.get(Bounty, bounty.id).bounty_type == 'services'
+        # And the constraint itself is gone from the schema.
+        ddl = db.session.execute(text(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'bounties'"
+        )).scalar()
+        assert 'ck_bounties_bounty_type' not in ddl

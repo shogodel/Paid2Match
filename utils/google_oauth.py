@@ -32,6 +32,16 @@ GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo'
 GOOGLE_SCOPE = 'openid email profile'
 
 
+def _json_or_none(resp):
+    """The response body as JSON, or None when it is not JSON at all
+    (a proxy error page served with a 200 status, a truncated body).
+    Callers treat None as a provider failure, never a crash."""
+    try:
+        return resp.json()
+    except ValueError:
+        return None
+
+
 def google_available():
     """Whether Google sign-in is configured (both id and secret set)."""
     return bool(
@@ -77,7 +87,8 @@ def exchange_google_code(code, redirect_uri):
         return None, 'Could not reach Google — please try again.'
     if resp.status_code != 200:
         return None, 'Google rejected the sign-in — please try again.'
-    token = resp.json().get('access_token')
+    data = _json_or_none(resp)
+    token = data.get('access_token') if isinstance(data, dict) else None
     if not token:
         return None, 'Google did not return an access token.'
     return token, None
@@ -101,4 +112,7 @@ def fetch_google_userinfo(access_token):
         return None, 'Could not reach Google — please try again.'
     if resp.status_code != 200:
         return None, 'Could not read your profile from Google.'
-    return resp.json(), None
+    data = _json_or_none(resp)
+    if not isinstance(data, dict):
+        return None, 'Could not read your profile from Google.'
+    return data, None

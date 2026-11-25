@@ -45,6 +45,7 @@ from .endorsement import Endorsement, Pledge
 from .employer_pledge import EmployerPledge
 from .post_view import PostView, SearchAppearance
 from .staged_reward import StageRewardEvent
+from .stripe_event import StripeEventLog
 from .video_vouch import VideoVouch
 from .intro_bounty import IntroBounty, IntroClaim, IntroRewardEvent
 from .staked_vouch import StakedVouch, RESOLUTIONS
@@ -103,6 +104,7 @@ __all__ = [
     'PostView',
     'SearchAppearance',
     'StageRewardEvent',
+    'StripeEventLog',
     'VideoVouch',
     'IntroBounty',
     'IntroClaim',

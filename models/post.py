@@ -78,6 +78,10 @@ class Post(db.Model):
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     shares = db.relationship('Share', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+    # Views are derived data — they go with the post (without this,
+    # deleting a viewed post fails on Postgres: post_views.post_id
+    # has no ON DELETE CASCADE, and on SQLite it leaves orphans).
+    post_views = db.relationship('PostView', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Post {self.id} {self.post_type} by {self.author_id}>'
@@ -231,7 +235,9 @@ class Bookmark(db.Model):
     post_id = db.Column(db.String(36), db.ForeignKey('posts.id'), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=utc_now)
 
-    post = db.relationship('Post', backref='bookmarks')
+    post = db.relationship(
+        'Post', backref=db.backref('bookmarks', cascade='all, delete-orphan')
+    )
     user = db.relationship('User', backref='bookmarks')
 
     def __repr__(self):

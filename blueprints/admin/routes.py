@@ -273,10 +273,13 @@ def change_user_email(id):
     except EmailNotValidError:
         flash('Please enter a valid email address.', 'danger')
         return redirect(url_for('admin.users'))
-    if new_email == user.email:
+    # Case-insensitive comparisons: legacy rows may hold a mixed-case
+    # email, and '=' is case-sensitive — filter_by would miss the
+    # clash and create two accounts for the same address.
+    if new_email == (user.email or '').lower():
         flash('That is already the user\'s email address.', 'info')
         return redirect(url_for('admin.users'))
-    if User.query.filter_by(email=new_email).first():
+    if User.query.filter(func.lower(User.email) == new_email).first():
         flash('That email address is already in use.', 'danger')
         return redirect(url_for('admin.users'))
     old_email = user.email

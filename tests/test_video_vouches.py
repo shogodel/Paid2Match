@@ -53,6 +53,34 @@ def _make_real_video(path, seconds):
     )
 
 
+@pytest.fixture(scope='module')
+def real_video_bytes(tmp_path_factory):
+    """Bytes of a real 2-second mp4, generated once per module.
+
+    Success-path uploads need a real video: when ffprobe is
+    installed, a fake mp4 (FAKE_MP4) is rejected as unreadable, so
+    the happy-path tests cannot use it anymore."""
+    if not shutil.which('ffmpeg'):
+        pytest.skip('needs ffmpeg')
+    path = tmp_path_factory.mktemp('video') / 'short.mp4'
+    _make_real_video(path, 2)
+    return path.read_bytes()
+
+
+@pytest.fixture
+def no_ffprobe(monkeypatch):
+    """Pretend ffprobe is not installed — the fail-open deploy
+    caveat (the duration check is skipped, uploads are accepted)."""
+    real_which = shutil.which
+    monkeypatch.setattr(
+        shutil, 'which',
+        lambda cmd, *args, **kwargs: (
+            None if cmd == 'ffprobe'
+            else real_which(cmd, *args, **kwargs)
+        ),
+    )
+
+
 # ---------------------------------------------------------------- model
 
 
@@ -107,9 +135,10 @@ class TestVideoVouchModel:
 class TestUpload:
     def test_upload_pitch_happy_path(
             self, app, client, login_as, sample_hunter, sample_bounty,
-            upload_dir):
+            upload_dir, real_video_bytes):
         login_as(client, 'hunter@example.com')
         r = _upload(client, kind='pitch', bounty_id=sample_bounty.id,
+                    video=(io.BytesIO(real_video_bytes), 'pitch.mp4'),
                     next=f'/needs/{sample_bounty.url_slug}')
         assert r.status_code == 302
         with app.app_context():
@@ -121,14 +150,16 @@ class TestUpload:
             assert vouch.target_user_id is None
             assert vouch.status == 'active'
             assert vouch.original_filename == 'pitch.mp4'
-            assert vouch.file_size == len(FAKE_MP4)
+            assert vouch.file_size == len(real_video_bytes)
+            assert vouch.duration_seconds == pytest.approx(2, abs=0.5)
             assert os.path.isfile(upload_dir / vouch.filename)
 
     def test_upload_vouch_happy_path(
             self, app, client, login_as, sample_user, second_user,
-            upload_dir):
+            upload_dir, real_video_bytes):
         login_as(client, 'testuser@example.com')
         r = _upload(client, kind='vouch', target_user_id=second_user.id,
+                    video=(io.BytesIO(real_video_bytes), 'vouch.mp4'),
                     next=f'/profile/{second_user.handle}')
         assert r.status_code == 302
         with app.app_context():
@@ -168,6 +199,60 @@ class TestUpload:
         assert b'too large' in r.data
         with app.app_context():
             assert VideoVouch.query.count() == 0
+
+    @pytest.mark.skipif(
+        not shutil.which('ffprobe'), reason='needs ffprobe')
+    def test_upload_unreadable_video_rejected(
+            self, app, client, login_as, sample_hunter, sample_bounty,
+            upload_dir):
+        """A file ffprobe cannot parse is not a video: rejected,
+        not stored — even though its extension is .mp4."""
+        login_as(client, 'hunter@example.com')
+        r = _upload(
+            client, kind='pitch', bounty_id=sample_bounty.id,
+            video=(io.BytesIO(FAKE_MP4), 'pitch.mp4'),
+            next='/profile/', follow_redirects=True)
+        assert r.status_code == 200
+        assert b'not a playable video' in r.data
+        with app.app_context():
+            assert VideoVouch.query.count() == 0
+        assert not upload_dir.exists() or not any(upload_dir.iterdir())
+
+    def test_upload_accepted_when_ffprobe_missing(
+            self, app, client, login_as, sample_hunter, sample_bounty,
+            upload_dir, no_ffprobe):
+        """Without ffprobe the check is skipped (fail open, by
+        design — see docs/VIDEO_VOUCH_UPLOADS.md): a fake mp4 is
+        accepted with an unknown duration."""
+        login_as(client, 'hunter@example.com')
+        r = _upload(client, kind='pitch', bounty_id=sample_bounty.id,
+                    next='/profile/')
+        assert r.status_code == 302
+        with app.app_context():
+            vouch = VideoVouch.query.first()
+            assert vouch is not None
+            assert vouch.duration_seconds is None
+
+    def test_upload_over_16mb_reaches_route(
+            self, app, client, login_as, sample_hunter, sample_bounty,
+            upload_dir, no_ffprobe):
+        """The per-request 50MB override actually applies: a 17MB
+        upload clears the 16MB global cap and reaches the route
+        (ffprobe mocked away so the fake bytes are accepted)."""
+        login_as(client, 'hunter@example.com')
+        big = b'\x00' * (17 * 1024 * 1024)
+        r = _upload(
+            client, kind='pitch', bounty_id=sample_bounty.id,
+            video=(io.BytesIO(big), 'big.mp4'),
+            next='/profile/', follow_redirects=True)
+        assert r.status_code == 200
+        # The success flash (not the 413 handler's 'too large'
+        # flash) proves the upload reached the route.
+        assert b'Your video pitch is live.' in r.data
+        with app.app_context():
+            vouch = VideoVouch.query.first()
+            assert vouch is not None
+            assert vouch.file_size == len(big)
 
     def test_upload_unauthenticated_blocked(
             self, app, client, sample_bounty, upload_dir):
@@ -249,16 +334,17 @@ class TestUpload:
 class TestServe:
     def test_serve_returns_file(
             self, app, client, login_as, sample_hunter, sample_bounty,
-            upload_dir):
+            upload_dir, real_video_bytes):
         login_as(client, 'hunter@example.com')
-        _upload(client, kind='pitch', bounty_id=sample_bounty.id)
+        _upload(client, kind='pitch', bounty_id=sample_bounty.id,
+                video=(io.BytesIO(real_video_bytes), 'pitch.mp4'))
         with app.app_context():
             filename = VideoVouch.query.first().filename
         # Playback is public — no login needed.
         anon = app.test_client()
         r = anon.get(f'/video-vouches/file/{filename}')
         assert r.status_code == 200
-        assert r.data == FAKE_MP4
+        assert r.data == real_video_bytes
         assert r.content_type.startswith('video/')
 
     def test_serve_unknown_filename_404s(self, app, client, upload_dir):
@@ -276,18 +362,20 @@ class TestServe:
 
 class TestDelete:
     def _uploaded(self, app, client, login_as, sample_hunter,
-                  sample_bounty, upload_dir):
+                  sample_bounty, upload_dir, real_video_bytes):
         login_as(client, 'hunter@example.com')
-        _upload(client, kind='pitch', bounty_id=sample_bounty.id)
+        _upload(client, kind='pitch', bounty_id=sample_bounty.id,
+                video=(io.BytesIO(real_video_bytes), 'pitch.mp4'))
         with app.app_context():
             vouch = VideoVouch.query.first()
             return vouch.id, vouch.filename
 
     def test_delete_by_owner(
             self, app, client, login_as, sample_hunter, sample_bounty,
-            upload_dir):
+            upload_dir, real_video_bytes):
         vouch_id, filename = self._uploaded(
-            app, client, login_as, sample_hunter, sample_bounty, upload_dir)
+            app, client, login_as, sample_hunter, sample_bounty,
+            upload_dir, real_video_bytes)
         assert os.path.isfile(upload_dir / filename)
         r = client.post(f'/video-vouches/{vouch_id}/delete',
                         data={'next': '/profile/'}, follow_redirects=True)
@@ -301,9 +389,10 @@ class TestDelete:
 
     def test_delete_by_other_user_forbidden(
             self, app, client, login_as, sample_hunter, sample_bounty,
-            sample_user, upload_dir):
+            sample_user, upload_dir, real_video_bytes):
         vouch_id, filename = self._uploaded(
-            app, client, login_as, sample_hunter, sample_bounty, upload_dir)
+            app, client, login_as, sample_hunter, sample_bounty,
+            upload_dir, real_video_bytes)
         login_as(client, 'testuser@example.com')
         r = client.post(f'/video-vouches/{vouch_id}/delete',
                         data={'next': '/profile/'})
@@ -314,9 +403,10 @@ class TestDelete:
 
     def test_delete_by_admin(
             self, app, client, login_as, sample_hunter, sample_bounty,
-            sample_admin, upload_dir):
+            sample_admin, upload_dir, real_video_bytes):
         vouch_id, filename = self._uploaded(
-            app, client, login_as, sample_hunter, sample_bounty, upload_dir)
+            app, client, login_as, sample_hunter, sample_bounty,
+            upload_dir, real_video_bytes)
         login_as(client, 'admin@example.com')
         r = client.post(f'/video-vouches/{vouch_id}/delete',
                         data={'next': '/profile/'})
@@ -327,9 +417,10 @@ class TestDelete:
 
     def test_delete_unauthenticated_blocked(
             self, app, client, login_as, sample_hunter, sample_bounty,
-            upload_dir):
+            upload_dir, real_video_bytes):
         vouch_id, _filename = self._uploaded(
-            app, client, login_as, sample_hunter, sample_bounty, upload_dir)
+            app, client, login_as, sample_hunter, sample_bounty,
+            upload_dir, real_video_bytes)
         # Clear Flask-Login's cached g._login_user: the test's app
         # context is shared, so a cached hunter would shadow this
         # anonymous request (see conftest login_as).
@@ -375,9 +466,10 @@ class TestVideoVouchUI:
 
     def test_bounty_detail_poster_sees_video_pitches(
             self, app, client, login_as, sample_hunter, sample_user,
-            sample_bounty, upload_dir):
+            sample_bounty, upload_dir, real_video_bytes):
         login_as(client, 'hunter@example.com')
-        _upload(client, kind='pitch', bounty_id=sample_bounty.id)
+        _upload(client, kind='pitch', bounty_id=sample_bounty.id,
+                video=(io.BytesIO(real_video_bytes), 'pitch.mp4'))
         login_as(client, 'testuser@example.com')
         r = client.get(f'/needs/{sample_bounty.url_slug}')
         assert r.status_code == 200

@@ -23,6 +23,7 @@
             <td>
                 {% if entry.pledge.status != 'revoked' %}
                 <form method="POST" action="{{ url_for('admin.revoke_pledge', id=entry.pledge.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="text" name="reason" placeholder="Reason" class="form-control form-control-sm d-inline w-auto">
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Revoke this pledge?')">Revoke</button>
                 </form>

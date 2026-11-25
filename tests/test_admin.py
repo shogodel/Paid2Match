@@ -121,9 +121,53 @@ class TestAdminSettings:
         r = logged_in_admin.get('/admin/settings')
         assert r.status_code == 200
 
-    def test_create_admin(self, logged_in_admin, client, app):
-        r = logged_in_admin.post('/admin/create-admin', data={
+    def test_create_admin(self, client, app, monkeypatch):
+        # The old test only asserted a 302 — and it never created an
+        # admin at all: with sample_admin in the DB the route takes
+        # the 'Admin already exists' path. This one bootstraps for
+        # real (no admin in the DB, setup token supplied) and checks
+        # the user exists with the admin role afterwards.
+        monkeypatch.setenv('ADMIN_SETUP_TOKEN', 'test-setup-token')
+        r = client.post('/admin/create-admin', data={
+            'token': 'test-setup-token',
             'email': 'newadmin@test.com',
             'password': 'NewAdmin123!',
         }, follow_redirects=False)
         assert r.status_code == 302
+        with app.app_context():
+            from models.user import User
+            user = User.query.filter_by(email='newadmin@test.com').first()
+            assert user is not None
+            assert user.role == 'admin'
+            assert user.is_active is True
+
+    def test_create_admin_blocked_when_admin_exists(
+            self, logged_in_admin, client, app, sample_admin):
+        # The path the old test was actually exercising: an admin
+        # already exists, so the bootstrap refuses and creates
+        # nobody.
+        r = logged_in_admin.post('/admin/create-admin', data={
+            'email': 'newadmin@test.com',
+            'password': 'NewAdmin123!',
+        }, follow_redirects=True)
+        assert r.status_code == 200
+        assert b'Admin already exists' in r.data
+        with app.app_context():
+            from models.user import User
+            assert User.query.filter_by(
+                email='newadmin@test.com').first() is None
+
+    def test_create_admin_needs_setup_token(self, client, app, monkeypatch):
+        # No ADMIN_SETUP_TOKEN configured: self-service creation is
+        # disabled entirely (403), even with no admin in the DB.
+        monkeypatch.delenv('ADMIN_SETUP_TOKEN', raising=False)
+        r = client.post('/admin/create-admin', data={
+            'token': 'whatever',
+            'email': 'newadmin@test.com',
+            'password': 'NewAdmin123!',
+        })
+        assert r.status_code == 403
+        with app.app_context():
+            from models.user import User
+            assert User.query.filter_by(
+                email='newadmin@test.com').first() is None

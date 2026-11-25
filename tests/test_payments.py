@@ -66,17 +66,24 @@ def _secured_paid_bounty(app, poster, reward=1000):
 
 
 def _confirmed_match(app, bounty, hunter, poster):
-    """A dual-confirmed match on the bounty (payout still pending)."""
+    """A dual-confirmed match on the bounty (payout still pending).
+    The fee is locked the way confirm_match locks it at creation
+    (fee_rate_for — 15% for founding referrers, else the configured
+    rate), so the helper mirrors production: release_escrow honors
+    the locked fee and never recomputes it."""
     pitch = Pitch(bounty_id=bounty.id, hunter_id=hunter.id,
                   candidate_teaser='x' * 60, status='accepted')
     db.session.add(pitch)
     db.session.flush()
+    _gross, platform_fee, _net = compute_payout_amounts(
+        float(bounty.reward_amount or 0), fee_rate_for(hunter)
+    )
     match = Match(
         bounty_id=bounty.id, pitch_id=pitch.id,
         hunter_id=hunter.id, employer_id=poster.id,
         hunter_confirmed=True, employer_confirmed=True,
         payout_amount=float(bounty.reward_amount or 0),
-        platform_fee=float(bounty.reward_amount or 0) * 0.20,
+        platform_fee=platform_fee,
         payout_status='pending',
     )
     db.session.add(match)

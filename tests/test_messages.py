@@ -50,6 +50,36 @@ class TestMessagesCompose:
         })
         assert r.status_code in (200, 302)
 
+    def test_compose_blocked_by_recipient(self, logged_in_user, client, app,
+                                          sample_user, sample_hunter):
+        # A block means "they cannot follow or message you" — the
+        # follow route enforces it, messaging must too.
+        from extensions import db
+        from models.message import Message
+        from models.moderation import Block
+        db.session.add(Block(
+            blocker_id=sample_hunter.id, blocked_id=sample_user.id,
+            kind='block'))
+        db.session.commit()
+        r = logged_in_user.post('/messages/compose', data={
+            'recipient_email': 'hunter@example.com',
+            'content': 'You blocked me but I can still write?',
+        }, follow_redirects=False)
+        assert r.status_code == 302
+        assert Message.query.count() == 0
+
+    def test_compose_empty_content_rejected(self, logged_in_user, client, app,
+                                            sample_hunter):
+        # Message.content is NOT NULL — an empty send used to crash
+        # with an IntegrityError (500).
+        from models.message import Message
+        r = logged_in_user.post('/messages/compose', data={
+            'recipient_email': 'hunter@example.com',
+            'content': '   ',
+        })
+        assert r.status_code in (200, 302)
+        assert Message.query.count() == 0
+
 
 class TestMessagesRead:
     def test_read_requires_login(self, client, sample_message):
@@ -104,6 +134,35 @@ class TestMessagesReply:
             data={'content': 'This should not work.'}
         )
         assert r.status_code == 302
+
+    def test_reply_blocked_by_sender(self, logged_in_hunter, client, app,
+                                     sample_user, sample_hunter,
+                                     sample_message):
+        # The original sender blocked the replier — the reply is refused.
+        from extensions import db
+        from models.message import Message
+        from models.moderation import Block
+        db.session.add(Block(
+            blocker_id=sample_user.id, blocked_id=sample_hunter.id,
+            kind='block'))
+        db.session.commit()
+        r = logged_in_hunter.post(
+            f'/messages/{sample_message.id}/reply',
+            data={'content': 'Thanks for your interest!'},
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        assert Message.query.count() == 1  # only the original
+
+    def test_reply_empty_content_rejected(self, logged_in_hunter, client, app,
+                                          sample_message):
+        from models.message import Message
+        r = logged_in_hunter.post(
+            f'/messages/{sample_message.id}/reply',
+            data={'content': '   '},
+        )
+        assert r.status_code in (200, 302)
+        assert Message.query.count() == 1  # only the original
 
 
 class TestMessagesApi:

@@ -175,6 +175,37 @@ class TestKarmaRules:
         db.session.commit()
         assert awarded == 10  # the cap applies to referral karma only
 
+    def test_award_karma_idempotent_per_ref(self, app, sample_user):
+        # The same (user, reason, ref) awards only once — a retry
+        # (webhook redelivery, double-submit) returns 0.
+        first = award_karma(
+            sample_user.id, 50, 'referral_completed',
+            ref_type='match', ref_id='dup-match')
+        retry = award_karma(
+            sample_user.id, 50, 'referral_completed',
+            ref_type='match', ref_id='dup-match')
+        assert first == 50
+        assert retry == 0
+        # A different ref still awards.
+        other = award_karma(
+            sample_user.id, 50, 'referral_completed',
+            ref_type='match', ref_id='other-match')
+        assert other == 50
+        db.session.commit()
+        profile = Profile.query.filter_by(user_id=sample_user.id).first()
+        assert profile.karma == 100
+
+    def test_like_karma_ref_stable_per_post_and_liker(self, app):
+        from utils.karma import like_karma_ref
+        ref_a = like_karma_ref('post-1', 'user-1')
+        ref_b = like_karma_ref('post-1', 'user-1')
+        ref_c = like_karma_ref('post-1', 'user-2')
+        ref_d = like_karma_ref('post-2', 'user-1')
+        assert ref_a == ref_b  # same pair -> same ref (no re-award)
+        assert ref_a != ref_c  # a different liker is a different award
+        assert ref_a != ref_d  # a different post is a different award
+        assert len(ref_a) == 36  # fits KarmaEvent.ref_id
+
     def test_circular_referral_earns_zero_karma(self, app, sample_user, second_user, third_user, sample_bounty):
         # A (second) refers B (third) -> completed.
         pitch1 = Pitch(bounty_id=sample_bounty.id, hunter_id=second_user.id,

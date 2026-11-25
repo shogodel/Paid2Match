@@ -12,7 +12,7 @@
                 <div class="card-body">
                     <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
                         <span class="badge bg-secondary">{{ story.role_label }}</span>
-                        {% if story.earned_amount %}
+                        {% if story.role == 'referrer' and story.earned_amount %}
                         <span class="badge bg-success">{{ _('Earned') }} {{ story.earned_amount|money(story.earned_currency) }}</span>
                         {% endif %}
                     </div>
@@ -24,6 +24,9 @@
                 <div class="card-footer bg-transparent">
                     <small class="text-muted">
                         <a href="{{ url_for('profile.public_profile', user_id=story.author.handle or story.author_id) }}" class="text-decoration-none">{{ story.author.full_name }}</a>
+                        {% if story.role == 'hired' %}
+                        &middot; {{ _('shared on the hired candidate’s behalf') }}
+                        {% endif %}
                         &middot; {{ story.created_at.strftime('%b %d, %Y') if story.created_at else '' }}
                     </small>
                 </div>

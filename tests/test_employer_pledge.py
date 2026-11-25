@@ -9,6 +9,7 @@ self-published Pledge (models/endorsement.py), which has its own
 tests in test_phase3.py / test_trust_m3.py.
 """
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from extensions import db
 from models.audit_log import AuditLog
@@ -65,6 +66,17 @@ def test_register_empty_message(client):
     resp = client.get('/pledge/')
     assert resp.status_code == 200
     assert b'No approved pledges yet.' in resp.data
+
+
+def test_register_linked_from_site_nav(client):
+    """The human-reviewed register is reachable from the site nav
+    (Opportunities dropdown + footer), not only by direct URL —
+    and the link is labelled distinctly from the M3
+    self-published pledge register."""
+    resp = client.get('/')
+    assert resp.status_code == 200
+    assert b'href="/pledge/"' in resp.data
+    assert b'Employer pledge register' in resp.data
 
 
 # ---------------------------------------------------------------- new pledge
@@ -332,3 +344,77 @@ def test_has_approved_pledge_property(app, sample_user, second_user):
         other = db.session.get(User, second_user.id)
         assert user.has_approved_pledge is True
         assert other.has_approved_pledge is False
+
+
+# ------------------------------------------- one-active rule at the DB level
+
+
+def test_second_active_pledge_rejected_at_db_level(app, sample_user):
+    """The partial unique index rejects a second active pledge for
+    the same user even when the route-level check is bypassed —
+    pending+pending and pending+approved both fail, while a revoked
+    pledge does not block a fresh one."""
+    with app.app_context():
+        _make_pledge(sample_user.id, 'First Corp', 'pending')
+        dup = EmployerPledge(
+            user_id=sample_user.id, org_name='Second Corp',
+            status='pending',
+        )
+        db.session.add(dup)
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
+        approved = EmployerPledge(
+            user_id=sample_user.id, org_name='Third Corp',
+            status='approved',
+        )
+        db.session.add(approved)
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
+        assert EmployerPledge.query.filter_by(
+            user_id=sample_user.id
+        ).count() == 1
+
+
+def test_repledge_after_revoke_allowed_at_db_level(app, sample_user):
+    """A revoked pledge does not block a fresh pledge at the DB
+    level (the partial index only covers pending/approved)."""
+    with app.app_context():
+        _make_pledge(sample_user.id, 'Revoked Corp', 'revoked')
+        fresh = EmployerPledge(
+            user_id=sample_user.id, org_name='Fresh Corp',
+            status='pending',
+        )
+        db.session.add(fresh)
+        db.session.commit()  # must not raise
+        assert EmployerPledge.query.filter_by(
+            user_id=sample_user.id
+        ).count() == 2
+
+
+def test_race_between_check_and_commit_is_handled(
+    logged_in_user, app, sample_user, monkeypatch
+):
+    """Two concurrent POSTs could both pass the active_for_user
+    check; the loser must get the friendly 'already have an active
+    pledge' outcome, not a 500. Simulated by patching the check to
+    pass while a pending pledge already exists."""
+    with app.app_context():
+        _make_pledge(sample_user.id, 'First Corp', 'pending')
+    monkeypatch.setattr(
+        EmployerPledge, 'active_for_user',
+        classmethod(lambda cls, user_id: None),
+    )
+    resp = logged_in_user.post('/pledge/new', data={
+        'org_name': 'Second Corp',
+        'confirm': 'y',
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert b'already have an active pledge' in resp.data
+    with app.app_context():
+        pledges = EmployerPledge.query.filter_by(
+            user_id=sample_user.id
+        ).all()
+        assert len(pledges) == 1
+        assert pledges[0].org_name == 'First Corp'

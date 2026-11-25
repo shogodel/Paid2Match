@@ -41,12 +41,14 @@
                                 <td class="text-end">{{ (bounty.reward_amount * 1.03)|money(bounty.currency) }}</td>
                             </tr>
                         </table>
+                        <p class="text-muted small mb-0 mt-2">{{ _('Payments are processed in Canadian dollars (CAD) at the amount shown.') }}</p>
                     </div>
                     
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-lock"></i> Pay {{ (bounty.reward_amount * 1.03)|money(bounty.currency) }}
+                                <i class="fas fa-lock"></i> {{ _('Pay %(amount)s', amount=(bounty.reward_amount * 1.03)|money(bounty.currency)) }}
                             </button>
                             <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-outline-secondary">
                                 {{ _('Cancel') }}

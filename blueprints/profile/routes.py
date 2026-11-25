@@ -3,7 +3,8 @@ import os
 import uuid
 from flask import Blueprint, abort, render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
-from sqlalchemy import desc
+from sqlalchemy import desc, func
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 from extensions import db, get_or_404
 from models.user import User
@@ -113,7 +114,16 @@ def setup():
                 profile.avatar_url = avatar_url
         
         db.session.add(profile)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            # Another user took the handle between the form's
+            # uniqueness check and this commit — the database
+            # unique constraint caught the race. Roll back and say
+            # so, instead of a 500.
+            db.session.rollback()
+            flash('That handle is already taken.', 'danger')
+            return render_template('profile/setup.html', form=form)
         flash('Profile created!', 'success')
         return redirect(url_for('bounties.board'))
     return render_template('profile/setup.html', form=form)
@@ -319,6 +329,11 @@ def public_profile(user_id):
         user = db.session.get(User, user_id)
         if user is None:
             abort(404)
+        # A deleted user's profile is removed from public view (the
+        # delete page promises this) — 404 here rather than 301ing
+        # to the handle, so the handle does not leak either.
+        if user.is_deleted:
+            abort(404)
         if user.handle:
             return redirect(
                 url_for('profile.public_profile', user_id=user.handle),
@@ -326,7 +341,7 @@ def public_profile(user_id):
             )
     else:
         user = User.query.filter_by(handle=user_id).first()
-        if user is None:
+        if user is None or user.is_deleted:
             abort(404)
     user_id = user.id
     profile = Profile.query.filter_by(user_id=user_id).first()
@@ -465,17 +480,44 @@ def linked_accounts():
     db.session.commit()
     accounts = LinkedAccount.query.filter_by(user_id=current_user.id).all()
     by_platform = {a.platform: a for a in accounts}
+    # The template renders one card per platform (``{% for card in
+    # cards %}``) plus the user's public profile URL for the bio-link
+    # hint — without these the page renders only its heading and no
+    # link can be added, checked, or unlinked from the UI.
+    oauth_avail = {p: oauth_available(p) for p in OAUTH_PLATFORMS}
+    cards = [
+        {
+            'platform': platform,
+            'account': by_platform.get(platform),
+            'status': (
+                by_platform[platform].status
+                if platform in by_platform else None
+            ),
+            'expires_at': (
+                by_platform[platform].expires_at
+                if platform in by_platform else None
+            ),
+            'oauth_available': oauth_avail.get(platform, False),
+            'form': LinkedAccountForm(),
+        }
+        for platform in PLATFORMS
+    ]
+    profile_url = url_for(
+        'profile.public_profile',
+        user_id=current_user.handle or current_user.id,
+        _external=True,
+    )
     return render_template(
         'profile/linked.html',
         accounts=accounts,
         by_platform=by_platform,
         platforms=PLATFORMS,
         oauth_platforms=OAUTH_PLATFORMS,
-        oauth_available={
-            p: oauth_available(p) for p in OAUTH_PLATFORMS
-        },
+        oauth_available=oauth_avail,
         form=LinkedAccountForm(),
         verified_count=verified_linked_count(current_user.id),
+        cards=cards,
+        profile_url=profile_url,
     )
 
 
@@ -549,7 +591,12 @@ def linked_oauth_callback(platform):
     if not state or state != session.pop('oauth_state', None):
         flash('The sign-in did not verify — please try again.', 'danger')
         return redirect(url_for('profile.linked_accounts'))
-    session.pop('oauth_platform', None)
+    # The state is bound to the platform the flow started with — a
+    # callback for another platform carrying this state is not that
+    # flow.
+    if session.pop('oauth_platform', None) != platform:
+        flash('The sign-in did not verify — please try again.', 'danger')
+        return redirect(url_for('profile.linked_accounts'))
     code = request.args.get('code')
     if not code:
         flash('The sign-in was cancelled.', 'warning')
@@ -563,6 +610,28 @@ def linked_oauth_callback(platform):
     if error:
         flash(error, 'danger')
         return redirect(url_for('profile.linked_accounts'))
+    if platform == 'github' and handle:
+        # One external identity, one Paid2Match account: a GitHub
+        # login is unique, so a verified link to it cannot belong to
+        # two users — otherwise both would earn trust from the same
+        # identity. (LinkedIn is skipped: its handle is a display
+        # name, not a unique id, so this check cannot tell two
+        # same-named people apart — that needs the provider sub
+        # stored, which is a schema change.) An expired link does
+        # not block — its verification has lapsed.
+        clash = LinkedAccount.query.filter(
+            LinkedAccount.platform == platform,
+            func.lower(LinkedAccount.handle) == handle.lower(),
+            LinkedAccount.user_id != current_user.id,
+            LinkedAccount.status == 'verified',
+        ).all()
+        if any(a.is_currently_verified for a in clash):
+            flash(
+                'That GitHub account is already linked to another '
+                'Paid2Match account.',
+                'danger',
+            )
+            return redirect(url_for('profile.linked_accounts'))
     account = get_or_create_link(
         current_user.id, platform, 'oauth',
         url=profile_url, handle=handle,

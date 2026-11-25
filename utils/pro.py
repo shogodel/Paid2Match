@@ -54,6 +54,10 @@ def create_pro_checkout(user, success_url, cancel_url):
         amount_cents=PRO_PRICE_CENTS,
         description='Paid2Match Pro — advanced analytics ($9/month)',
         metadata={'m3_kind': 'pro', 'user_id': user.id},
+        # One Pro subscription per user: a double-click returns the
+        # same session instead of creating a second subscription
+        # that would keep charging with no local row.
+        idempotency_key=f'pro-{user.id}',
     )
 
 

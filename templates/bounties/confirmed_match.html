@@ -26,12 +26,12 @@
                                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
                                     {{ bounty.reward_amount|money(bounty.currency) }}
                                 {% else %}
-                                    Free Need
+                                    {{ _('Free Need') }}
                                 {% endif %}
                             </td>
                         </tr>
                         <tr>
-                            <td><strong>Platform Fee{% if match.payout_amount and match.platform_fee %} ({{ "{:.0f}".format(match.platform_fee / match.payout_amount * 100) }}%){% endif %}:</strong></td>
+                            <td><strong>{{ _('Platform Fee') }}{% if match.payout_amount and match.platform_fee %} ({{ "{:.0f}".format(match.platform_fee / match.payout_amount * 100) }}%){% endif %}:</strong></td>
                             <td>
                                 {% if match.platform_fee %}
                                     {{ match.platform_fee|money(bounty.currency) }}
@@ -102,7 +102,7 @@
                     <div class="border rounded p-3 mb-2">
                         <div class="small text-muted">
                             {{ review.reviewer.full_name or review.reviewer.email }}
-                            reviewed {{ review.reviewee.full_name or review.reviewee.email }}
+                            {{ _('reviewed') }} {{ review.reviewee.full_name or review.reviewee.email }}
                         </div>
                         <div>
                             {% set labels = review.dimension_labels %}

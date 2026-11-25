@@ -9,7 +9,7 @@
                 <span class="badge bg-info">{{ post.post_type }}</span>
                 {% if post.is_bumped %}<span class="badge bg-warning text-dark">{{ _('Bumped') }}</span>{% endif %}
                 {% if post.is_boosted %}<span class="badge bg-danger">{{ _('Boosted') }}</span>{% endif %}
-                <span class="text-muted small">Posted {{ post.created_at.strftime('%b %d, %Y %H:%M') if post.created_at }}</span>
+                <span class="text-muted small">{{ _('Posted %(date)s', date=post.created_at.strftime('%b %d, %Y %H:%M') if post.created_at) }}</span>
             </div>
             <p class="mt-2 mb-0">{{ post.content }}</p>
         </div>
@@ -29,18 +29,21 @@
                     <div class="d-flex gap-2 flex-wrap">
                         {% if free_balance > 0 %}
                         <form method="POST" action="{{ url_for('social.bump_post', post_id=post.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="source" value="free">
                             <button type="submit" class="btn btn-success">{{ _('Use a free bump') }}</button>
                         </form>
                         {% endif %}
                         {% if pack_balance > 0 %}
                         <form method="POST" action="{{ url_for('social.bump_post', post_id=post.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="source" value="pack">
                             <button type="submit" class="btn btn-primary">{{ _('Use a pack bump') }}</button>
                         </form>
                         {% endif %}
                         <form method="POST" action="{{ url_for('payments.buy_single_bump', post_id=post.id) }}">
-                            <button type="submit" class="btn btn-outline-primary">Buy a bump — ${{ "%.2f"|format(single_price_cents / 100) }}</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-primary">{{ _('Buy a bump — $%(price)s', price="%.2f"|format(single_price_cents / 100)) }}</button>
                         </form>
                     </div>
                     <p class="text-muted small mt-2 mb-0">{{ _('Limits: 1 bump per post per 24 hours, 3 bumps per day.') }} <a href="{{ url_for('payments.bump_packs') }}">{{ _('Buy a pack') }}</a> {{ _('(5 for $8, 10 for $15).') }}</p>
@@ -56,6 +59,7 @@
                     <p class="text-muted small">{{ _('Set to cancel at the end of the paid month.') }}</p>
                     {% else %}
                     <form method="POST" action="{{ url_for('payments.cancel_recurring_bump_route', recurring_id=recurring.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Cancel (runs to end of month)') }}</button>
                     </form>
                     {% endif %}
@@ -63,6 +67,7 @@
                     <p class="text-muted small">{{ _('Auto-bump this post every 3 days, $5/month. Cancel anytime — it runs to the end of the paid month.') }}</p>
                     {% if eligible %}
                     <form method="POST" action="{{ url_for('payments.subscribe_recurring_bump', post_id=post.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-outline-primary">{{ _('Set up recurring bump') }}</button>
                     </form>
                     {% endif %}
@@ -77,8 +82,9 @@
                     <p class="text-muted small">{{ _('Extra Discover visibility beyond your followers, labeled "Boosted".') }}</p>
                     {% if eligible %}
                     <form method="POST" action="{{ url_for('payments.buy_boost', post_id=post.id) }}" class="d-flex gap-2 align-items-end">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div>
-                            <label class="form-label small" for="days">Days (1–{{ boost_max_days }})</label>
+                            <label class="form-label small" for="days">{{ _('Days (1–%(max)s)', max=boost_max_days) }}</label>
                             <input type="number" name="days" id="days" value="1" min="1" max="{{ boost_max_days }}" class="form-control" style="width: 90px;">
                         </div>
                         <button type="submit" class="btn btn-primary">{{ _('Buy boost') }}</button>

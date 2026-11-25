@@ -41,7 +41,7 @@
                         {{ form.bio(class="form-control", rows=4, placeholder=_('Tell us about yourself...')) }}
                     </div>
                     
-                    <h5 class="profile-card-title mt-4"><i class="fas fa-map-marker-alt me-2"></i>Location & Company</h5>
+                    <h5 class="profile-card-title mt-4"><i class="fas fa-map-marker-alt me-2"></i>{{ _("Location & Company") }}</h5>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             {{ form.location.label(class="form-label") }}
@@ -59,7 +59,7 @@
                         <small class="text-muted">{{ _('Separate skills with commas') }}</small>
                     </div>
                     
-                    <h5 class="profile-card-title mt-4"><i class="fas fa-link me-2"></i>Links & Social</h5>
+                    <h5 class="profile-card-title mt-4"><i class="fas fa-link me-2"></i>{{ _("Links & Social") }}</h5>
                     <div class="mb-3">
                         {{ form.website.label(class="form-label") }}
                         {{ form.website(class="form-control", placeholder=_('https://yourwebsite.com')) }}

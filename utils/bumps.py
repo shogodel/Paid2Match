@@ -22,6 +22,8 @@ spending.
 """
 from datetime import timedelta
 
+from flask_babel import gettext as _
+
 from extensions import db
 from models import utc_now
 from models.bump import (
@@ -107,26 +109,26 @@ def _spend_pack_bump(user_id):
 def bump_eligibility(user, post):
     """(ok, reason) — can this user bump this post right now?"""
     if not _is_member_or_above(user):
-        return False, 'Only Member accounts and above can bump posts — complete a referral first.'
+        return False, _('Only Member accounts and above can bump posts — complete a referral first.')
     created = _as_aware(post.created_at)
     if created and utc_now() < created + timedelta(hours=BUMP_MIN_POST_AGE_HOURS):
-        return False, 'A post must be 24 hours old before it can be bumped.'
+        return False, _('A post must be 24 hours old before it can be bumped.')
     since = utc_now() - timedelta(hours=BUMP_PER_POST_HOURS)
     recent = Bump.query.filter(
         Bump.post_id == post.id,
         Bump.created_at >= since,
     ).first()
     if recent is not None:
-        return False, 'This post was already bumped in the last 24 hours.'
+        return False, _('This post was already bumped in the last 24 hours.')
     if bumps_today(user.id) >= BUMP_PER_USER_PER_DAY:
-        return False, 'You have used your 3 bumps for today.'
+        return False, _('You have used your 3 bumps for today.')
     return True, None
 
 
 def boost_eligibility(user, post):
     """(ok, reason) — can this user boost this post right now?"""
     if not _is_member_or_above(user):
-        return False, 'Only Member accounts and above can boost posts — complete a referral first.'
+        return False, _('Only Member accounts and above can boost posts — complete a referral first.')
     return True, None
 
 
@@ -145,11 +147,11 @@ def apply_bump(user, post, source, stripe_session_id=None, price_cents=None,
     if source == 'free':
         profile = Profile.query.filter_by(user_id=user.id).first()
         if not profile or (profile.free_bumps or 0) <= 0:
-            return None, 'You have no free bumps left.'
+            return None, _('You have no free bumps left.')
         profile.free_bumps -= 1
     elif source == 'pack':
         if not _spend_pack_bump(user.id):
-            return None, 'You have no pack bumps left.'
+            return None, _('You have no pack bumps left.')
     now = utc_now()
     bump = Bump(
         post_id=post.id,

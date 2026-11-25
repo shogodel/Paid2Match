@@ -92,31 +92,26 @@ def test_paid_out_totals_per_currency(
 ):
     """Completed payouts sum per currency — three separate figures.
     Lowercase stored codes ('cad') group with their currency, and
-    pending/failed payouts never count."""
+    pending/failed payouts never count. Each payout gets its own
+    match: one match has at most one payout per kind
+    (uq_payouts_match_kind)."""
+    payouts = [
+        (100, 'cad', 'completed'),
+        (50, 'CAD', 'completed'),
+        (200, 'eur', 'completed'),
+        (300, 'USD', 'completed'),
+        (999, 'cad', 'pending'),
+        (888, 'eur', 'failed'),
+    ]
     with app.app_context():
-        match = _make_match(
-            sample_bounty.id, sample_hunter.id, sample_user.id
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 100, 'cad'
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 50, 'CAD'
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 200, 'eur'
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 300, 'USD'
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 999, 'cad',
-            status='pending',
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 888, 'eur',
-            status='failed',
-        )
+        for amount, currency, status in payouts:
+            match = _make_match(
+                sample_bounty.id, sample_hunter.id, sample_user.id
+            )
+            _make_payout(
+                match.id, sample_hunter.id, sample_bounty.id,
+                amount, currency, status=status,
+            )
         totals = paid_out_totals()
     assert totals == {
         'CAD': Decimal('150.00'),
@@ -143,17 +138,17 @@ def test_paid_out_totals_ignores_non_completed(
     """Pending and processing payouts are not paid out yet — the
     counter stays at zero until a payout completes."""
     with app.app_context():
-        match = _make_match(
-            sample_bounty.id, sample_hunter.id, sample_user.id
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 500, 'cad',
-            status='pending',
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 700, 'usd',
-            status='processing',
-        )
+        for amount, currency, status in (
+            (500, 'cad', 'pending'),
+            (700, 'usd', 'processing'),
+        ):
+            match = _make_match(
+                sample_bounty.id, sample_hunter.id, sample_user.id
+            )
+            _make_payout(
+                match.id, sample_hunter.id, sample_bounty.id,
+                amount, currency, status=status,
+            )
         totals = paid_out_totals()
     assert totals['CAD'] == Decimal('0')
     assert totals['USD'] == Decimal('0')
@@ -177,15 +172,14 @@ def test_homepage_counter_separate_figures(
     """The homepage shows the per-currency figures side by side —
     and never a blended total across currencies."""
     with app.app_context():
-        match = _make_match(
-            sample_bounty.id, sample_hunter.id, sample_user.id
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 100, 'cad'
-        )
-        _make_payout(
-            match.id, sample_hunter.id, sample_bounty.id, 200, 'eur'
-        )
+        for amount, currency in ((100, 'cad'), (200, 'eur')):
+            match = _make_match(
+                sample_bounty.id, sample_hunter.id, sample_user.id
+            )
+            _make_payout(
+                match.id, sample_hunter.id, sample_bounty.id,
+                amount, currency,
+            )
     resp = client.get('/')
     assert resp.status_code == 200
     assert b'CA$100.00' in resp.data
@@ -328,22 +322,74 @@ def test_wall_shows_need_title_and_earned_amount(
     assert b'Referrer' in resp.data
 
 
-def test_wall_amount_falls_back_to_reward(
+def test_wall_amount_falls_back_to_derived_net(
     client, app, sample_paid_bounty, sample_user, sample_hunter
 ):
-    """No payout recorded yet — the wall falls back to the need's
-    reward as the amount earned."""
+    """No payout recorded yet — the wall derives the referrer's
+    net (reward minus the 20% platform fee: CA$4,000 on a CA$5,000
+    reward), never the gross reward as 'earned'."""
     with app.app_context():
         match = _make_match(
             sample_paid_bounty.id, sample_hunter.id, sample_user.id
         )
         _make_story(
-            sample_paid_bounty.id, sample_user.id, 'poster',
-            'Great hire, smooth process.', match_id=match.id,
+            sample_paid_bounty.id, sample_hunter.id, 'referrer',
+            'Best referral I ever made.', match_id=match.id,
         )
     resp = client.get('/wins/')
     assert resp.status_code == 200
-    assert b'CA$5,000.00' in resp.data
+    assert b'CA$4,000.00' in resp.data
+    assert b'CA$5,000.00' not in resp.data
+
+
+def test_wall_no_earned_badge_for_poster_and_hired(
+    client, app, sample_paid_bounty, sample_user, sample_hunter
+):
+    """Only the referrer earned money: poster and hired stories
+    show no 'Earned' badge even when a payout is recorded — the
+    poster paid the reward, the hired candidate got a job."""
+    with app.app_context():
+        match = _make_match(
+            sample_paid_bounty.id, sample_hunter.id, sample_user.id
+        )
+        _make_payout(
+            match.id, sample_hunter.id, sample_paid_bounty.id, 4000,
+            'cad',
+        )
+        _make_story(
+            sample_paid_bounty.id, sample_user.id, 'poster',
+            'Great hire, smooth process.', match_id=match.id,
+        )
+        _make_story(
+            sample_paid_bounty.id, sample_user.id, 'hired',
+            'She started Monday and loves the team already.',
+            match_id=match.id,
+        )
+    resp = client.get('/wins/')
+    assert resp.status_code == 200
+    assert b'Great hire, smooth process.' in resp.data
+    assert b'She started Monday' in resp.data
+    assert b'Earned' not in resp.data
+
+
+def test_wall_hired_story_shows_on_behalf_note(
+    client, app, sample_bounty, sample_user, sample_hunter
+):
+    """A 'hired' story is written by a participant on the hired
+    person's behalf — the wall says so next to the author's name,
+    instead of presenting them as the hired candidate."""
+    with app.app_context():
+        match = _make_match(
+            sample_bounty.id, sample_hunter.id, sample_user.id
+        )
+        _make_story(
+            sample_bounty.id, sample_user.id, 'hired',
+            'She started Monday and loves the team already.',
+            match_id=match.id,
+        )
+    resp = client.get('/wins/')
+    assert resp.status_code == 200
+    assert 'shared on the hired candidate'.encode() in resp.data
 
 
 def test_wall_no_amount_for_free_need(
@@ -397,6 +443,18 @@ def test_new_story_form_shows_bounty_title(
     assert resp.status_code == 200
     assert sample_bounty.title.encode() in resp.data
     assert b'Your story' in resp.data
+
+
+def test_new_story_form_explains_hired_on_behalf(
+    logged_in_user, app, sample_bounty, sample_user, sample_hunter
+):
+    """The form is honest about the 'hired' role: the hired
+    candidate usually has no account, so a participant shares
+    their side on their behalf."""
+    _completed_setup(app, sample_bounty, sample_hunter, sample_user)
+    resp = logged_in_user.get(f'/wins/new/{sample_bounty.id}')
+    assert resp.status_code == 200
+    assert 'on their behalf'.encode() in resp.data
 
 
 def test_poster_can_add_story(

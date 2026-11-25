@@ -2,9 +2,11 @@
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from flask import Blueprint, abort, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import desc, or_
+from sqlalchemy.exc import IntegrityError
 import stripe
 
 from extensions import db, get_or_404
@@ -14,6 +16,7 @@ from models.dispute import Dispute
 from models.pitch import Pitch
 from models.message import Message
 from models.match import Match
+from models.payout import Payout
 from models.post import Post
 from models.profile import Profile
 from models.admin_settings import AdminSettings
@@ -21,6 +24,7 @@ from models.bounty_upgrade import BountyUpgrade
 from models.review import Review, maybe_reveal_reviews
 from models.referral import Referral
 from models.staked_vouch import StakedVouch
+from models.stripe_event import StripeEventLog
 from models.user import User
 from models.video_vouch import VideoVouch
 from blueprints.staked_vouches.routes import can_resolve as _stake_can_resolve
@@ -699,7 +703,20 @@ def confirm_match(pitch_id):
             payout_status='pending'
         )
         db.session.add(match)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            # Two simultaneous first-confirmations race here — the
+            # loser falls back to the winner's match
+            # (uq_matches_pitch_id) instead of 500ing. A second
+            # match for one pitch would release the same escrow
+            # twice, so the constraint is the real guard; this is
+            # just the graceful path. Nothing else is pending in
+            # the session yet, so the rollback is safe.
+            db.session.rollback()
+            match = Match.query.filter_by(pitch_id=pitch_id).first()
+            if match is None:
+                raise
 
     already_confirmed = False
     if current_user.id == match.hunter_id:
@@ -1023,11 +1040,23 @@ def secure_payment(id):
     transaction_fee = bounty_amount * 0.03
     total_charge = bounty_amount + transaction_fee
 
-    amount_cents = int(total_charge * 100)
-    description = f'Referral Need Reward: {bounty.title} (${bounty_amount:.2f} + 3% fee: ${transaction_fee:.2f})'
+    # to_cents (Decimal, half-up) — int(total * 100) truncates float
+    # artifacts and undercharges by a cent (e.g. $999.99 → 102998
+    # instead of 102999).
+    amount_cents = to_cents(total_charge)
+    # The description is the product name on the Stripe Checkout
+    # page — it must say CAD explicitly: the need may be
+    # denominated in EUR/USD, but Stripe always charges the
+    # numeric amount in Canadian dollars.
+    description = f'Referral Need Reward (CAD): {bounty.title} (CA${bounty_amount:.2f} + 3% fee: CA${transaction_fee:.2f})'
 
     # M2: manual capture — the payment is authorized (escrow), not
     # taken. It is captured when the match is confirmed by both sides.
+    # The idempotency key is per bounty + payment state: a
+    # double-click returns the SAME session instead of authorizing
+    # twice (the second authorization would be orphaned — the
+    # webhook only records one payment intent). After a refund the
+    # payment_status changes, so a re-secure gets a fresh key.
     checkout_url = create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
@@ -1039,6 +1068,7 @@ def secure_payment(id):
             'transaction_fee': str(transaction_fee)
         },
         capture_method='manual',
+        idempotency_key=f'escrow-{bounty.id}-{bounty.payment_status}',
     )
 
     if not checkout_url:
@@ -1098,12 +1128,20 @@ def secure_third_party(id):
         bounty_amount = float(bounty.reward_amount)
         transaction_fee = bounty_amount * 0.03
         total_charge = bounty_amount + transaction_fee
-        
-        amount_cents = int(total_charge * 100)
-        description = f'Referral Need Reward: {bounty.title} (${bounty_amount:.2f} + 3% fee: ${transaction_fee:.2f})'
+
+        # to_cents (Decimal, half-up) — int(total * 100) truncates
+        # float artifacts and undercharges by a cent.
+        amount_cents = to_cents(total_charge)
+        # The description is the product name on the Stripe
+        # Checkout page — it must say CAD explicitly (see
+        # secure_payment).
+        description = f'Referral Need Reward (CAD): {bounty.title} (CA${bounty_amount:.2f} + 3% fee: CA${transaction_fee:.2f})'
 
         # M2: manual capture — the payment is authorized (escrow), not
         # taken. It is captured when the match is confirmed by both sides.
+        # Idempotency key per bounty + payment state (see secure_payment):
+        # a double-click returns the same session instead of
+        # authorizing twice.
         checkout_url = create_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
@@ -1116,6 +1154,7 @@ def secure_third_party(id):
                 'third_party_payer': current_user.id
             },
             capture_method='manual',
+            idempotency_key=f'escrow-{bounty.id}-{bounty.payment_status}',
         )
 
         if not checkout_url:
@@ -1295,9 +1334,38 @@ def stripe_webhook():
     
     event_id = event.get('id')
     event_type = event.get('type')
-    
+
     logger.info(f'Processing webhook event: {event_id}, type: {event_type}')
-    
+
+    # Dedup: Stripe redelivers events (retries, and our endpoint is
+    # live at two URLs), and not every handler is idempotent on its
+    # own — a redelivered upgrade-EXTENSION re-extends the upgrade
+    # a second time for one payment, and a redelivered bounty
+    # checkout re-notifies the poster. Record the event id before
+    # dispatching; a duplicate delivery is acknowledged without
+    # reprocessing. The row commits with the business changes
+    # below, so a crash before the first commit leaves nothing
+    # recorded and the redelivery processes normally.
+    if event_id:
+        already = StripeEventLog.query.filter_by(event_id=event_id).first()
+        if already is not None:
+            logger.info(f'Event {event_id} already processed, skipping')
+            return '', 200
+        db.session.add(StripeEventLog(
+            event_id=event_id, event_type=event_type or '',
+        ))
+        try:
+            db.session.flush()
+        except IntegrityError:
+            # Two concurrent deliveries of the same event raced
+            # past the check — the loser skips. Nothing else is
+            # pending in the session yet, so the rollback is safe.
+            db.session.rollback()
+            logger.info(
+                f'Event {event_id} already processed (race), skipping'
+            )
+            return '', 200
+
     # Handle the event
     if event_type == 'checkout.session.completed':
         session = event['data']['object']
@@ -1348,7 +1416,16 @@ def stripe_webhook():
                     existing = db.session.get(BU, extend_upgrade_id)
                     if existing:
                         existing.expires_at = existing.expires_at + timedelta(days=duration_days)
-                        existing.price_paid = (existing.price_paid or 0) + total_price
+                        # price_paid is Numeric (Decimal) and
+                        # total_price is a float from the metadata —
+                        # adding them directly raises TypeError and
+                        # 500s the webhook, so the paid extension
+                        # never lands (Stripe retries and crashes
+                        # again every time).
+                        existing.price_paid = (
+                            (existing.price_paid or Decimal('0'))
+                            + Decimal(str(total_price))
+                        )
                         db.session.commit()
                         logger.info(f'Extended upgrade {extend_upgrade_id} for bounty {bounty_id}')
                 else:
@@ -1527,6 +1604,24 @@ def cancel_refund(id):
         flash('Access denied', 'danger')
         return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
 
+    # A completed hire can never be cancelled for a refund: the
+    # escrow was already captured and the referrer already paid (or
+    # is being paid). Refunding the poster now would hand them their
+    # money back while the referrer keeps the payout — the platform
+    # eats the full reward. payment_status stays 'secured' after
+    # capture, so it cannot be the guard; the match/payouts are.
+    # This check runs before the payments-disabled branch so a
+    # completed need is never closed either, whatever the
+    # kill-switch state.
+    completed_match = Match.query.filter_by(bounty_id=bounty.id).filter(
+        Match.hunter_confirmed.is_(True),
+        Match.employer_confirmed.is_(True),
+    ).first()
+    paid_out = Payout.query.filter_by(bounty_id=bounty.id).first()
+    if bounty.status == 'completed' or completed_match is not None or paid_out is not None:
+        flash('This need already has a completed hire — it cannot be cancelled or refunded. If something went wrong, please contact support.', 'danger')
+        return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
+
     # M2: fail closed — when payments are disabled and a payment was
     # secured, refuse: the Stripe authorization cannot be cancelled
     # while the kill-switch is on, so the bounty must stay secured
@@ -1548,7 +1643,14 @@ def cancel_refund(id):
         # pays nothing); refund a captured payment minus Stripe's
         # processing fees.
         if payment_intent_status(bounty.stripe_payment_intent) == 'succeeded':
-            refund_cents = to_cents(max(0.0, reward - (reward * 0.029 + 0.30)))
+            # The refund keeps Stripe's processing fee (Stripe does
+            # not return it on refunds) — the rates live in config
+            # (STRIPE_FEE_PERCENT / STRIPE_FEE_FIXED), not hardcoded.
+            fee_pct = current_app.config.get('STRIPE_FEE_PERCENT', 2.9)
+            fee_fixed = current_app.config.get('STRIPE_FEE_FIXED', 0.30)
+            refund_cents = to_cents(
+                max(0.0, reward - (reward * fee_pct / 100 + fee_fixed))
+            )
             _refund_id, refund_error = create_refund(
                 bounty.stripe_payment_intent, refund_cents
             )
@@ -1618,12 +1720,14 @@ def upgrade(id):
             flash('Payments are currently unavailable — upgrades cannot be purchased right now.', 'warning')
             return redirect(url_for('bounties.detail', slug_code=bounty.url_slug))
         total_price = price_per_day * duration_days
-        
+
         base_url = request.host_url.rstrip('/')
         success_url = f'{base_url}{url_for("bounties.upgrade_success", id=id, upgrade_type=upgrade_type)}?days={duration_days}'
         cancel_url = f'{base_url}{url_for("bounties.upgrade", id=id)}'
-        
-        amount_cents = int(total_price * 100)
+
+        # to_cents (Decimal, half-up) — int(total * 100) truncates
+        # float artifacts and undercharges by a cent.
+        amount_cents = to_cents(total_price)
         description = f'{info["name"]} Upgrade: {bounty.title} ({duration_days} days)'
         
         checkout_url = create_checkout_session(
@@ -1709,8 +1813,10 @@ def extend_upgrade(id):
     base_url = request.host_url.rstrip('/')
     success_url = f'{base_url}{url_for("bounties.upgrade_success", id=id, upgrade_type=upgrade_type)}?days={additional_days}&extend=true'
     cancel_url = f'{base_url}{url_for("bounties.upgrade", id=id)}'
-    
-    amount_cents = int(total_price * 100)
+
+    # to_cents (Decimal, half-up) — int(total * 100) truncates float
+    # artifacts and undercharges by a cent.
+    amount_cents = to_cents(total_price)
     description = f'{info["name"]} Extension: {bounty.title} ({additional_days} days)'
     
     checkout_url = create_checkout_session(

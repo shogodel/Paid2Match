@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Messages{% endblock %}
+{% block title %}{{ _('Messages') }}{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="row">
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2>Inbox</h2>
+                <h2>{{ _('Inbox') }}</h2>
                 <div>
-                    <a href="{{ url_for('messages.compose') }}" class="btn btn-primary">New Message</a>
-                    <a href="{{ url_for('messages.sent') }}" class="btn btn-secondary">Sent</a>
+                    <a href="{{ url_for('messages.compose') }}" class="btn btn-primary">{{ _('New Message') }}</a>
+                    <a href="{{ url_for('messages.sent') }}" class="btn btn-secondary">{{ _('Sent') }}</a>
                 </div>
             </div>
-            
+
             {% if messages %}
                 <div class="list-group">
                 {% for msg in messages %}
@@ -23,12 +23,12 @@
                             <small class="text-muted">{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                         </div>
                         <p class="mb-0 text-truncate">{{ msg.content }}</p>
-                        {% if not msg.is_read %}<span class="badge bg-primary">New</span>{% endif %}
+                        {% if not msg.is_read %}<span class="badge bg-primary">{{ _('New') }}</span>{% endif %}
                     </a>
                 {% endfor %}
                 </div>
             {% else %}
-                <p>No messages yet.</p>
+                <p>{{ _('No messages yet.') }}</p>
             {% endif %}
         </div>
     </div>

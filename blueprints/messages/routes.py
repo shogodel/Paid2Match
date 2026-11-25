@@ -5,6 +5,7 @@ from sqlalchemy import or_, desc
 
 from extensions import db, get_or_404
 from models.message import Message
+from models.moderation import Block
 from models.user import User
 from utils.notifications import notify
 
@@ -39,13 +40,29 @@ def compose():
     """GET/POST /messages/compose - Compose new message."""
     if request.method == 'POST':
         recipient_email = request.form.get('recipient_email')
-        content = request.form.get('content')
-        
+        content = (request.form.get('content') or '').strip()
+
         recipient = User.query.filter_by(email=recipient_email).first()
         if not recipient:
             flash('User not found', 'danger')
             return redirect(url_for('messages.compose'))
-        
+
+        if not content:
+            # Message.content is NOT NULL — an empty send used to
+            # crash with an IntegrityError (500).
+            flash('Write a message first.', 'warning')
+            return redirect(url_for('messages.compose'))
+
+        # A block means "they cannot follow or message you"
+        # (models/moderation.py) — the follow route enforces it;
+        # messaging must too.
+        if Block.query.filter_by(
+            blocker_id=recipient.id, blocked_id=current_user.id,
+            kind='block',
+        ).first():
+            flash('You cannot message this user.', 'danger')
+            return redirect(url_for('messages.compose'))
+
         message = Message(
             sender_id=current_user.id,
             recipient_id=recipient.id,
@@ -97,7 +114,17 @@ def reply(message_id):
         flash('Access denied', 'danger')
         return redirect(url_for('messages.inbox'))
     
-    content = request.form.get('content')
+    content = (request.form.get('content') or '').strip()
+    if not content:
+        flash('Write a message first.', 'warning')
+        return redirect(url_for('messages.inbox'))
+
+    if Block.query.filter_by(
+        blocker_id=original.sender_id, blocked_id=current_user.id,
+        kind='block',
+    ).first():
+        flash('You cannot message this user.', 'danger')
+        return redirect(url_for('messages.inbox'))
     
     # Phase 3: a reply stays in the thread — the referral context
     # (bounty + pitch) is copied from the original message, so a

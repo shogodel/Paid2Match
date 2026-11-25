@@ -28,7 +28,11 @@ so translations are always compiled from the current `.po` files.
 The uWSGI/Nginx notes below are the older setup and are kept for reference.
 
 ## Overview
-Gunicorn has been replaced with **uWSGI** for better performance and integration with Nginx.
+> STALE SECTION: the notes below describe the pre-Docker uWSGI/Nginx
+> setup, kept for reference only. The live deploy is Docker +
+> Gunicorn (see "Docker deploy" above); uWSGI is NOT in
+> requirements.txt (it cannot build on Python 3.12) and the Dockerfile
+> serves the app with Gunicorn. Do not re-add uWSGI.
 
 ## Configuration Files
 
@@ -111,8 +115,11 @@ nginx -t && nginx -s reload
 Set in `.env` file or system environment:
 - `FLASK_ENV`: 'production' (default), 'development', 'testing'
 - `DATABASE_URL`: PostgreSQL connection string
-- `SECRET_KEY`: Flask secret key
-- `STRIPE_SECRET_KEY`: Stripe API key
+- `SECRET_KEY`: Flask secret key (required — production refuses to
+  boot without one)
+- Stripe keys are NOT env vars: they live in AdminSettings in the
+  database (Admin > Settings). Setting `STRIPE_SECRET_KEY` in the
+  environment configures nothing.
 
 ## Best Practices Implemented
 1. **Unix socket** instead of TCP port (better performance)

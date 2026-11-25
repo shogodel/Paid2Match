@@ -26,6 +26,26 @@ HANDLE_RE = re.compile(r'^[a-z0-9._-]{3,30}$')
 HANDLE_MIN_LENGTH = 3
 HANDLE_MAX_LENGTH = 30
 
+#: Handles nobody may take. The /profile/* static routes first: a
+#: handle equal to one of those segments would be unreachable —
+#: Werkzeug matches the static segment before the <handle> rule,
+#: so /profile/setup would show the setup form, never the profile.
+#: The rest are top-level route prefixes and app words a handle
+#: would impersonate or read as a site section (/profile/admin
+#: looks official; 'needs', 'wins', 'pledge' read as site pages).
+RESERVED_HANDLES = frozenset({
+    # /profile/* static routes.
+    'setup', 'edit', 'linked', 'verify-request', 'users',
+    # Top-level route prefixes.
+    'admin', 'api', 'static', 'auth', 'needs', 'bounties', 'wins',
+    'pledge', 'pledges', 'intros', 'stakes', 'messages', 'referrals',
+    'social', 'video-vouches',
+    # Account / app words.
+    'login', 'logout', 'signup', 'register', 'settings', 'search',
+    'support', 'help', 'about', 'root', 'system', 'official',
+    'paid2match', 'me', 'new',
+})
+
 
 def _transliterate(value):
     """Strip accents: é→e, ñ→n, ü→u (NFKD + drop non-ASCII)."""
@@ -92,7 +112,9 @@ def handle_from_name(full_name, taken=None):
     'test.user'. Transliterates, lowercases, turns spaces into '.',
     strips anything outside [a-z0-9._-], pads/truncates to 3–30
     characters. When ``taken(handle)`` is given, appends digits
-    ('test.user2', 'test.user3', …) until the handle is free."""
+    ('test.user2', 'test.user3', …) until the handle is free.
+    Reserved handles (RESERVED_HANDLES) are never returned — they
+    count as taken, so 'Admin' becomes 'admin2'."""
     base = _transliterate(full_name).lower()
     base = re.sub(r'\s+', '.', base)
     base = re.sub(r'[^a-z0-9._-]', '', base)
@@ -104,7 +126,14 @@ def handle_from_name(full_name, taken=None):
         base = base + 'x' * (HANDLE_MIN_LENGTH - len(base))
     if len(base) > HANDLE_MAX_LENGTH:
         base = base[:HANDLE_MAX_LENGTH].rstrip('._-')
-    if taken is None or not taken(base):
+
+    def _unavailable(handle):
+        # Reserved handles are never handed out — treat them as
+        # taken so generation appends digits ('Admin' -> 'admin2',
+        # never 'admin').
+        return handle in RESERVED_HANDLES or (taken and taken(handle))
+
+    if not _unavailable(base):
         return base
     # Collision: append digits, shrinking the base to fit 30 chars.
     n = 2
@@ -113,7 +142,7 @@ def handle_from_name(full_name, taken=None):
         candidate = (
             base[:HANDLE_MAX_LENGTH - len(suffix)].rstrip('._-') + suffix
         )
-        if not taken(candidate):
+        if not _unavailable(candidate):
             return candidate
         n += 1
 
@@ -121,3 +150,9 @@ def handle_from_name(full_name, taken=None):
 def is_valid_handle(value):
     """True when value matches ^[a-z0-9._-]{3,30}$."""
     return bool(value) and bool(HANDLE_RE.match(value))
+
+
+def is_reserved_handle(value):
+    """True when the handle is reserved (see RESERVED_HANDLES) —
+    a route segment or app word nobody may take as a handle."""
+    return bool(value) and value in RESERVED_HANDLES

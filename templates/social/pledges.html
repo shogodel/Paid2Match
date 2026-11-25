@@ -11,7 +11,7 @@
             <h5>{{ _('Platform-wide no-ghosting compliance (last 30 days)') }}</h5>
             {% if platform_rate is not none %}
             <div class="fs-3">{{ (platform_rate * 100)|round(0) }}%</div>
-            <p class="text-muted small mb-0">{{ platform_on_time }} of {{ platform_due }} referrals answered within 5 business days.</p>
+            <p class="text-muted small mb-0">{{ _('%(on_time)s of %(due)s referrals answered within 5 business days.', on_time=platform_on_time, due=platform_due) }}</p>
             {% else %}
             <p class="text-muted mb-0">{{ _('No referrals were due an answer in the last 30 days yet.') }}</p>
             {% endif %}
@@ -22,7 +22,7 @@
     <a href="{{ url_for('social.new_pledge') }}" class="btn btn-primary mb-4">{{ _('Pledge for my company') }}</a>
     {% endif %}
 
-    <h4>Pledged employers ({{ entries|length }})</h4>
+    <h4>{{ _('Pledged employers (%(count)s)', count=entries|length) }}</h4>
     {% if entries %}
     <table class="table">
         <thead><tr><th>{{ _('Company') }}</th><th>{{ _('Pledged') }}</th><th>{{ _('Status') }}</th><th>{{ _('No-ghosting (30 days)') }}</th></tr></thead>
@@ -41,7 +41,7 @@
             </td>
             <td>
                 {% if entry.compliance_rate is not none %}
-                {{ (entry.compliance_rate * 100)|round(0) }}% ({{ entry.compliance_due }} due)
+                {{ (entry.compliance_rate * 100)|round(0) }}% ({{ _('%(count)s due', count=entry.compliance_due) }})
                 {% else %}
                 <span class="text-muted">{{ _('No referrals due yet') }}</span>
                 {% endif %}

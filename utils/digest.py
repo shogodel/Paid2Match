@@ -49,20 +49,26 @@ def _top_posts(user_id, limit=3):
 def _new_needs_in_spaces(user_id, limit=3):
     """Referral needs posted in the last 7 days in spaces the user is
     a member of. Needs are posts (post_type need_paid/need_free) with
-    a bounty attached."""
+    a bounty attached — and only publicly visible ones: an unsecured
+    paid need is not public yet, so it must not leak into digests
+    either."""
+    from models.bounty import Bounty
     space_ids = {
         m.space_id
         for m in SpaceMembership.query.filter_by(user_id=user_id).all()
     }
     if not space_ids:
         return []
-    posts = Post.query.filter(
+    posts = Post.query.join(
+        Bounty, Post.bounty_id == Bounty.id
+    ).filter(
         Post.space_id.in_(space_ids),
         Post.post_type.in_(['need_paid', 'need_free']),
         Post.is_hidden == False,  # noqa: E712
         Post.created_at >= _week_ago(),
+        Bounty.publicly_visible_filter(),
     ).order_by(desc(Post.created_at)).limit(limit).all()
-    return [p for p in posts if p.bounty is not None]
+    return posts
 
 
 def _week_stats(user_id):

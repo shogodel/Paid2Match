@@ -65,6 +65,23 @@ OAUTH_ENDPOINTS = {
 GITHUB_EMAILS_URL = 'https://api.github.com/user/emails'
 GITHUB_SIGNIN_SCOPE = 'read:user user:email'
 
+# LinkedIn sign-in ("Continue with LinkedIn") uses Sign In with
+# LinkedIn using OpenID Connect: the userinfo endpoint returns the
+# email, but only when the ``email`` scope is granted — the
+# account-linking flow asks for ``openid profile`` only, so sign-in
+# overrides the scope the same way GitHub does.
+LINKEDIN_SIGNIN_SCOPE = 'openid profile email'
+
+
+def _json_or_none(resp):
+    """The response body as JSON, or None when it is not JSON at all
+    (a proxy error page served with a 200 status, a truncated body).
+    Callers treat None as a provider failure, never a crash."""
+    try:
+        return resp.json()
+    except ValueError:
+        return None
+
 
 def _oauth_config(platform):
     """(client_id, client_secret) from config, or (None, None)."""
@@ -127,7 +144,8 @@ def exchange_oauth_code(platform, code, redirect_uri):
         return None, 'Could not reach the provider — please try again.'
     if resp.status_code != 200:
         return None, 'The provider rejected the sign-in — please try again.'
-    token = resp.json().get('access_token')
+    data = _json_or_none(resp)
+    token = data.get('access_token') if isinstance(data, dict) else None
     if not token:
         return None, 'The provider did not return an access token.'
     return token, None
@@ -151,7 +169,9 @@ def fetch_oauth_profile(platform, access_token):
         return None, None, 'Could not reach the provider — please try again.'
     if resp.status_code != 200:
         return None, None, 'Could not read your profile from the provider.'
-    data = resp.json()
+    data = _json_or_none(resp)
+    if not isinstance(data, dict):
+        return None, None, 'Could not read your profile from the provider.'
     if platform == 'github':
         return data.get('login'), data.get('html_url'), None
     # LinkedIn userinfo: sub is the stable id, name the display name.
@@ -177,7 +197,10 @@ def fetch_github_user(access_token):
         return None, 'Could not reach GitHub — please try again.'
     if resp.status_code != 200:
         return None, 'Could not read your profile from GitHub.'
-    return resp.json(), None
+    data = _json_or_none(resp)
+    if not isinstance(data, dict):
+        return None, 'Could not read your profile from GitHub.'
+    return data, None
 
 
 def fetch_github_primary_email(access_token):
@@ -199,10 +222,40 @@ def fetch_github_primary_email(access_token):
         return None, 'Could not reach GitHub — please try again.'
     if resp.status_code != 200:
         return None, 'Could not read your email from GitHub.'
-    for entry in resp.json() or []:
-        if entry.get('primary') and entry.get('verified'):
+    entries = _json_or_none(resp)
+    if not isinstance(entries, list):
+        return None, 'Could not read your email from GitHub.'
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get('primary') and entry.get('verified'):
             return entry.get('email'), None
     return None, None
+
+
+def fetch_linkedin_userinfo(access_token):
+    """Fetch the full LinkedIn /v2/userinfo payload for sign-in
+    (sub, name, given_name, family_name, picture, email,
+    email_verified). Returns (data, error) — email is present only
+    when the ``email`` scope was granted, so the caller must handle
+    a missing email (fail cleanly, never create an account without
+    one)."""
+    try:
+        resp = requests.get(
+            OAUTH_ENDPOINTS['linkedin']['profile'],
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Accept': 'application/json',
+            },
+            timeout=FETCH_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        logger.warning('LinkedIn userinfo fetch failed: %s', exc)
+        return None, 'Could not reach LinkedIn — please try again.'
+    if resp.status_code != 200:
+        return None, 'Could not read your profile from LinkedIn.'
+    data = _json_or_none(resp)
+    if not isinstance(data, dict):
+        return None, 'Could not read your profile from LinkedIn.'
+    return data, None
 
 
 def _fetch_page(url):

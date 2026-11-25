@@ -22,6 +22,16 @@ class Payout(db.Model):
     """One payout owed to a referrer for one confirmed match."""
     __tablename__ = 'payouts'
 
+    # One payout of each kind per match: two simultaneous escrow
+    # releases must not create two 'referral' rows for one match —
+    # each row gets its own transfer, so a duplicate would pay the
+    # referrer twice.
+    __table_args__ = (
+        db.UniqueConstraint(
+            'match_id', 'kind', name='uq_payouts_match_kind'
+        ),
+    )
+
     VALID_STATUSES = ['pending', 'processing', 'completed', 'failed']
     VALID_METHODS = ['stripe', 'manual']
     # M4: 'referral' is the referrer's payout; 'chain_share' is the

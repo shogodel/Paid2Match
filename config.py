@@ -25,9 +25,14 @@ class Config:
         'pool_recycle': 3600,
     }
     
-    # Session
-    SESSION_TYPE = 'filesystem'
+    # Session — Flask's default signed-cookie sessions (Flask-Session
+    # is not installed; there is no server-side session store, so no
+    # SESSION_TYPE). Only the Flask-Login user id lives in the cookie.
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    # Flask-Login's remember cookie defaults to 365 days — cap it at
+    # the same 7 days as the session, or "7-day sessions" would be a
+    # fiction (OAuth login always sets remember=True).
+    REMEMBER_COOKIE_DURATION = timedelta(days=7)
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
@@ -54,9 +59,13 @@ class Config:
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
     
     # External APIs - loaded from .env
-    STRIPE_API_KEY = os.getenv('STRIPE_API_KEY')
-    STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
-    STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+    # NOTE: there are deliberately NO STRIPE_* key settings here.
+    # Stripe keys live in AdminSettings in the database (Admin >
+    # Settings) and utils/payments.py reads them from there — env
+    # vars named STRIPE_API_KEY / STRIPE_SECRET_KEY /
+    # STRIPE_PUBLISHABLE_KEY / STRIPE_WEBHOOK_SECRET are dead and
+    # setting them configures nothing. (They used to be read here
+    # and misled operators into thinking payments were configured.)
 
     # Master switch for all Stripe/payment functionality (the kill-switch).
     # Set STRIPE_ENABLED=false in the environment to completely disable payments
@@ -80,6 +89,17 @@ class Config:
     # is the route (the UI hides the OAuth buttons).
     LINKEDIN_CLIENT_ID = os.getenv('LINKEDIN_CLIENT_ID')
     LINKEDIN_CLIENT_SECRET = os.getenv('LINKEDIN_CLIENT_SECRET')
+
+    # Kill-switch for the LinkedIn button, mirroring
+    # FACEBOOK_LOGIN_ENABLED: the LinkedIn app needs a Company Page
+    # (which needs an account a day old with 2 connections), so the
+    # button only renders when this is true. Set
+    # LINKEDIN_LOGIN_ENABLED=true in the environment (and recreate
+    # the container) once the app exists and sign-in actually works.
+    # The /auth/linkedin/* routes keep working regardless — this flag
+    # only controls the button's visibility.
+    LINKEDIN_LOGIN_ENABLED = os.getenv(
+        'LINKEDIN_LOGIN_ENABLED', 'false').lower() in ('1', 'true', 'yes')
     GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
     GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
 

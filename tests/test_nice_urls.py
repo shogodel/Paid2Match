@@ -153,16 +153,45 @@ class TestHandleValidation:
         'bad@handle',     # @
         'électricien',    # non-ASCII
     ])
-    def test_invalid_handles_rejected_by_model(self, bad):
+    def test_invalid_handles_rejected_by_model(self, app, bad):
+        # The app fixture imports every model (via the blueprints)
+        # so the mappers configure even when this class runs alone.
         with pytest.raises(ValueError):
             User(email='x@example.com', full_name='X Y', handle=bad)
 
     @pytest.mark.parametrize('good', [
         'test.user', 'a-b_c.d9', 'abc', 'a' * 30, 'remus.b',
     ])
-    def test_valid_handles_accepted_by_model(self, good):
+    def test_valid_handles_accepted_by_model(self, app, good):
         user = User(email='x@example.com', full_name='X Y', handle=good)
         assert user.handle == good
+
+    @pytest.mark.parametrize('reserved', [
+        # /profile/* static routes — a handle here would be
+        # unreachable (the static segment wins the match).
+        'setup', 'edit', 'linked', 'verify-request', 'users',
+        # Top-level route prefixes and app words.
+        'admin', 'api', 'static', 'auth', 'needs', 'wins', 'pledge',
+        'intros', 'login', 'support', 'paid2match',
+    ])
+    def test_reserved_handles_rejected_by_model(self, app, reserved):
+        with pytest.raises(ValueError, match='reserved'):
+            User(email='x@example.com', full_name='X Y',
+                 handle=reserved)
+
+    @pytest.mark.parametrize('name,expected', [
+        ('Admin', 'admin2'),
+        ('Setup', 'setup2'),
+        ('Needs', 'needs2'),
+    ])
+    def test_handle_generation_skips_reserved(self, name, expected):
+        assert handle_from_name(name) == expected
+
+    def test_auto_generated_handle_skips_reserved(self, app):
+        """A user actually named 'Admin' gets 'admin2' at insert —
+        never the reserved 'admin'."""
+        user = _make_user(app, 'admin-named@example.com', 'Admin')
+        assert user.handle == 'admin2'
 
     def test_duplicate_handle_rejected_by_database(
         self, app, sample_user
@@ -389,6 +418,41 @@ class TestSetupFormHandle:
         assert r.status_code == 200
         assert b'That handle is already taken.' in r.data
 
+    def test_setup_rejects_reserved_handle(
+        self, client, app, login_as
+    ):
+        _make_user(app, 'reserved@example.com', 'Reserved Taker')
+        login_as(client, 'reserved@example.com')
+        r = client.post('/profile/setup', data=_setup_data(
+            handle='admin',
+        ))
+        assert r.status_code == 200
+        assert b'That handle is reserved.' in r.data
+
+    def test_setup_handle_race_returns_friendly_error(
+        self, client, app, login_as, sample_user, monkeypatch
+    ):
+        """A handle taken between the form's uniqueness check and
+        the commit is caught by the database constraint — the route
+        answers with the friendly 'already taken' message, not a
+        500. (The form check is patched out to simulate the race.)"""
+        from blueprints.profile.forms import SetupForm
+        monkeypatch.setattr(
+            SetupForm, 'validate_handle', lambda self, field: None
+        )
+        user = _make_user(app, 'race@example.com', 'Race Taker')
+        login_as(client, 'race@example.com')
+        r = client.post('/profile/setup', data=_setup_data(
+            handle=sample_user.handle,
+        ))
+        assert r.status_code == 200
+        assert b'That handle is already taken.' in r.data
+        with app.app_context():
+            assert db.session.get(User, user.id).handle == 'race.taker'
+            from models.profile import Profile
+            assert Profile.query.filter_by(
+                user_id=user.id).count() == 0
+
     def test_setup_rejects_bad_handle_format(
         self, client, app, login_as
     ):
@@ -439,8 +503,14 @@ class TestMigrationBackfill:
         from app import create_app
 
         db_file = tmp_path / 'nice_urls_backfill.db'
-        test_app = create_app('testing')
-        test_app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_file}'
+        # The URI must reach create_app() via config_overrides:
+        # Flask-SQLAlchemy creates its engines eagerly in
+        # db.init_app(), so setting SQLALCHEMY_DATABASE_URI on the
+        # app afterwards is silently ignored and this test would
+        # run against (and leak rows into) the shared test DB.
+        test_app = create_app('testing', config_overrides={
+            'SQLALCHEMY_DATABASE_URI': f'sqlite:///{db_file}',
+        })
         with test_app.app_context():
             flask_migrate.upgrade(revision='phase3_discovery_trust')
             db.session.execute(text(

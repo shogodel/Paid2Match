@@ -17,9 +17,9 @@
                     <li>
                         <strong>{{ upgrade.info.name }}</strong> - 
                         {% if upgrade.expires_at %}
-                            Expires {{ upgrade.expires_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            {{ _('Expires %(date)s', date=upgrade.expires_at.strftime('%B %d, %Y at %I:%M %p')) }}
                         {% else %}
-                            No expiration
+                            {{ _('No expiration') }}
                         {% endif %}
                     </li>
                 {% endfor %}
@@ -35,7 +35,7 @@
                             <h4 class="mb-0">{{ info.badge }}</h4>
                         </div>
                         <div class="card-body">
-                            <h3 class="text-success mb-3">${{ "%.2f"|format(info.price_per_day) }}/day</h3>
+                            <h3 class="text-success mb-3">${{ "%.2f"|format(info.price_per_day) }}{{ _('/day') }}</h3>
                             <p class="small text-muted">{{ info.description }}</p>
                             
                             <hr>
@@ -46,11 +46,11 @@
                                 <div class="mb-3">
                                     <label class="form-label">{{ _('Duration (days)') }}</label>
                                     <select name="duration_days" class="form-select" required>
-                                        <option value="1">1 day - ${{ "%.2f"|format(info.price_per_day) }}</option>
-                                        <option value="3">3 days - ${{ "%.2f"|format(info.price_per_day * 3) }}</option>
-                                        <option value="7" selected>7 days - ${{ "%.2f"|format(info.price_per_day * 7) }}</option>
-                                        <option value="14">14 days - ${{ "%.2f"|format(info.price_per_day * 14) }}</option>
-                                        <option value="30">30 days - ${{ "%.2f"|format(info.price_per_day * 30) }}</option>
+                                        <option value="1">{{ ngettext('%(num)s day', '%(num)s days', 1) }} - ${{ "%.2f"|format(info.price_per_day) }}</option>
+                                        <option value="3">{{ ngettext('%(num)s day', '%(num)s days', 3) }} - ${{ "%.2f"|format(info.price_per_day * 3) }}</option>
+                                        <option value="7" selected>{{ ngettext('%(num)s day', '%(num)s days', 7) }} - ${{ "%.2f"|format(info.price_per_day * 7) }}</option>
+                                        <option value="14">{{ ngettext('%(num)s day', '%(num)s days', 14) }} - ${{ "%.2f"|format(info.price_per_day * 14) }}</option>
+                                        <option value="30">{{ ngettext('%(num)s day', '%(num)s days', 30) }} - ${{ "%.2f"|format(info.price_per_day * 30) }}</option>
                                     </select>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">
@@ -76,7 +76,7 @@
             
             <div class="mt-4 text-center">
                 <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Skip & View Need
+                    <i class="fas fa-arrow-left"></i> {{ _('Skip & View Need') }}
                 </a>
             </div>
             

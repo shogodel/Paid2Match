@@ -21,9 +21,11 @@ Feed items are dicts: {'kind': 'post'|'share', 'post': Post,
 from datetime import timedelta, timezone
 
 from flask_babel import lazy_gettext as _l
+from sqlalchemy import or_
 
 from extensions import db
 from models import utc_now
+from models.bounty import Bounty
 from models.follow import Follow
 from models.moderation import Block
 from models.post import Post, Share
@@ -76,8 +78,22 @@ def hidden_author_ids(viewer_id):
     return hidden
 
 
+def _public_post_clause():
+    """A post is publicly visible unless it is linked to a paid bounty
+    whose payment is not secured yet — the bounty board hides those
+    until escrow (Bounty.is_publicly_visible), and the feed must not
+    leak them. Posts with no linked bounty are unaffected. Callers
+    must outerjoin Bounty on Post.bounty_id first."""
+    return or_(
+        Post.bounty_id.is_(None),
+        Bounty.publicly_visible_filter(),
+    )
+
+
 def _visible_posts_query(viewer_id):
-    query = Post.query.filter_by(is_hidden=False)
+    query = Post.query.filter_by(is_hidden=False).outerjoin(
+        Bounty, Post.bounty_id == Bounty.id,
+    ).filter(_public_post_clause())
     hidden = hidden_author_ids(viewer_id)
     if hidden:
         query = query.filter(~Post.author_id.in_(hidden))
@@ -92,6 +108,7 @@ def _flair_types(flair):
 
 
 def _paginate(items, page, per_page):
+    page = max(page, 1)
     total = len(items)
     start = (page - 1) * per_page
     end = start + per_page
@@ -130,14 +147,22 @@ def get_following_feed(viewer_id, page=1, per_page=20, flair=None):
     ]
 
     hidden = hidden_author_ids(viewer_id)
-    shares = Share.query.join(Post, Share.post_id == Post.id).filter(
+    shares = Share.query.join(Post, Share.post_id == Post.id).outerjoin(
+        Bounty, Post.bounty_id == Bounty.id,
+    ).filter(
         Share.user_id.in_(author_ids),
         Post.is_hidden == False,  # noqa: E712 (SQLAlchemy boolean comparison)
+        _public_post_clause(),
     )
     if types:
         shares = shares.filter(Post.post_type.in_(types))
     if hidden:
-        shares = shares.filter(~Post.author_id.in_(hidden))
+        shares = shares.filter(
+            ~Post.author_id.in_(hidden),
+            # A muted user's shares are their content too — a mute
+            # hides them from your feeds, not just their own posts.
+            ~Share.user_id.in_(hidden),
+        )
     for share in shares.all():
         items.append({
             'kind': 'share', 'post': share.post, 'share': share,
@@ -165,13 +190,21 @@ def get_latest_feed(viewer_id, page=1, per_page=20, flair=None):
     ]
 
     hidden = hidden_author_ids(viewer_id)
-    shares = Share.query.join(Post, Share.post_id == Post.id).filter(
+    shares = Share.query.join(Post, Share.post_id == Post.id).outerjoin(
+        Bounty, Post.bounty_id == Bounty.id,
+    ).filter(
         Post.is_hidden == False,  # noqa: E712 (SQLAlchemy boolean comparison)
+        _public_post_clause(),
     )
     if types:
         shares = shares.filter(Post.post_type.in_(types))
     if hidden:
-        shares = shares.filter(~Post.author_id.in_(hidden))
+        shares = shares.filter(
+            ~Post.author_id.in_(hidden),
+            # Shares are the sharer's content in the feed — a blocked
+            # or muted user's shares must not appear either.
+            ~Share.user_id.in_(hidden),
+        )
     for share in shares.all():
         items.append({
             'kind': 'share', 'post': share.post, 'share': share,

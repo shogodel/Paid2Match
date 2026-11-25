@@ -15,6 +15,11 @@ def _is_safe_redirect(url):
     without becoming an open redirect."""
     if not url:
         return False
+    # Browsers treat backslashes as slashes, so '/\\evil.com' (which
+    # urlparse sees as a same-origin path) navigates to //evil.com —
+    # reject any backslash outright.
+    if '\\' in url:
+        return False
     from urllib.parse import urlparse
     parsed = urlparse(url)
     if not parsed.netloc:
@@ -22,8 +27,17 @@ def _is_safe_redirect(url):
     return parsed.netloc == request.host
 
 
-def create_app(config_name: str = None) -> Flask:
-    """Create and configure the Flask application."""
+def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
+    """Create and configure the Flask application.
+
+    config_overrides are applied right after the named config class
+    loads and BEFORE any extension initialises: Flask-SQLAlchemy
+    creates its engines eagerly in db.init_app(), so a
+    SQLALCHEMY_DATABASE_URI set after create_app() returns is
+    silently ignored (the engine stays bound to the old URI).
+    Anything that needs a different database — migration tests on a
+    throwaway file, for example — must pass it here.
+    """
 
     # Load config
     if config_name is None:
@@ -39,6 +53,20 @@ def create_app(config_name: str = None) -> Flask:
     # Load configuration
     from config import config_by_name
     app.config.from_object(config_by_name.get(config_name, config_by_name['development']))
+    if config_overrides:
+        app.config.update(config_overrides)
+
+    # Fail fast in production/staging without a secret key: without
+    # one the app still boots and then 500s on the first request
+    # that touches the session (Flask-Login, the locale switcher,
+    # CSRF) — a broken deploy that looks healthy. Refuse to start
+    # instead so the deploy fails loudly at boot.
+    if config_name in ('production', 'staging') and not app.config.get('SECRET_KEY'):
+        raise RuntimeError(
+            'SECRET_KEY is not set — refusing to start in '
+            f'{config_name!r} without one. Set SECRET_KEY in the '
+            'environment (or .env) and restart.'
+        )
 
     # The app runs behind the SWAG reverse proxy, which terminates HTTPS
     # and forwards X-Forwarded-Proto/Host. Trust one proxy hop so
@@ -162,6 +190,20 @@ def create_app(config_name: str = None) -> Flask:
     from utils.mentions import link_mentions
     app.jinja_env.filters['mention_links'] = link_mentions
 
+    # Newlines to <br> for multi-line user text (profile bio). The
+    # text is ESCAPED FIRST — the old template idiom
+    # `| replace('\n', '<br>') | safe` skipped escaping entirely, so
+    # a <script> tag in a bio ran on every visitor's profile view
+    # (stored XSS). The only raw HTML in the output is our own <br>.
+    from markupsafe import Markup, escape as _escape
+
+    def _nl2br(text):
+        if not text:
+            return Markup('')
+        return Markup(str(_escape(text)).replace('\n', '<br>'))
+
+    app.jinja_env.filters['nl2br'] = _nl2br
+
     # Phase 2: trust-level / rank display labels. The level strings
     # are logic keys in Python (compared, not displayed); templates
     # translate them at render time through this filter.
@@ -202,7 +244,15 @@ def create_app(config_name: str = None) -> Flask:
     @login_manager.user_loader
     def load_user(user_id):
         from models.user import User
-        return db.session.get(User, user_id)
+        user = db.session.get(User, user_id)
+        # Flask-Login only checks is_active at login_user() time — a
+        # session or remember-cookie reload never re-checks it. So a
+        # deactivated or soft-deleted user would stay logged in until
+        # the cookie expired. Reject them here so deactivation takes
+        # effect on the very next request.
+        if user is not None and (not user.is_active or user.is_deleted):
+            return None
+        return user
 
     @login_manager.unauthorized_handler
     def unauthorized():
@@ -394,9 +444,18 @@ def create_app(config_name: str = None) -> Flask:
         from models.bounty import Bounty
         from models.match import Match
 
-        # Use cached stats if available (5 min cache via simple dict)
+        # Use cached stats if available (5 min cache via simple dict).
+        # The timestamp is what makes it 5 minutes: without it the
+        # entry lived in app.config forever and the homepage counts
+        # never moved until the next restart.
         cache_key = 'homepage_stats'
-        if cache_key not in app.config:
+        cache_age_key = 'homepage_stats_cached_at'
+        cached_at = app.config.get(cache_age_key)
+        cache_stale = (
+            cached_at is None
+            or (datetime.now(timezone.utc) - cached_at).total_seconds() > 300
+        )
+        if cache_key not in app.config or cache_stale:
             total_users = db.session.query(User).filter_by(is_active=True).count()
             total_bounties = db.session.query(Bounty).filter(
                 Bounty.status.in_(['open', 'completed'])
@@ -417,6 +476,7 @@ def create_app(config_name: str = None) -> Flask:
                 'total_rewards': total_rewards,
                 'successful_matches': successful_matches
             }
+            app.config[cache_age_key] = datetime.now(timezone.utc)
         
         stats = app.config[cache_key]
 

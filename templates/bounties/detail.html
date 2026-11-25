@@ -23,7 +23,7 @@
                         {% endif %}
                         {% if bounty.payment_status == 'secured' %}
                         <span class="badge bg-{{ 'success' if bounty.is_free_bounty else 'info' }}">
-                            <i class="fas fa-check-circle"></i> {{ 'Free' if bounty.is_free_bounty else 'Secured' }}
+                            <i class="fas fa-check-circle"></i> {{ _('Free') if bounty.is_free_bounty else _('Secured') }}
                         </span>
                         {% endif %}
                         {% for badge_info in bounty.upgrade_badges %}
@@ -38,14 +38,14 @@
                             {% if bounty.reward_amount and bounty.reward_amount > 0 %}
                                 {{ bounty.reward_amount|money(bounty.currency) }}
                             {% else %}
-                                Free Need
+                                {{ _('Free Need') }}
                             {% endif %}
                         </span>
                         {% if bounty.location %}
                         <span class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ bounty.location }}</span>
                         {% endif %}
                         {% if bounty.deadline %}
-                        <span class="text-muted"><i class="fas fa-calendar"></i> Due: {{ bounty.deadline.strftime('%B %d, %Y') }}</span>
+                        <span class="text-muted"><i class="fas fa-calendar"></i> {{ _('Due:') }} {{ bounty.deadline.strftime('%B %d, %Y') }}</span>
                         <span id="countdown-{{ bounty.id }}" class="badge bg-{{ 'warning' if bounty.time_remaining_display and 'd' not in bounty.time_remaining_display else 'info' }}">
                             <i class="fas fa-clock"></i> <span class="countdown-text">{{ bounty.time_remaining_display }}</span>
                         </span>
@@ -87,7 +87,7 @@
 
             {% if bounty.status != 'open' %}
             <div class="alert alert-warning">
-                {{ _('This bounty is') }} <strong>{{ bounty.status }}</strong>.{% if bounty.payment_status == 'unsecured' %} Payment is required to publish it.{% endif %}
+                {{ _('This bounty is') }} <strong>{{ bounty.status }}</strong>.{% if bounty.payment_status == 'unsecured' %} {{ _('Payment is required to publish it.') }}{% endif %}
             </div>
             {% endif %}
 
@@ -207,7 +207,7 @@
                         {% if bounty.reward_amount and bounty.reward_amount > 0 %}
                             {{ bounty.reward_amount|money(bounty.currency) }}
                         {% else %}
-                            Free
+                            {{ _('Free') }}
                         {% endif %}
                     </p>
                     {% if bounty.payment_status == 'secured' %}
@@ -221,8 +221,9 @@
                         <div class="d-flex flex-column gap-2 mt-3">
                             {% if bounty.payment_status == 'unsecured' and bounty.reward_amount and bounty.reward_amount > 0 %}
                             <a href="{{ url_for('bounties.secure_payment', id=bounty.id) }}" class="btn btn-warning">
-                                <i class="fas fa-lock"></i> Secure This Bounty ({{ (bounty.reward_amount|float * 1.03)|money(bounty.currency) }})
+                                <i class="fas fa-lock"></i> {{ _('Secure This Bounty (%(amount)s)', amount=(bounty.reward_amount|float * 1.03)|money(bounty.currency)) }}
                             </a>
+                            <p class="text-muted small mb-0">{{ _('Payments are processed in Canadian dollars (CAD) at the amount shown.') }}</p>
                             {% elif bounty.payment_status == 'secured' %}
                             <div class="alert alert-success w-100 mb-0">
                                 <i class="fas fa-check-circle"></i> <strong>{{ _('Secured') }}</strong>
@@ -253,7 +254,7 @@
         <div class="col">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0">Referrals ({{ pitches|length }})</h4>
+                    <h4 class="mb-0">{{ _('Referrals (%(count)s)', count=pitches|length) }}</h4>
                 </div>
                 <ul class="list-group list-group-flush">
                     {% for pitch in pitches %}
@@ -270,12 +271,12 @@
                                     <small class="text-muted">
                                         {% set hunter_profile = pitch.hunter.profiles.first() %}
                                         {% if hunter_profile %}
-                                            Rep: {{ hunter_profile.reputation_score or 0 }} pts
+                                            {{ _('Rep: %(score)s pts', score=hunter_profile.reputation_score or 0) }}
                                             {% if hunter_profile.location %} &middot; {{ hunter_profile.location }}{% endif %}
                                         {% endif %}
                                     </small>
                                     <p class="mb-1 mt-2"><em>"{{ pitch.candidate_teaser }}"</em></p>
-                                    <small class="text-muted">Referred {{ pitch.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                    <small class="text-muted">{{ _('Referred %(date)s', date=pitch.created_at.strftime('%B %d, %Y at %I:%M %p')) }}</small>
                                     {# Staked vouch from a pitch: the poster puts
                                        money on the line behind this referrer
                                        for this need. Recorded only — no money
@@ -300,15 +301,18 @@
                                     {% elif existing_match and existing_match.hunter_confirmed and current_user.id == bounty.poster_id %}
                                         <span class="badge bg-warning text-dark">{{ _('Awaiting Your Confirm') }}</span>
                                         <form method="POST" action="{{ url_for('bounties.confirm_match', pitch_id=pitch.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-primary btn-sm">{{ _('Confirm Match') }}</button>
                                         </form>
                                     {% elif existing_match and existing_match.employer_confirmed and current_user.id == pitch.hunter_id %}
                                         <span class="badge bg-warning text-dark">{{ _('Awaiting Your Confirm') }}</span>
                                         <form method="POST" action="{{ url_for('bounties.confirm_match', pitch_id=pitch.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-primary btn-sm">{{ _('Confirm Match') }}</button>
                                         </form>
                                     {% elif not existing_match %}
                                         <form method="POST" action="{{ url_for('bounties.confirm_match', pitch_id=pitch.id) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-primary btn-sm">{{ _('Confirm Match') }}</button>
                                         </form>
                                     {% else %}
@@ -323,11 +327,11 @@
                                         <span class="badge bg-secondary">{{ pitch.status|title }}</span>
                                     </div>
                                     <small class="text-muted">
-                                        Anonymous referrer &middot;
-                                        Rep: ???
+                                        {{ _('Anonymous referrer') }} &middot;
+                                        {{ _('Rep: ???') }}
                                     </small>
                                     <p class="mb-0 text-muted small">"{{ pitch.candidate_teaser[:100] }}..."</p>
-                                    <small class="text-muted">Referred {{ pitch.created_at.strftime('%B %d, %Y') }}</small>
+                                    <small class="text-muted">{{ _('Referred %(date)s', date=pitch.created_at.strftime('%B %d, %Y')) }}</small>
                                 </div>
                             </div>
                         {% else %}
@@ -336,22 +340,24 @@
                                     <span class="badge bg-warning text-dark">{{ pitch.status|title }}</span>
                                     <p class="mb-0 text-muted">"{{ pitch.candidate_teaser[:150] }}..."</p>
                                     <small class="text-muted">
-                                        Anonymous referrer &middot;
+                                        {{ _('Anonymous referrer') }} &middot;
                                         {% set hunter_profile = pitch.hunter.profiles.first() %}
                                         {% if hunter_profile and hunter_profile.reputation_score is not none %}
-                                            Rep: {{ hunter_profile.reputation_score }} pts
+                                            {{ _('Rep: %(score)s pts', score=hunter_profile.reputation_score) }}
                                         {% else %}
-                                            Rep: ???
+                                            {{ _('Rep: ???') }}
                                         {% endif %}
                                         &middot; {{ pitch.created_at.strftime('%B %d, %Y') }}
                                     </small>
                                 </div>
                                 <div class="d-flex gap-2">
                                     <form method="POST" action="{{ url_for('bounties.respond_to_pitch', pitch_id=pitch.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="response" value="interested">
                                         <button type="submit" class="btn btn-success btn-sm">{{ _('Interested') }}</button>
                                     </form>
                                     <form method="POST" action="{{ url_for('bounties.respond_to_pitch', pitch_id=pitch.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="response" value="pass">
                                         <button type="submit" class="btn btn-outline-secondary btn-sm">{{ _('Pass') }}</button>
                                     </form>

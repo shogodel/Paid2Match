@@ -6,6 +6,7 @@
     <p class="text-muted">{{ _('Tell the network what happened — in your own words.') }}</p>
     <div class="alert alert-info">
         {{ _('Only the people involved in a completed hire can share a story: the poster, the referrer, and the hired candidate. Each side gets one story per need.') }}
+        {{ _('The hired candidate usually isn’t a Paid2Match user, so the poster or the referrer shares their side on their behalf.') }}
     </div>
     <p><strong>{{ _('Need') }}:</strong> <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}">{{ bounty.title }}</a></p>
     <form method="POST" action="{{ url_for('wins.new_story', bounty_id=bounty.id) }}">

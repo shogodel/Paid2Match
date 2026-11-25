@@ -267,6 +267,37 @@ class TestBuildTrail:
             'hired': None,
         }
 
+    def test_trail_for_specific_match(
+            self, app, sample_user, sample_hunter, second_user):
+        """build_trail(bounty, match=...) builds the trail for
+        that match (the wins wall passes a story's match); an
+        uncompleted match falls back to the latest completed one
+        instead of ever showing a trail for an uncompleted hire."""
+        bounty = _paid_bounty(app, sample_user)
+        first = _confirmed_match(app, bounty, sample_hunter, sample_user)
+        _payouts(app, first, bounty)
+        second = _confirmed_match(app, bounty, second_user, sample_user)
+        _payouts(app, second, bounty)
+
+        # Default: the latest completed match (second_user's).
+        by_role = {hop['role']: hop for hop in build_trail(bounty)}
+        assert by_role['referrer']['user'].id == second_user.id
+        # Explicit: the first match's trail.
+        by_role = {
+            hop['role']: hop
+            for hop in build_trail(bounty, match=first)
+        }
+        assert by_role['referrer']['user'].id == sample_hunter.id
+        # An uncompleted match never gets a trail of its own.
+        unconfirmed = _confirmed_match(
+            app, bounty, sample_hunter, sample_user, confirmed=False
+        )
+        by_role = {
+            hop['role']: hop
+            for hop in build_trail(bounty, match=unconfirmed)
+        }
+        assert by_role['referrer']['user'].id == second_user.id
+
     def test_hired_person_without_account_shows_name(
             self, app, sample_user, sample_hunter):
         bounty = _paid_bounty(app, sample_user)

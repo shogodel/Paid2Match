@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Refer someone - Paid2Match{% endblock %}
+{% block title %}{{ _('Refer someone') }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-7">
-            <h2>Refer someone for "{{ bounty.title }}"</h2>
+            <h2>{{ _('Refer someone for "%(title)s"', title=bounty.title) }}</h2>
             <p class="text-muted">
                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
-                Bounty: {{ bounty.reward_amount|money(bounty.currency) }} if your referral is the one who gets hired.
+                {{ _('Bounty: %(amount)s if your referral is the one who gets hired.', amount=bounty.reward_amount|money(bounty.currency)) }}
                 {% else %}
-                Community referral — no bounty. You earn karma, trust, and a "helped" credit instead.
+                {{ _('Community referral — no bounty. You earn karma, trust, and a "helped" credit instead.') }}
                 {% endif %}
-                The person you refer will be asked to confirm before the poster sees anything — nobody is referred without knowing.
+                {{ _('The person you refer will be asked to confirm before the poster sees anything — nobody is referred without knowing.') }}
             </p>
             <form method="POST">
                 {{ form.hidden_tag() }}
@@ -38,10 +38,10 @@
                     {{ form.message.label(class="form-label") }}
                     {{ form.message(class="form-control", rows=4) }}
                     {% for e in form.message.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
-                    <div class="form-text">50–1000 characters. This is what the poster reads once the person confirms.</div>
+                    <div class="form-text">{{ _('50–1000 characters. This is what the poster reads once the person confirms.') }}</div>
                 </div>
                 {{ form.submit(class="btn btn-primary") }}
-                <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-link">Cancel</a>
+                <a href="{{ url_for('bounties.detail', slug_code=bounty.url_slug) }}" class="btn btn-link">{{ _('Cancel') }}</a>
             </form>
         </div>
     </div>

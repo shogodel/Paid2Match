@@ -55,7 +55,9 @@ class Bump(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now)
     expires_at = db.Column(db.DateTime, nullable=False)
 
-    post = db.relationship('Post', backref='bumps')
+    post = db.relationship(
+        'Post', backref=db.backref('bumps', cascade='all, delete-orphan')
+    )
     user = db.relationship('User', backref='bumps')
 
     def __repr__(self):
@@ -121,7 +123,9 @@ class Boost(db.Model):
     ends_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=utc_now)
 
-    post = db.relationship('Post', backref='boosts')
+    post = db.relationship(
+        'Post', backref=db.backref('boosts', cascade='all, delete-orphan')
+    )
     user = db.relationship('User', backref='boosts')
 
     def __repr__(self):
@@ -175,7 +179,13 @@ class RecurringBump(db.Model):
     next_bump_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=utc_now)
 
-    post = db.relationship('Post', backref='recurring_bumps')
+    # Cascade: a canceled/past-due recurring row goes with the post.
+    # An ACTIVE row blocks deletion in the delete route instead — its
+    # Stripe subscription would keep charging with no row to cancel.
+    post = db.relationship(
+        'Post',
+        backref=db.backref('recurring_bumps', cascade='all, delete-orphan'),
+    )
     user = db.relationship('User', backref='recurring_bumps')
 
     def __repr__(self):

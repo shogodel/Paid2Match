@@ -12,6 +12,8 @@ One active pledge per user: a new pledge is blocked while another is
 pending or approved. A revoked pledge may be re-pledged (a fresh row
 is created; the revoked row stays as history).
 """
+from sqlalchemy import text
+
 from extensions import db
 from models import generate_uuid, utc_now
 
@@ -19,6 +21,22 @@ from models import generate_uuid, utc_now
 class EmployerPledge(db.Model):
     """An employer's pledge that a human reads every application."""
     __tablename__ = 'employer_pledges'
+
+    __table_args__ = (
+        # One active (pending/approved) pledge per user, enforced at
+        # the DB level: the route-level active_for_user check races
+        # under concurrent POSTs. A revoked pledge is not active, so
+        # re-pledging after a revocation still works.
+        db.Index(
+            'ix_employer_pledges_one_active',
+            'user_id',
+            unique=True,
+            postgresql_where=text(
+                "status IN ('pending', 'approved')"
+            ),
+            sqlite_where=text("status IN ('pending', 'approved')"),
+        ),
+    )
 
     STATUSES = ['pending', 'approved', 'revoked']
     # Statuses that block a new pledge from the same user.

@@ -104,10 +104,21 @@ def _derived_amounts(match, reward, sharer_id):
     return gross, fee, referrer_amount, sharer_amount
 
 
-def build_trail(bounty):
+def build_trail(bounty, match=None):
     """The ordered money-trail hops for a bounty, or [] when no
-    hire has completed yet. Read-only — no rows are written."""
-    match = completed_match_for(bounty)
+    hire has completed yet. Read-only — no rows are written. When
+    `match` is given, the trail is built for that match — it must
+    be a completed match for this bounty; anything else falls back
+    to the latest completed match, so a trail is never built for
+    an uncompleted hire (the wins wall passes a story's match)."""
+    if match is not None and (
+        match.bounty_id != bounty.id
+        or not match.hunter_confirmed
+        or not match.employer_confirmed
+    ):
+        match = None
+    if match is None:
+        match = completed_match_for(bounty)
     if match is None:
         return []
 

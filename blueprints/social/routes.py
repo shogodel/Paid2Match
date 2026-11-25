@@ -10,8 +10,8 @@ import uuid
 from datetime import datetime, timezone
 
 from flask import (
-    Blueprint, Response, flash, jsonify, redirect, render_template, request,
-    session, url_for,
+    Blueprint, Response, abort, flash, jsonify, redirect, render_template,
+    request, session, url_for,
 )
 from flask_login import current_user, login_required
 from sqlalchemy import desc, or_
@@ -48,12 +48,12 @@ from models.bump import RecurringBump
 from utils.feed import (
     PUBLISHED_DISCOVER_RULES, PUBLISHED_TRENDING_RULES,
     create_need_post, get_discover_feed, get_following_feed,
-    get_latest_feed, get_trending_feed, hidden_author_ids,
+    get_latest_feed, get_trending_feed,
     suggested_connections,
 )
 from utils.mentions import notify_mentions
 from utils.onboarding import get_onboarding_steps
-from utils.karma import KARMA_FLAG_WEIGHT_X2, KARMA_LIKE_RECEIVED, award_karma
+from utils.karma import KARMA_FLAG_WEIGHT_X2, KARMA_LIKE_RECEIVED, award_karma, like_karma_ref
 from utils.moderation import can_post_today, check_auto_hide
 from utils.notifications import notify, unread_count
 from utils.pledges import (
@@ -149,6 +149,17 @@ def _wants_json():
         request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         or request.accept_mimetypes.best == 'application/json'
     )
+
+
+def _post_is_public(post):
+    """False when the post is linked to a paid bounty whose payment is
+    not secured yet and the viewer is not the author — the need is not
+    public yet (same rule as the bounty detail page: only the poster
+    may view it until escrow). Posts with no linked bounty, or with a
+    free/secured bounty, are public."""
+    if post.bounty is None or post.bounty.is_publicly_visible:
+        return True
+    return current_user.is_authenticated and current_user.id == post.author_id
 
 
 def _author_levels(posts):
@@ -602,6 +613,9 @@ def post_detail(post_id):
     ):
         flash('This post is no longer available.', 'warning')
         return redirect(url_for('social.feed'))
+    if not _post_is_public(post):
+        flash('This referral need is not public yet.', 'warning')
+        return redirect(url_for('social.feed'))
 
     viewed = session.get('viewed_posts', [])
     if post_id not in viewed:
@@ -642,6 +656,8 @@ def post_comments(post_id):
     the inline comment box on post cards (latest 5; the full thread
     lives on the post detail page)."""
     post = get_or_404(Post, post_id)
+    if not _post_is_public(post):
+        return jsonify({'error': 'This post is not available.'}), 404
     comments = Comment.query.filter_by(
         post_id=post.id, parent_id=None, is_hidden=False
     ).order_by(desc(Comment.created_at)).limit(5).all()
@@ -661,6 +677,12 @@ def edit_post(post_id):
     if post.author_id != current_user.id:
         flash('Access denied', 'danger')
         return redirect(url_for('social.post_detail', post_id=post_id))
+    if post.is_need and post.bounty_id:
+        # A need post's text is the need's description — it is edited
+        # from the need's page (the post form would demand a title the
+        # post does not have, so editing here always failed).
+        flash('Edit this referral need from its page.', 'info')
+        return redirect(url_for('bounties.edit', id=post.bounty_id))
     form = PostForm(obj=post)
     if request.method == 'POST' and form.validate_on_submit():
         post.body = form.body.data.strip()
@@ -679,12 +701,28 @@ def edit_post(post_id):
 @social_bp.route('/posts/<post_id>/delete', methods=['POST'])
 @login_required
 def delete_post(post_id):
-    """POST /social/posts/<id>/delete — delete your own post."""
+    """POST /social/posts/<id>/delete — delete your own post. Likes,
+    comments, shares, poll, bookmarks, views and bumps/boosts go with
+    it (ORM cascades). An ACTIVE recurring bump blocks deletion: its
+    Stripe subscription would keep charging with no row left to
+    cancel — cancel it first, then delete."""
     post = get_or_404(Post, post_id)
     if post.author_id != current_user.id:
         if _wants_json():
             return jsonify({'ok': False, 'error': 'Access denied'}), 403
         flash('Access denied', 'danger')
+        return redirect(url_for('social.post_detail', post_id=post_id))
+    active_recurring = RecurringBump.query.filter_by(
+        post_id=post.id, status='active'
+    ).first()
+    if active_recurring:
+        message = (
+            'Cancel the recurring bump on this post before deleting '
+            'it — otherwise the subscription would keep charging.'
+        )
+        if _wants_json():
+            return jsonify({'ok': False, 'error': message}), 400
+        flash(message, 'warning')
         return redirect(url_for('social.post_detail', post_id=post_id))
     db.session.delete(post)
     db.session.commit()
@@ -701,6 +739,8 @@ def like_post(post_id):
     author +10 karma (§4.2); unliking does not revoke it. AJAX callers
     get {liked, like_count} instead of a redirect."""
     post = get_or_404(Post, post_id)
+    if not _post_is_public(post):
+        abort(404)
     existing = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
     if existing:
         db.session.delete(existing)
@@ -710,8 +750,12 @@ def like_post(post_id):
         return redirect(request.referrer or url_for('social.feed'))
     db.session.add(Like(user_id=current_user.id, post_id=post_id))
     if post.author_id != current_user.id:
+        # The ref is the (post, liker) pair — like -> unlike -> like
+        # must not award the +10 again (award_karma is idempotent
+        # per ref).
         award_karma(post.author_id, KARMA_LIKE_RECEIVED, 'like_received',
-                    ref_type='post', ref_id=post_id)
+                    ref_type='post_like',
+                    ref_id=like_karma_ref(post_id, current_user.id))
         notify(
             post.author_id, 'like',
             f'{current_user.full_name} liked your post',
@@ -731,6 +775,8 @@ def comment_post(post_id):
     comment (one level deep, §1.2). AJAX callers get the created
     comment as JSON instead of a redirect."""
     post = get_or_404(Post, post_id)
+    if not _post_is_public(post):
+        abort(404)
     form = CommentForm()
     if form.validate_on_submit():
         parent = None
@@ -795,6 +841,8 @@ def share_post(post_id):
     One share per user per post; the share is attributed to you (§4.4).
     AJAX callers get {shared, share_count} instead of a redirect."""
     post = get_or_404(Post, post_id)
+    if not _post_is_public(post):
+        abort(404)
     form = ShareForm()
     if Share.query.filter_by(user_id=current_user.id, post_id=post_id).first():
         if _wants_json():
@@ -886,6 +934,8 @@ def vote_poll(poll_id):
     Returns the chart data (options with votes + percentages)."""
     from models.poll import Poll, PollOption, PollVote
     poll = get_or_404(Poll, poll_id)
+    if poll.post is not None and not _post_is_public(poll.post):
+        abort(404)
     option_id = request.form.get('option_id')
     existing = PollVote.query.filter_by(
         poll_id=poll.id, user_id=current_user.id,
@@ -957,6 +1007,8 @@ def save_post(post_id):
     Phase 1 Save deferral). AJAX callers get {saved} instead of a
     redirect; same optimistic-update pattern as like/follow."""
     post = get_or_404(Post, post_id)
+    if not _post_is_public(post):
+        abort(404)
     existing = Bookmark.query.filter_by(
         user_id=current_user.id, post_id=post_id,
     ).first()
@@ -1175,11 +1227,8 @@ def search():
         viewer_id = (
             current_user.id if current_user.is_authenticated else None
         )
-        posts_q = Post.query.filter_by(is_hidden=False)
-        hidden = hidden_author_ids(viewer_id)
-        if hidden:
-            posts_q = posts_q.filter(~Post.author_id.in_(hidden))
-        post_results = posts_q.filter(
+        from utils.feed import _visible_posts_query
+        post_results = _visible_posts_query(viewer_id).filter(
             Post.body.ilike(pattern)
         ).order_by(desc(Post.created_at)).limit(10).all()
         now = datetime.now(timezone.utc)

@@ -57,14 +57,16 @@ def _upload_folder():
 
 def _probe_duration_seconds(path):
     """Video duration in seconds via ffprobe, or None when ffprobe
-    is unavailable or cannot read the file.
+    is unavailable or the file carries no duration metadata (some
+    containers report N/A — the file parsed, the length is just
+    unknown).
 
-    NOTE FOR DEPLOY: ffprobe (part of ffmpeg) is what enforces the
-    30-second limit server-side. The live image should have ffmpeg
-    installed — without it the server-side check silently skips and
-    only the client-side check (templates/partials/video_vouch_form.html)
-    stands between an upload and the limit. See
-    docs/VIDEO_VOUCH_UPLOADS.md.
+    Raises ValueError when ffprobe IS available but cannot read the
+    file at all: the upload is not a playable video, so the route
+    rejects it instead of storing garbage under a .mp4 name. The
+    fail-open case is only a missing ffprobe — the Dockerfile
+    installs ffmpeg, so that should not happen on the live image
+    (see docs/VIDEO_VOUCH_UPLOADS.md).
     """
     ffprobe = shutil.which('ffprobe')
     if not ffprobe:
@@ -77,11 +79,29 @@ def _probe_duration_seconds(path):
              '-of', 'default=noprint_wrappers=1:nokey=1', path],
             capture_output=True, text=True, timeout=30,
         )
-        return float(result.stdout.strip())
-    except (ValueError, subprocess.SubprocessError, OSError):
+    except (subprocess.SubprocessError, OSError):
         current_app.logger.warning(
-            'ffprobe could not read %s — duration not enforced', path)
+            'ffprobe failed to run on %s — upload rejected', path)
+        raise ValueError('ffprobe could not read the file')
+    if result.returncode != 0:
+        # ffprobe exits non-zero when it cannot parse the container
+        # at all — a text file renamed .mp4, a truncated upload, or
+        # any other non-video. Not a video, not a vouch.
+        current_app.logger.warning(
+            'ffprobe could not read %s — upload rejected', path)
+        raise ValueError('ffprobe could not read the file')
+    text = result.stdout.strip()
+    if text in ('', 'N/A'):
+        # Readable container, no duration recorded (e.g. a
+        # browser-recorded webm): accept, duration unknown.
         return None
+    try:
+        return float(text)
+    except ValueError:
+        current_app.logger.warning(
+            'ffprobe returned an unparsable duration for %s — '
+            'upload rejected', path)
+        raise ValueError('ffprobe could not read the file')
 
 
 @video_vouches_bp.before_request
@@ -170,7 +190,18 @@ def upload():
     path = os.path.join(folder, filename)
     file.save(path)
 
-    duration = _probe_duration_seconds(path)
+    try:
+        duration = _probe_duration_seconds(path)
+    except ValueError:
+        # ffprobe is available and could not read the file: not a
+        # playable video. Delete the saved file and refuse.
+        os.remove(path)
+        flash(
+            _('That file is not a playable video. Upload an MP4, '
+              'WebM or MOV video file.'),
+            'danger',
+        )
+        return redirect(next_url)
     max_seconds = current_app.config['VIDEO_VOUCH_MAX_SECONDS']
     if duration is not None and duration > max_seconds:
         os.remove(path)

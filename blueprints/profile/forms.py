@@ -95,13 +95,17 @@ class SetupForm(FlaskForm):
     submit = SubmitField(_l('Create Profile'))
 
     def validate_handle(self, field):
-        """Uniqueness check (format is the Regexp above). Optional()
-        skips this validator when the field is blank."""
+        """Uniqueness + reserved check (format is the Regexp
+        above). Optional() skips this validator when the field is
+        blank."""
         from flask_login import current_user
         from models.user import User
+        from utils.slugs import is_reserved_handle
         if not field.data:
             return
         handle = field.data.strip()
+        if is_reserved_handle(handle):
+            raise ValidationError(_l('That handle is reserved.'))
         existing = User.query.filter_by(handle=handle).first()
         if existing and existing.id != current_user.id:
             raise ValidationError(_l('That handle is already taken.'))

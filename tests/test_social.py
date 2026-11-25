@@ -343,3 +343,211 @@ class TestNeedPosts:
         assert resp.status_code == 200
         post_id = post.id
         assert db.session.get(Post, post_id).body == 'Updated description for the synced post test — long enough to pass validation.'
+
+
+def _paid_bounty(poster_id, title, secured=False):
+    """A paid bounty: unsecured by default (payment not yet escrowed)."""
+    bounty = Bounty(
+        poster_id=poster_id,
+        title=title,
+        description='A paid referral need with a real reward attached.',
+        bounty_type='recruitment',
+        bounty_direction='seeking_opportunity',
+        reward_amount=2000,
+        status='open',
+        payment_status='secured' if secured else 'unsecured',
+        is_free=False,
+    )
+    db.session.add(bounty)
+    db.session.commit()
+    return bounty
+
+
+def _need_post(bounty):
+    from utils.feed import create_need_post
+    post = create_need_post(bounty)
+    db.session.commit()
+    return post
+
+
+class TestAuditFixes:
+    """Regression tests for the 2026-11-24 social-core audit."""
+
+    def test_like_unlike_like_awards_karma_once(
+            self, client, login_as, second_user, third_user, sample_post,
+            sample_user):
+        # Like -> unlike -> like must not farm +10 karma per cycle.
+        from models.profile import Profile
+        from models.referral import KarmaEvent
+        login_as(client, 'second@example.com', 'SecondPass123!')
+        client.post(f'/social/posts/{sample_post.id}/like')
+        client.post(f'/social/posts/{sample_post.id}/like')  # unlike
+        client.post(f'/social/posts/{sample_post.id}/like')  # like again
+        profile = Profile.query.filter_by(user_id=sample_user.id).first()
+        assert profile.karma == 10
+        assert KarmaEvent.query.filter_by(
+            user_id=sample_user.id, reason='like_received').count() == 1
+        # A different liker still earns the author a fresh +10.
+        login_as(client, 'third@example.com', 'ThirdPass123!')
+        client.post(f'/social/posts/{sample_post.id}/like')
+        profile = Profile.query.filter_by(user_id=sample_user.id).first()
+        assert profile.karma == 20
+
+    def test_delete_post_cleans_up_children(
+            self, client, logged_in_user, app, sample_user, second_user,
+            sample_post):
+        from datetime import datetime, timezone
+        from models.bump import Boost, Bump, RecurringBump
+        from models.poll import Poll, PollOption, PollVote, create_poll
+        from models.post import Bookmark
+        from models.post_view import PostView
+        post_id = sample_post.id
+        poll = create_poll(sample_post, ['Option A', 'Option B'])
+        db.session.flush()
+        option = PollOption.query.filter_by(poll_id=poll.id).first()
+        db.session.add(PollVote(
+            poll_id=poll.id, option_id=option.id, user_id=second_user.id))
+        db.session.add(Bookmark(
+            user_id=second_user.id, post_id=post_id))
+        db.session.add(PostView(
+            post_id=post_id, viewer_id=second_user.id))
+        now = datetime.now(timezone.utc)
+        db.session.add(Bump(
+            post_id=post_id, user_id=sample_user.id, source='free',
+            expires_at=now + timedelta(days=1)))
+        db.session.add(Boost(
+            post_id=post_id, user_id=sample_user.id, days=1,
+            price_cents=500, stripe_session_id='sess_audit_1',
+            starts_at=now, ends_at=now + timedelta(days=1)))
+        db.session.add(RecurringBump(
+            post_id=post_id, user_id=sample_user.id, status='canceled',
+            next_bump_at=now + timedelta(days=3)))
+        db.session.commit()
+        resp = client.post(
+            f'/social/posts/{post_id}/delete', follow_redirects=True)
+        assert resp.status_code == 200
+        assert db.session.get(Post, post_id) is None
+        assert Poll.query.filter_by(post_id=post_id).first() is None
+        assert PollVote.query.filter_by(poll_id=poll.id).count() == 0
+        assert Bookmark.query.filter_by(post_id=post_id).count() == 0
+        assert PostView.query.filter_by(post_id=post_id).count() == 0
+        assert Bump.query.filter_by(post_id=post_id).count() == 0
+        assert Boost.query.filter_by(post_id=post_id).count() == 0
+        assert RecurringBump.query.filter_by(post_id=post_id).count() == 0
+
+    def test_delete_post_blocked_by_active_recurring_bump(
+            self, client, logged_in_user, app, sample_user, sample_post):
+        from datetime import datetime, timezone
+        from models.bump import RecurringBump
+        db.session.add(RecurringBump(
+            post_id=sample_post.id, user_id=sample_user.id,
+            status='active',
+            next_bump_at=datetime.now(timezone.utc) + timedelta(days=3)))
+        db.session.commit()
+        resp = client.post(
+            f'/social/posts/{sample_post.id}/delete', follow_redirects=True)
+        assert resp.status_code == 200
+        # The post survives — deleting it would orphan a live Stripe
+        # subscription with no row left to cancel.
+        assert db.session.get(Post, sample_post.id) is not None
+        assert b'recurring bump' in resp.data
+
+    def test_unsecured_paid_need_hidden_everywhere(
+            self, app, client, login_as, sample_user, second_user):
+        from utils.feed import (
+            get_discover_feed, get_following_feed, get_latest_feed,
+            get_trending_feed,
+        )
+        bounty = _paid_bounty(second_user.id, 'Unsecured paid need')
+        post = _need_post(bounty)
+        db.session.add(Follow(
+            follower_id=sample_user.id, followed_id=second_user.id))
+        db.session.commit()
+        for getter in (get_following_feed, get_latest_feed,
+                       get_discover_feed, get_trending_feed):
+            ids = [i['post'].id for i in getter(sample_user.id)['items']]
+            assert post.id not in ids
+        # Search does not leak it either (the post body matches the
+        # query, but the post is not public yet).
+        login_as(client, 'testuser@example.com', 'TestPass123!')
+        resp = client.get('/social/search?q=real+reward+attached')
+        assert resp.status_code == 200
+        assert b'A paid referral need' not in resp.data
+        # Post detail redirects non-authors; liking 404s.
+        resp = client.get(f'/social/posts/{post.id}')
+        assert resp.status_code == 302
+        resp = client.post(f'/social/posts/{post.id}/like')
+        assert resp.status_code == 404
+        # The author can still view it (they need the page to pay).
+        login_as(client, 'second@example.com', 'SecondPass123!')
+        resp = client.get(f'/social/posts/{post.id}')
+        assert resp.status_code == 200
+        # Once payment is secured, the need goes public everywhere.
+        bounty.payment_status = 'secured'
+        db.session.commit()
+        ids = [i['post'].id
+               for i in get_latest_feed(sample_user.id)['items']]
+        assert post.id in ids
+
+    def test_latest_feed_hides_shares_by_blocked_user(
+            self, app, sample_user, second_user, third_user):
+        from models.moderation import Block
+        from utils.feed import get_latest_feed
+        post = _post(third_user.id, 'A post worth sharing around.')
+        db.session.add(Share(user_id=second_user.id, post_id=post.id))
+        db.session.add(Block(
+            blocker_id=sample_user.id, blocked_id=second_user.id,
+            kind='block'))
+        db.session.commit()
+        items = get_latest_feed(sample_user.id)['items']
+        assert not any(
+            i['kind'] == 'share' and i['share'].user_id == second_user.id
+            for i in items
+        )
+        # The underlying post itself still shows — only the blocked
+        # user's share is hidden.
+        assert any(
+            i['kind'] == 'post' and i['post'].id == post.id
+            for i in items
+        )
+
+    def test_following_feed_hides_shares_by_muted_user(
+            self, app, sample_user, second_user, third_user):
+        from models.moderation import Block
+        from utils.feed import get_following_feed
+        db.session.add(Follow(
+            follower_id=sample_user.id, followed_id=second_user.id))
+        post = _post(third_user.id, 'Another post worth sharing.')
+        db.session.add(Share(user_id=second_user.id, post_id=post.id))
+        db.session.add(Block(
+            blocker_id=sample_user.id, blocked_id=second_user.id,
+            kind='mute'))
+        db.session.commit()
+        items = get_following_feed(sample_user.id)['items']
+        assert not any(
+            i['kind'] == 'share' and i['share'].user_id == second_user.id
+            for i in items
+        )
+
+    def test_negative_page_clamped_to_first(
+            self, app, sample_user, second_user):
+        from utils.feed import get_following_feed
+        db.session.add(Follow(
+            follower_id=sample_user.id, followed_id=second_user.id))
+        _post(second_user.id, 'Only post in the feed here.')
+        first = get_following_feed(sample_user.id, page=1)
+        negative = get_following_feed(sample_user.id, page=-1)
+        zero = get_following_feed(sample_user.id, page=0)
+        assert negative['page'] == 1
+        assert zero['page'] == 1
+        assert [i['post'].id for i in negative['items']] == [
+            i['post'].id for i in first['items']]
+
+    def test_edit_need_post_redirects_to_bounty(
+            self, client, logged_in_user, sample_user):
+        bounty = _paid_bounty(
+            sample_user.id, 'A need to edit', secured=True)
+        post = _need_post(bounty)
+        resp = client.get(f'/social/posts/{post.id}/edit')
+        assert resp.status_code == 302
+        assert f'/needs/{bounty.id}/edit' in resp.location

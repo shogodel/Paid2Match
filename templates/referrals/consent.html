@@ -1,40 +1,42 @@
 {% extends "base.html" %}
-{% block title %}You've been referred - Paid2Match{% endblock %}
+{% block title %}{{ _("You've been referred") }} - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-7">
             <div class="card">
                 <div class="card-body">
-                    <h2>Someone referred you</h2>
-                    <p><strong>{{ referral.referrer.full_name }}</strong> thinks you'd be a great fit for:</p>
+                    <h2>{{ _('Someone referred you') }}</h2>
+                    <p><strong>{{ referral.referrer.full_name }}</strong> {{ _("thinks you'd be a great fit for:") }}</p>
                     <h4>"{{ referral.bounty.title }}"</h4>
                     <p><em>"{{ referral.message }}"</em></p>
                     {% if referral.bounty.reward_amount and referral.bounty.reward_amount > 0 %}
-                    <p>Bounty: {{ referral.bounty.reward_amount|money(referral.bounty.currency) }}</p>
+                    <p>{{ _('Bounty: %(amount)s', amount=referral.bounty.reward_amount|money(referral.bounty.currency)) }}</p>
                     {% else %}
-                    <p><span class="badge bg-success">Community referral — no bounty</span></p>
+                    <p><span class="badge bg-success">{{ _('Community referral — no bounty') }}</span></p>
                     {% endif %}
 
                     {% if referral.status != 'invited' %}
                         <div class="alert alert-info mb-0">
-                            {% if referral.status == 'consented' %}You already confirmed this referral — the poster can review it now.
-                            {% elif referral.status == 'declined' %}You declined this referral.
-                            {% elif referral.status == 'completed' %}This referral is complete — congratulations!
-                            {% else %}This referral is {{ referral.status }}.{% endif %}
+                            {% if referral.status == 'consented' %}{{ _('You already confirmed this referral — the poster can review it now.') }}
+                            {% elif referral.status == 'declined' %}{{ _('You declined this referral.') }}
+                            {% elif referral.status == 'completed' %}{{ _('This referral is complete — congratulations!') }}
+                            {% else %}{{ _('This referral is %(status)s.', status=referral.status) }}{% endif %}
                         </div>
                     {% elif not current_user.is_authenticated %}
-                        <p class="text-muted">Sign in with Google or GitHub to confirm or decline. Your email ({{ referral.referred_email }}) is the one this invite was sent to — signing in creates your account if you don't have one yet.</p>
-                        <a href="{{ url_for('auth.login', next=url_for('referrals.consent', token=referral.invite_token)) }}" class="btn btn-primary">Sign in to answer</a>
+                        <p class="text-muted">{{ _("Sign in with Google or GitHub to confirm or decline. Your email (%(email)s) is the one this invite was sent to — signing in creates your account if you don't have one yet.", email=referral.referred_email) }}</p>
+                        <a href="{{ url_for('auth.login', next=url_for('referrals.consent', token=referral.invite_token)) }}" class="btn btn-primary">{{ _('Sign in to answer') }}</a>
                     {% elif current_user.email.lower() != referral.referred_email.lower() %}
-                        <div class="alert alert-warning mb-0">This invite was sent to {{ referral.referred_email }} — you're logged in as {{ current_user.email }}. Only the invited person can answer it.</div>
+                        <div class="alert alert-warning mb-0">{{ _("This invite was sent to %(invited)s — you're logged in as %(current)s. Only the invited person can answer it.", invited=referral.referred_email, current=current_user.email) }}</div>
                     {% else %}
-                        <p>Nobody is referred without knowing — it's your call.</p>
+                        <p>{{ _("Nobody is referred without knowing — it's your call.") }}</p>
                         <form method="POST" action="{{ url_for('referrals.confirm_referral', referral_id=referral.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-success">Yes, refer me</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success">{{ _('Yes, refer me') }}</button>
                         </form>
                         <form method="POST" action="{{ url_for('referrals.decline_referral', referral_id=referral.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-outline-secondary">No thanks</button>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-secondary">{{ _('No thanks') }}</button>
                         </form>
                     {% endif %}
                 </div>

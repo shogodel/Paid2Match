@@ -5,7 +5,9 @@ from sqlalchemy.orm import validates
 
 from extensions import db
 from models import generate_uuid, utc_now
-from utils.slugs import HANDLE_RE, handle_from_name, is_valid_handle
+from utils.slugs import (
+    HANDLE_RE, handle_from_name, is_reserved_handle, is_valid_handle,
+)
 
 
 class User(db.Model, UserMixin):
@@ -15,9 +17,11 @@ class User(db.Model, UserMixin):
     @validates('handle')
     def _validate_handle(self, key, value):
         """Handles are 3–30 lowercase letters, digits, dots, dashes
-        and underscores. None is allowed here — the before_insert
-        event fills it in from the full name — but an explicitly
-        set bad handle is rejected at the model, not just the form."""
+        and underscores, and never a reserved handle (route segments
+        and app words — see utils/slugs.RESERVED_HANDLES). None is
+        allowed here — the before_insert event fills it in from the
+        full name — but an explicitly set bad handle is rejected at
+        the model, not just the form."""
         if value is None:
             return value
         if not is_valid_handle(value):
@@ -25,6 +29,8 @@ class User(db.Model, UserMixin):
                 'handle must match '
                 f'{HANDLE_RE.pattern!r}, got {value!r}'
             )
+        if is_reserved_handle(value):
+            raise ValueError(f'handle {value!r} is reserved')
         return value
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)

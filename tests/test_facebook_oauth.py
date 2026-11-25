@@ -117,12 +117,17 @@ class TestFacebookButton:
         assert resp.status_code == 200
         assert b'Continue with Facebook' in resp.data
         assert b'/auth/facebook/login' in resp.data
-        assert b'Sign in with Google, GitHub, or Facebook' in resp.data
+        # Facebook is the only configured provider here, so the
+        # intro lists Facebook alone — never providers that are off.
+        assert b'Sign in with Facebook' in resp.data
+        assert b'Sign in with Google' not in resp.data
 
     def test_button_hidden_when_flag_off(self, app, client):
         # Credentials configured but the kill-switch off (the Meta
         # app is still in Development until business verification
-        # passes): no button, no Facebook in the intro line.
+        # passes): no button, and with no provider left at all the
+        # page shows the unavailable warning instead of an intro
+        # line advertising providers that are not there.
         app.config['FACEBOOK_CLIENT_ID'] = 'test-facebook-client-id'
         app.config['FACEBOOK_CLIENT_SECRET'] = 'test-facebook-client-secret'
         assert not app.config.get('FACEBOOK_LOGIN_ENABLED')
@@ -130,8 +135,9 @@ class TestFacebookButton:
         assert resp.status_code == 200
         assert b'Continue with Facebook' not in resp.data
         assert b'/auth/facebook/login' not in resp.data
-        assert b'Sign in with Google or GitHub' in resp.data
-        assert b'Sign in with Google, GitHub, or Facebook' not in resp.data
+        assert b'Sign-in is not available right now' in resp.data
+        assert b'Sign in with Google' not in resp.data
+        assert b'Sign in with Facebook' not in resp.data
 
 
 class TestFacebookCallbackCreate:

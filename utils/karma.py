@@ -7,6 +7,7 @@ referrals is capped at +150/day. Karma is computed over a rolling
 12-month window; Profile.karma is a cached sum, recomputed on every
 award. Karma is never for sale and never convertible to cash.
 """
+import uuid
 from datetime import timedelta
 
 from sqlalchemy import func
@@ -51,10 +52,32 @@ def recompute_karma(user_id):
     return max(total, 0)
 
 
+def like_karma_ref(post_id, liker_id):
+    """Stable reference id for a like's karma event: one (post, liker)
+    pair maps to one UUID, so like -> unlike -> like cannot award
+    karma twice. The Like row itself is deleted on unlike, so its id
+    cannot be the key — the pair is the key. A uuid5 keeps the
+    36-char shape of KarmaEvent.ref_id."""
+    return str(uuid.uuid5(
+        uuid.NAMESPACE_URL, f'like:{post_id}:{liker_id}'
+    ))
+
+
 def award_karma(user_id, amount, reason, ref_type=None, ref_id=None):
     """Award karma to a user. Referral karma is capped at +150/day (§4.2).
-    Returns the amount actually awarded (0 if the cap was already hit).
+    Idempotent when a ref is given: the same (user, reason, ref_type,
+    ref_id) awards only once — a retry (webhook redelivery,
+    double-submit, like -> unlike -> like) returns 0 instead of
+    awarding again. Returns the amount actually awarded (0 if the cap
+    was already hit or the award already exists).
     Does not commit — the caller commits."""
+    if ref_type is not None and ref_id is not None:
+        existing = KarmaEvent.query.filter_by(
+            user_id=user_id, reason=reason,
+            ref_type=ref_type, ref_id=ref_id,
+        ).first()
+        if existing is not None:
+            return 0
     if reason == 'referral_completed':
         day_start = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
         earned_today = db.session.query(

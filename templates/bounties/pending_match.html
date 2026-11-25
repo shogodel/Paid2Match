@@ -39,7 +39,7 @@
                         {% if bounty.reward_amount and bounty.reward_amount > 0 %}
                             {{ bounty.reward_amount|money(bounty.currency) }}
                         {% else %}
-                            Free Need
+                            {{ _('Free Need') }}
                         {% endif %}
                     </div>
                 </div>

@@ -19,6 +19,19 @@ def _mock_resp(status=200, json_data=None):
     return resp
 
 
+def _mock_bad_json(status=200):
+    """A response whose body is not JSON (proxy error page served
+    with a 200, truncated body) — resp.json() raises, as requests
+    does."""
+    resp = SimpleNamespace(status_code=status)
+
+    def _raise():
+        raise ValueError('No JSON object could be decoded')
+
+    resp.json = _raise
+    return resp
+
+
 def _configure_github(app):
     """Pretend GitHub OAuth is configured (test credentials only)."""
     app.config['GITHUB_CLIENT_ID'] = 'test-github-client-id'
@@ -215,6 +228,38 @@ class TestGitHubCallbackCreate:
             assert user is not None
             assert user.full_name == 'Private Cat'
             assert user.email_verified is True
+
+    def test_emails_bad_json_rejected(self, app, client):
+        # The /user/emails fallback returning a 200 whose body is not
+        # JSON must fail cleanly, not 500 on resp.json().
+        _configure_github(app)
+        _set_state(client)
+
+        def fake_get(url, **kwargs):
+            if url.endswith('/user/emails'):
+                return _mock_bad_json()
+            return _mock_resp(json_data={
+                'login': 'privatecat', 'name': 'Private Cat',
+                'email': None,
+            })
+
+        post = patch(
+            'utils.linked_accounts.requests.post',
+            return_value=_mock_resp(
+                json_data={'access_token': 'fake-access-token'}
+            ),
+        )
+        get = patch(
+            'utils.linked_accounts.requests.get', side_effect=fake_get
+        )
+        with post, get:
+            resp = client.get(
+                '/auth/github/callback?code=x&state=test-state',
+                follow_redirects=True,
+            )
+        assert b'Could not read your email from GitHub' in resp.data
+        with app.app_context():
+            assert User.query.count() == 0
 
     def test_no_verified_email_rejected(self, app, client):
         _configure_github(app)

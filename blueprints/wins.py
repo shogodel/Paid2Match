@@ -28,8 +28,8 @@ from wtforms.validators import DataRequired, Length
 from extensions import db, get_or_404
 from models.bounty import Bounty
 from models.match import Match
-from models.payout import Payout
 from models.win_story import WinStory
+from utils.money_trail import build_trail
 
 wins_bp = Blueprint('wins', __name__)
 
@@ -90,28 +90,27 @@ def _available_roles(bounty, user_id):
 
 
 def _earned_for(story):
-    """The amount earned on the hire behind a story, as
-    ``(amount, currency)`` — or ``(None, None)`` when it is not
-    known. Prefers the referrer's payout for the match (the net
-    amount actually earned), then the match's recorded payout
-    amount, then the need's reward. A free need has no amount."""
+    """The amount the referrer earned on the hire behind a story,
+    as ``(amount, currency)`` — or ``(None, None)`` when it is not
+    known. Read from the money trail, the single source of truth
+    for who earned what: the referrer hop's amount is the net the
+    referrer actually earned — the payout amount when Payout rows
+    exist, else the derived net (gross minus platform fee, 70/30
+    when a sharer is in the chain). Never the gross reward: the
+    referrer earns the net, not what the poster put up. A free
+    need has no amount. The wall shows this badge on referrer
+    stories only — the poster paid the reward (they earned
+    nothing) and the hired candidate got a job, not money."""
     bounty = story.bounty
-    match = story.match
-    if match is None:
-        match = completed_matches_for(story.bounty_id).order_by(
-            Match.created_at.desc()
-        ).first()
-    if match is not None:
-        payout = Payout.query.filter_by(
-            match_id=match.id, kind='referral'
-        ).first()
-        if payout is not None:
-            return payout.amount, payout.currency
-        if match.payout_amount:
-            return match.payout_amount, bounty.currency if bounty else 'CAD'
-    if bounty is not None and bounty.reward_amount:
-        return bounty.reward_amount, bounty.currency
-    return None, None
+    if bounty is None:
+        return None, None
+    trail = build_trail(bounty, match=story.match)
+    referrer_hop = next(
+        (hop for hop in trail if hop['role'] == 'referrer'), None
+    )
+    if referrer_hop is None:
+        return None, None
+    return referrer_hop['amount'], referrer_hop['currency']
 
 
 @wins_bp.route('/')

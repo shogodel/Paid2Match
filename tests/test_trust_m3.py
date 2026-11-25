@@ -174,6 +174,21 @@ class TestEndorsements:
         ok, _r = can_endorse(sample_user, second_user.id, 'JavaScript')
         assert ok is True
 
+    def test_one_per_skill_is_case_insensitive(self, app, sample_user,
+                                               second_user):
+        # 'python' after 'Python' is the same skill, not a second
+        # endorsement.
+        _set_karma(sample_user, 250)
+        _e, error = give_endorsement(sample_user, second_user, 'Python')
+        assert error is None
+        db.session.commit()
+        ok, reason = can_endorse(sample_user, second_user.id, 'python')
+        assert ok is False
+        assert 'already endorsed' in reason
+        _e, error = give_endorsement(sample_user, second_user, 'PYTHON')
+        assert _e is None
+        assert 'already endorsed' in error
+
     def test_monthly_limit_five(self, app, sample_user, second_user, third_user, sample_hunter):
         _set_karma(sample_user, 250)
         endorsees = [second_user, third_user, sample_hunter, second_user, third_user]

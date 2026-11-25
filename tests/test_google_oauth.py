@@ -18,6 +18,19 @@ def _mock_resp(status=200, json_data=None):
     return resp
 
 
+def _mock_bad_json(status=200):
+    """A response whose body is not JSON (proxy error page served
+    with a 200, truncated body) — resp.json() raises, as requests
+    does."""
+    resp = SimpleNamespace(status_code=status)
+
+    def _raise():
+        raise ValueError('No JSON object could be decoded')
+
+    resp.json = _raise
+    return resp
+
+
 def _configure_google(app):
     """Pretend Google OAuth is configured (test credentials only)."""
     app.config['GOOGLE_CLIENT_ID'] = 'test-client-id.apps.googleusercontent.com'
@@ -197,6 +210,93 @@ class TestGoogleCallbackMatch:
         with client.session_transaction() as sess:
             assert sess.get('_user_id') == user_id
 
+    def test_matches_mixed_case_legacy_email(self, app, client):
+        # A pre-OAuth row may hold a mixed-case email; '=' is
+        # case-sensitive, so a plain filter_by would miss it and the
+        # callback would create a duplicate account.
+        _configure_google(app)
+        with app.app_context():
+            user = User(
+                email='MixedCase@Example.com',
+                full_name='Legacy User',
+                password_hash=generate_password_hash('OldPass123!'),
+                role='user',
+                is_active=True,
+                email_verified=False,
+            )
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+        _set_state(client)
+        post, get = _google_mocks(userinfo={
+            'email': 'mixedcase@example.com',
+            'email_verified': True,
+            'name': 'Legacy User',
+        })
+        with post, get:
+            resp = client.get('/auth/google/callback?code=x&state=test-state')
+        assert resp.status_code == 302
+        assert resp.location.endswith('/needs/')
+        with app.app_context():
+            assert User.query.count() == 1
+            user = db.session.get(User, user_id)
+            assert user.email_verified is True
+        with client.session_transaction() as sess:
+            assert sess.get('_user_id') == user_id
+
+    def test_simultaneous_signup_race_logs_into_winners_account(
+            self, app, client):
+        # Two callbacks for the same new email racing each other both
+        # see "no user" and both insert — the loser hits the unique
+        # email constraint and must log into the winner's account,
+        # not 500. Simulate the loser's commit failing because the
+        # winner's row landed first (via a separate connection).
+        from sqlalchemy import create_engine
+        from sqlalchemy.exc import IntegrityError
+        from sqlalchemy.orm import Session as OrmSession
+
+        _configure_google(app)
+        _set_state(client)
+        engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+        real_commit = OrmSession.commit
+        calls = {'n': 0}
+
+        def flaky_commit(session_self):
+            calls['n'] += 1
+            if calls['n'] == 1:
+                with engine.begin() as conn:
+                    conn.execute(User.__table__.insert().values(
+                        id='race-winner-id',
+                        email='newuser@example.com',
+                        full_name='Race Winner',
+                        password_hash='x',
+                        handle='race.winner',
+                        role='user',
+                        is_active=True,
+                        email_verified=True,
+                    ))
+                raise IntegrityError(
+                    'INSERT INTO users', None,
+                    Exception('duplicate key value violates unique constraint'),
+                )
+            return real_commit(session_self)
+
+        with patch.object(OrmSession, 'commit', flaky_commit):
+            post, get = _google_mocks()
+            with post, get:
+                resp = client.get(
+                    '/auth/google/callback?code=x&state=test-state'
+                )
+        assert resp.status_code == 302
+        assert resp.location.endswith('/needs/')
+        with app.app_context():
+            assert User.query.filter_by(
+                email='newuser@example.com').count() == 1
+            user = User.query.filter_by(email='newuser@example.com').first()
+            assert user.id == 'race-winner-id'
+        with client.session_transaction() as sess:
+            assert sess.get('_user_id') == 'race-winner-id'
+
     def test_deactivated_user_is_not_logged_in(self, app, client):
         _configure_google(app)
         with app.app_context():
@@ -310,6 +410,42 @@ class TestGoogleCallbackRejections:
         with app.app_context():
             assert User.query.count() == 0
 
+    def test_token_exchange_bad_json_rejected(self, app, client):
+        # A 200 whose body is not JSON must fail cleanly, not 500 on
+        # resp.json().
+        _configure_google(app)
+        _set_state(client)
+        post = patch(
+            'utils.google_oauth.requests.post',
+            return_value=_mock_bad_json(),
+        )
+        _, get = _google_mocks()
+        with post, get:
+            resp = client.get(
+                '/auth/google/callback?code=x&state=test-state',
+                follow_redirects=True,
+            )
+        assert b'did not return an access token' in resp.data
+        with app.app_context():
+            assert User.query.count() == 0
+
+    def test_userinfo_bad_json_rejected(self, app, client):
+        _configure_google(app)
+        _set_state(client)
+        post, _ = _google_mocks()
+        get = patch(
+            'utils.google_oauth.requests.get',
+            return_value=_mock_bad_json(),
+        )
+        with post, get:
+            resp = client.get(
+                '/auth/google/callback?code=x&state=test-state',
+                follow_redirects=True,
+            )
+        assert b'Could not read your profile from Google' in resp.data
+        with app.app_context():
+            assert User.query.count() == 0
+
     def test_userinfo_without_email_rejected(self, app, client):
         _configure_google(app)
         _set_state(client)
@@ -339,6 +475,41 @@ class TestGoogleCallbackRejections:
         assert b'has not verified that email address' in resp.data
         with app.app_context():
             assert User.query.count() == 0
+
+
+class TestSessionLifetime:
+    """The configured session lifetime is 7 days — it must actually
+    apply: the session cookie (needs session.permanent) and the
+    remember cookie (Flask-Login defaults to 365 days)."""
+
+    def _cookie_expires(self, resp, name):
+        from email.utils import parsedate_to_datetime
+        for header in resp.headers.getlist('Set-Cookie'):
+            if header.startswith(name + '='):
+                for part in header.split(';'):
+                    part = part.strip()
+                    if part.lower().startswith('expires='):
+                        return parsedate_to_datetime(part[8:])
+        return None
+
+    def test_login_cookies_expire_in_seven_days(self, app, client):
+        from datetime import datetime, timedelta, timezone
+        _configure_google(app)
+        _set_state(client)
+        post, get = _google_mocks()
+        with post, get:
+            resp = client.get(
+                '/auth/google/callback?code=x&state=test-state'
+            )
+        assert resp.status_code == 302
+        now = datetime.now(timezone.utc)
+        for cookie in ('session', 'remember_token'):
+            expires = self._cookie_expires(resp, cookie)
+            assert expires is not None, f'{cookie} cookie has no Expires'
+            assert timedelta(days=6) < expires - now < timedelta(days=8), (
+                f'{cookie} cookie expires {expires - now} from now, '
+                'expected ~7 days'
+            )
 
 
 class TestGoogleCallbackRedirects:
@@ -371,6 +542,23 @@ class TestGoogleCallbackRedirects:
             )
         assert resp.status_code == 302
         assert resp.location.endswith('/needs/')
+
+    def test_callback_rejects_backslash_next_url(self, app, client):
+        # Browsers treat backslashes as slashes, so '/\\evil.com'
+        # navigates to //evil.com — urlparse alone sees it as a
+        # same-origin path, so the check must reject backslashes.
+        _configure_google(app)
+        _set_state(client)
+        with client.session_transaction() as sess:
+            sess['next'] = '/\\evil.example.com/x'
+        post, get = _google_mocks()
+        with post, get:
+            resp = client.get(
+                '/auth/google/callback?code=x&state=test-state'
+            )
+        assert resp.status_code == 302
+        assert resp.location.endswith('/needs/')
+        assert 'evil.example.com' not in resp.location
 
     def test_callback_honours_pending_referral(self, app, client):
         _configure_google(app)

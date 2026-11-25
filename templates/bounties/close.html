@@ -32,6 +32,7 @@
                     <h6 class="mb-3">{{ _('What would you like to do with your payment?') }}</h6>
                     
                     <form method="POST" id="closeForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-check mb-3 p-3 border rounded">
                             <input type="radio" class="form-check-input" name="close_action" value="refund" id="actionRefund" required>
                             <label class="form-check-label" for="actionRefund">
@@ -56,11 +57,11 @@
                                     <td class="text-end">{{ bounty.reward_amount|money(bounty.currency) }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Transaction Fee ({{ refund_fee_percent }}%)</td>
+                                    <td>{{ _('Transaction Fee (%(pct)s%%)', pct=refund_fee_percent) }}</td>
                                     <td class="text-end">-{{ (bounty.reward_amount * refund_fee_percent / 100)|money(bounty.currency) }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Stripe Fee ({{ stripe_fee_percent }}% + {{ stripe_fee_fixed|money(bounty.currency) }})</td>
+                                    <td>{{ _('Stripe Fee (%(pct)s%% + %(fixed)s)', pct=stripe_fee_percent, fixed=stripe_fee_fixed|money(bounty.currency)) }}</td>
                                     <td class="text-end">-{{ (bounty.reward_amount * stripe_fee_percent / 100 + stripe_fee_fixed)|money(bounty.currency) }}</td>
                                 </tr>
                                 <tr class="fw-bold">
@@ -106,6 +107,7 @@
                     </div>
                     
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-warning">
                                 <i class="fas fa-times"></i> {{ _('Close This Need') }}

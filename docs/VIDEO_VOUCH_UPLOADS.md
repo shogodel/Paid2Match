@@ -90,22 +90,25 @@ copy it before any rebuild that touches the compose file).
 ## ffprobe (server-side duration enforcement)
 
 The 30-second limit is enforced server-side with `ffprobe`
-(part of ffmpeg). The live image does **not** currently install
-ffmpeg (the `Dockerfile` has no `apt-get` step at all), so until
-it does, the server-side check is skipped (a warning is logged)
-and only the client-side check in
-`templates/partials/video_vouch_form.html` stands between an
-upload and the limit. To enforce it server-side, add ffmpeg to
-the image — in the `Dockerfile`, before the `pip install` step:
+(part of ffmpeg). The `Dockerfile` installs ffmpeg, so the live
+image has it — the upload route picks up `ffprobe` from `PATH`
+automatically. (The client-side check in
+`templates/partials/video_vouch_form.html` stays as the first
+line of defence either way.)
 
-```dockerfile
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-```
+Behaviour when ffprobe is missing (e.g. a local checkout without
+ffmpeg): the duration check is skipped (a warning is logged) and
+the upload is accepted — fail open, so uploads keep working. Do
+not rely on this in production: without ffprobe there is no
+server-side limit at all.
 
-then rebuild. No code change is needed: the upload route picks
-up `ffprobe` from `PATH` automatically. (The client-side check
-stays as the first line of defence either way.)
+Behaviour when ffprobe is present but cannot read the file (a
+non-video renamed `.mp4`, a truncated upload): the upload is
+**rejected** — fail closed. A file ffprobe cannot parse is not a
+playable video, so it is never stored as a vouch. A readable
+container whose duration ffprobe reports as `N/A` (some
+browser-recorded videos carry no duration metadata) is accepted
+with an unknown duration.
 
 ## Limits (config.py)
 

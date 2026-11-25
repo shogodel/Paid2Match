@@ -1,5 +1,29 @@
 """Tests for bounties blueprint."""
-import pytest
+
+
+def _make_bounty(app, poster, title, bounty_type='recruitment',
+                 location='Remote', reward_amount=None):
+    """A second bounty on the board (slug/shortcode auto-generated)."""
+    from extensions import db
+    from models.bounty import Bounty
+    with app.app_context():
+        bounty = Bounty(
+            poster_id=poster.id,
+            title=title,
+            description='A bounty created for board filter tests. '
+                        'Detailed enough to pass validation.',
+            bounty_type=bounty_type,
+            bounty_direction='seeking_opportunity',
+            reward_amount=reward_amount,
+            status='open',
+            payment_status='released',
+            location=location,
+            success_criteria='Candidate accepts offer and starts work.'
+        )
+        db.session.add(bounty)
+        db.session.commit()
+        db.session.refresh(bounty)
+        return bounty
 
 
 class TestBountyBoard:
@@ -8,17 +32,41 @@ class TestBountyBoard:
         assert r.status_code == 200
         assert b'Senior Python Engineer' in r.data
 
-    def test_board_filters_by_type(self, client, sample_bounty):
+    def test_board_filters_by_type(self, client, app, sample_user,
+                                   sample_bounty):
+        _make_bounty(app, sample_user,
+                     'Plumber Needed For Bathroom Refit Job',
+                     bounty_type='services')
         r = client.get('/needs/?bounty_type=recruitment')
         assert r.status_code == 200
+        assert b'Senior Python Engineer' in r.data
+        assert b'Plumber Needed For Bathroom Refit Job' not in r.data
+        r = client.get('/needs/?bounty_type=services')
+        assert r.status_code == 200
+        assert b'Plumber Needed For Bathroom Refit Job' in r.data
+        assert b'Senior Python Engineer' not in r.data
 
-    def test_board_filters_by_location(self, client, sample_bounty):
+    def test_board_filters_by_location(self, client, app, sample_user,
+                                       sample_bounty):
+        _make_bounty(app, sample_user,
+                     'Toronto Chef Needed For Bistro Opening',
+                     location='Toronto, ON')
         r = client.get('/needs/?location=Remote')
         assert r.status_code == 200
+        assert b'Senior Python Engineer' in r.data
+        assert b'Toronto Chef Needed For Bistro Opening' not in r.data
+        r = client.get('/needs/?location=Toronto')
+        assert r.status_code == 200
+        assert b'Toronto Chef Needed For Bistro Opening' in r.data
+        assert b'Senior Python Engineer' not in r.data
 
     def test_board_shows_free_badge(self, client, sample_bounty):
+        # The free sample bounty renders a 'Free' reward span; the
+        # bare word 'Free' also appears in the filter chip, so assert
+        # on the span, not the word.
         r = client.get('/needs/')
         assert r.status_code == 200
+        assert b'bounty-reward">Free</span>' in r.data
 
 
 class TestBountyDetail:
@@ -107,9 +155,30 @@ class TestBountyEdit:
         assert r.status_code == 200
         assert b'Updated Bounty Title' in r.data
 
-    @pytest.mark.skip(reason="Complex fixture setup - manual testing recommended")
-    def test_edit_access_denied(self, client, app, sample_admin, sample_bounty):
-        pass
+    def test_edit_access_denied(self, logged_in_admin, client, app,
+                                sample_admin, sample_bounty):
+        # Un-skipped 2026-11-24 audit: the fixtures were never the
+        # problem — an admin who is not the poster is denied like
+        # anyone else (the route has no admin exemption).
+        r = logged_in_admin.get(f'/needs/{sample_bounty.id}/edit',
+                                follow_redirects=True)
+        assert r.status_code == 200
+        assert b'Access denied' in r.data
+        r = logged_in_admin.post(f'/needs/{sample_bounty.id}/edit', data={
+            'title': 'Hijacked Title Change Attempt Here',
+            'description': 'Updated description for the bounty.',
+            'bounty_type': 'recruitment',
+            'bounty_direction': 'seeking_opportunity',
+            'reward_amount': '5000',
+            'location': 'Updated Location',
+        }, follow_redirects=True)
+        assert b'Access denied' in r.data
+        with app.app_context():
+            from extensions import db
+            from models.bounty import Bounty
+            db.session.expire_all()
+            bounty = db.session.get(Bounty, sample_bounty.id)
+            assert bounty.title == 'Senior Python Engineer Needed for Startup'
 
 
 class TestBountyPitch:

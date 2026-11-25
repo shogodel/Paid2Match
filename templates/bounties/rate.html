@@ -26,7 +26,7 @@
                             <select class="form-select" id="rating_primary" name="rating_primary" required>
                                 <option value="">{{ _('Choose…') }}</option>
                                 {% for n in [5, 4, 3, 2, 1] %}
-                                <option value="{{ n }}">{{ n }} star{{ 's' if n > 1 }}</option>
+                                <option value="{{ n }}">{{ ngettext('%(num)s star', '%(num)s stars', n) }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -35,7 +35,7 @@
                             <select class="form-select" id="rating_secondary" name="rating_secondary" required>
                                 <option value="">{{ _('Choose…') }}</option>
                                 {% for n in [5, 4, 3, 2, 1] %}
-                                <option value="{{ n }}">{{ n }} star{{ 's' if n > 1 }}</option>
+                                <option value="{{ n }}">{{ ngettext('%(num)s star', '%(num)s stars', n) }}</option>
                                 {% endfor %}
                             </select>
                         </div>

@@ -20,13 +20,16 @@
                     <td>{{ 'Yes (15% fee)' if user.founding_referrer else 'No' }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('admin.activate_user', id=user.id) }}" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-success">Activate</button>
                         </form>
                         <form method="POST" action="{{ url_for('admin.deactivate_user', id=user.id) }}" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-warning">Deactivate</button>
                         </form>
                         {% if not user.email_verified %}
                         <form method="POST" action="{{ url_for('admin.verify_user_email', id=user.id) }}" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-info">Verify Email</button>
                         </form>
                         {% endif %}

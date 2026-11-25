@@ -179,6 +179,76 @@ def test_follower_and_endorsed_are_candidates(
     ]
 
 
+def test_skill_points_capped_at_30(
+    app, sample_user, sample_hunter, network_bounty,
+):
+    """Five matching skills would be 50 points uncapped — the cap
+    holds the skill contribution at 30, and only 3 'Knows' chips
+    are shown."""
+    skilled = _make_user(
+        app, 'skilled@example.com', 'Skilled User',
+        skills='Python, Flask, Django, SQL, Docker',
+        location='Vancouver, BC',
+    )
+    wide_bounty = _make_bounty(
+        app, sample_user,
+        skills='Python, Flask, Django, SQL, Docker',
+        location='Toronto, ON',
+    )
+    _follow(app, sample_hunter, skilled)
+
+    suggestions = suggest_connections_for_need(sample_hunter, wide_bounty)
+
+    assert len(suggestions) == 1
+    assert suggestions[0]['score'] == 30
+    knows = [r for r in suggestions[0]['reasons']
+             if r.startswith('Knows ')]
+    assert len(knows) == 3
+
+
+def test_vouch_points_capped_at_10(
+    app, sample_user, sample_hunter, network_bounty,
+):
+    """Six endorsements would be 12 points uncapped — the cap
+    holds the vouch contribution at 10."""
+    vouched = _make_user(
+        app, 'vouched@example.com', 'Vouched User',
+        skills='Welding', location='Toronto, ON',
+    )
+    _follow(app, sample_hunter, vouched)
+    for i in range(6):
+        _endorse(app, sample_user, vouched, f'Skill{i}')
+
+    suggestions = suggest_connections_for_need(sample_hunter, network_bounty)
+
+    assert len(suggestions) == 1
+    assert suggestions[0]['score'] == 10
+    assert '6 vouches' in suggestions[0]['reasons']
+
+
+def test_no_crash_without_skills_city_or_profile(
+    app, sample_user, sample_hunter,
+):
+    """A candidate with no profile row, no skills and no city, and
+    a need with no skills, category or location: no crash, and no
+    suggestion (nothing scores above 0)."""
+    with app.app_context():
+        bare = User(
+            email='bare@example.com', full_name='Bare User',
+            password_hash=generate_password_hash('Pass123!'),
+            role='user', is_active=True, email_verified=True,
+        )
+        db.session.add(bare)
+        db.session.commit()
+        db.session.refresh(bare)
+    bare_bounty = _make_bounty(
+        app, sample_user, skills=None, location=None, category=None,
+    )
+    _follow(app, sample_hunter, bare)
+
+    assert suggest_connections_for_need(sample_hunter, bare_bounty) == []
+
+
 def test_empty_network_returns_empty(
     app, sample_hunter, network_bounty,
 ):

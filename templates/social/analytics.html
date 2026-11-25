@@ -11,15 +11,15 @@
                 <div class="card-body text-center">
                     <h5>{{ _('Trust level') }}</h5>
                     <div class="fs-3">{{ trust_level|level_label }}</div>
-                    <div class="text-muted">Score {{ trust_score }}/100</div>
+                    <div class="text-muted">{{ _('Score %(score)s/100', score=trust_score) }}</div>
                     {% if top_helper %}<span class="badge bg-warning text-dark mt-2">{{ _('Top Helper') }}</span>{% endif %}
                     <div class="text-start small text-muted mt-3">
-                        <div>Identity: {{ trust_breakdown.identity }}/20</div>
-                        <div>Transactions: {{ trust_breakdown.transactions }}/40</div>
-                        <div>Reliability: {{ trust_breakdown.reliability }}/20</div>
-                        <div>Community: {{ trust_breakdown.community }}/10</div>
-                        <div>Tenure: {{ trust_breakdown.tenure }}/10</div>
-                        {% if trust_breakdown.penalties %}<div>Penalties: −{{ trust_breakdown.penalties }}</div>{% endif %}
+                        <div>{{ _('Identity:') }} {{ trust_breakdown.identity }}/20</div>
+                        <div>{{ _('Transactions:') }} {{ trust_breakdown.transactions }}/40</div>
+                        <div>{{ _('Reliability:') }} {{ trust_breakdown.reliability }}/20</div>
+                        <div>{{ _('Community:') }} {{ trust_breakdown.community }}/10</div>
+                        <div>{{ _('Tenure:') }} {{ trust_breakdown.tenure }}/10</div>
+                        {% if trust_breakdown.penalties %}<div>{{ _('Penalties:') }} −{{ trust_breakdown.penalties }}</div>{% endif %}
                     </div>
                 </div>
             </div>
@@ -141,7 +141,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5>Profile views — last 90 days: {{ pro_analytics.profile_views.total_90d }}</h5>
+                    <h5>{{ _('Profile views — last 90 days: %(count)s', count=pro_analytics.profile_views.total_90d) }}</h5>
                     {% if pro_analytics.profile_views.named_viewers %}
                     <p class="small mb-1">{{ _('Viewers who opted in to show their name:') }}</p>
                     <ul class="small mb-0">
@@ -158,7 +158,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
-                    <h5>Search appearances: {{ pro_analytics.search.total_90d }}</h5>
+                    <h5>{{ _('Search appearances: %(count)s', count=pro_analytics.search.total_90d) }}</h5>
                     {% if pro_analytics.search.top_queries %}
                     <p class="small mb-1">{{ _('Top searches you appeared in:') }}</p>
                     <ul class="small mb-0">

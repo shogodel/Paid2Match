@@ -31,6 +31,19 @@ def _mock_resp(status=200, text='', json_data=None):
     return resp
 
 
+def _mock_bad_json(status=200):
+    """A response whose body is not JSON (proxy error page served
+    with a 200, truncated body) — resp.json() raises, as requests
+    does."""
+    resp = SimpleNamespace(status_code=status, text='<html>error</html>')
+
+    def _raise():
+        raise ValueError('No JSON object could be decoded')
+
+    resp.json = _raise
+    return resp
+
+
 def _link(user, platform='github', method='bio_link', **kwargs):
     account = get_or_create_link(
         user.id, platform, method,
@@ -166,6 +179,17 @@ class TestOAuth:
             'octocat', 'https://github.com/octocat', None
         )
 
+    def test_fetch_oauth_profile_bad_json(self, app):
+        # A 200 whose body is not JSON must fail cleanly, not 500 on
+        # resp.json().
+        with patch(
+            'utils.linked_accounts.requests.get',
+            return_value=_mock_bad_json(),
+        ):
+            handle, url, error = fetch_oauth_profile('github', 'tok_1')
+        assert (handle, url) == (None, None)
+        assert 'Could not read your profile' in error
+
     def test_oauth_callback_verifies_link(
         self, app, client, sample_user, login_as
     ):
@@ -211,6 +235,139 @@ class TestOAuth:
         assert LinkedAccount.query.filter_by(
             user_id=sample_user.id, platform='github'
         ).first() is None
+
+    def test_oauth_callback_rejects_platform_mismatch(
+        self, app, client, sample_user, login_as
+    ):
+        # The state is bound to the platform the flow started with:
+        # a GitHub state presented to the LinkedIn callback is not
+        # that flow, even though the state itself matches.
+        app.config['GITHUB_CLIENT_ID'] = 'gh_id'
+        app.config['GITHUB_CLIENT_SECRET'] = 'gh_secret'
+        app.config['LINKEDIN_CLIENT_ID'] = 'li_id'
+        app.config['LINKEDIN_CLIENT_SECRET'] = 'li_secret'
+        login_as(client, sample_user.email, 'TestPass123!')
+        client.get('/profile/linked/github/oauth')
+        with client.session_transaction() as sess:
+            state = sess['oauth_state']
+        # The token exchange + profile fetch are mocked to succeed:
+        # without the platform check the link WOULD be created.
+        with patch(
+            'blueprints.profile.routes.exchange_oauth_code',
+            return_value=('tok_1', None),
+        ), patch(
+            'blueprints.profile.routes.fetch_oauth_profile',
+            return_value=('Some Person', None, None),
+        ):
+            resp = client.get(
+                '/profile/linked/linkedin/oauth/callback'
+                f'?code=c1&state={state}'
+            )
+        assert resp.status_code == 302
+        assert LinkedAccount.query.filter_by(
+            user_id=sample_user.id, platform='linkedin'
+        ).first() is None
+
+    def test_oauth_callback_rejects_handle_linked_to_another_user(
+        self, app, client, sample_user, second_user, login_as
+    ):
+        # One external identity, one Paid2Match account: a GitHub
+        # login is unique, so two users must not both verify it.
+        app.config['GITHUB_CLIENT_ID'] = 'gh_id'
+        app.config['GITHUB_CLIENT_SECRET'] = 'gh_secret'
+        account = _link(sample_user, 'github', 'oauth', handle='octocat')
+        mark_verified(account)
+        db.session.commit()
+
+        login_as(client, second_user.email, 'SecondPass123!')
+        client.get('/profile/linked/github/oauth')
+        with client.session_transaction() as sess:
+            state = sess['oauth_state']
+        with patch(
+            'blueprints.profile.routes.exchange_oauth_code',
+            return_value=('tok_1', None),
+        ), patch(
+            'blueprints.profile.routes.fetch_oauth_profile',
+            return_value=('octocat', 'https://github.com/octocat', None),
+        ):
+            resp = client.get(
+                '/profile/linked/github/oauth/callback'
+                f'?code=c1&state={state}',
+                follow_redirects=True,
+            )
+        assert b'already linked to another' in resp.data
+        assert LinkedAccount.query.filter_by(
+            user_id=second_user.id, platform='github'
+        ).first() is None
+        # The first user's link is untouched.
+        db.session.refresh(account)
+        assert account.status == 'verified'
+
+    def test_oauth_callback_rejects_handle_case_insensitively(
+        self, app, client, sample_user, second_user, login_as
+    ):
+        # GitHub logins are case-insensitive: 'OctoCat' and 'octocat'
+        # are the same account.
+        app.config['GITHUB_CLIENT_ID'] = 'gh_id'
+        app.config['GITHUB_CLIENT_SECRET'] = 'gh_secret'
+        account = _link(sample_user, 'github', 'oauth', handle='OctoCat')
+        mark_verified(account)
+        db.session.commit()
+
+        login_as(client, second_user.email, 'SecondPass123!')
+        client.get('/profile/linked/github/oauth')
+        with client.session_transaction() as sess:
+            state = sess['oauth_state']
+        with patch(
+            'blueprints.profile.routes.exchange_oauth_code',
+            return_value=('tok_1', None),
+        ), patch(
+            'blueprints.profile.routes.fetch_oauth_profile',
+            return_value=('octocat', 'https://github.com/octocat', None),
+        ):
+            resp = client.get(
+                '/profile/linked/github/oauth/callback'
+                f'?code=c1&state={state}',
+                follow_redirects=True,
+            )
+        assert b'already linked to another' in resp.data
+        assert LinkedAccount.query.filter_by(
+            user_id=second_user.id, platform='github'
+        ).first() is None
+
+    def test_oauth_callback_allows_handle_whose_link_expired(
+        self, app, client, sample_user, second_user, login_as
+    ):
+        # An expired link does not block: its verification lapsed,
+        # so the handle is claimable again.
+        app.config['GITHUB_CLIENT_ID'] = 'gh_id'
+        app.config['GITHUB_CLIENT_SECRET'] = 'gh_secret'
+        account = _link(sample_user, 'github', 'oauth', handle='octocat')
+        mark_verified(account)
+        account.expires_at = utc_now() - timedelta(days=1)
+        db.session.commit()
+
+        login_as(client, second_user.email, 'SecondPass123!')
+        client.get('/profile/linked/github/oauth')
+        with client.session_transaction() as sess:
+            state = sess['oauth_state']
+        with patch(
+            'blueprints.profile.routes.exchange_oauth_code',
+            return_value=('tok_1', None),
+        ), patch(
+            'blueprints.profile.routes.fetch_oauth_profile',
+            return_value=('octocat', 'https://github.com/octocat', None),
+        ):
+            resp = client.get(
+                '/profile/linked/github/oauth/callback'
+                f'?code=c1&state={state}'
+            )
+        assert resp.status_code == 302
+        mine = LinkedAccount.query.filter_by(
+            user_id=second_user.id, platform='github'
+        ).first()
+        assert mine is not None
+        assert mine.status == 'verified'
 
 
 class TestManualReview:
@@ -357,6 +514,82 @@ class TestVisibility:
         db.session.commit()
         assert visible_linked_accounts(sample_user.id, second_user.id) == []
         assert visible_linked_accounts(sample_user.id, sample_user.id) == []
+
+
+class TestLinkedPageRenders:
+    """The template renders one card per platform (``{% for card in
+    cards %}``) — the route must actually pass ``cards`` and the
+    profile URL, or the page is an empty heading and no link can be
+    added, checked, or unlinked from the UI."""
+
+    def test_page_renders_a_card_per_platform(
+            self, app, client, sample_user, login_as):
+        login_as(client, sample_user.email, 'TestPass123!')
+        html = client.get('/profile/linked').data.decode()
+        for label in ('Github', 'Linkedin', 'Instagram', 'Facebook',
+                      'Tiktok', 'X', 'Youtube', 'Website'):
+            assert label in html
+        # The add form renders (bio-link hint + Add & verify button).
+        assert 'Add &amp; verify' in html or 'Add & verify' in html
+
+    def test_page_renders_linked_account_actions(
+            self, app, client, sample_user, login_as):
+        account = _link(sample_user, 'github', 'bio_link')
+        login_as(client, sample_user.email, 'TestPass123!')
+        html = client.get('/profile/linked').data.decode()
+        # Pending link: check + manual-review + visibility + unlink.
+        assert 'Check now' in html
+        assert 'Ask for a manual review' in html
+        assert 'Set visibility' in html
+        assert 'Unlink' in html
+        # The bio-link hint shows the user's public profile URL.
+        assert f'/profile/{sample_user.handle}' in html
+        assert account.url in html
+
+
+class TestLinkedPageCsrf:
+    """The check / manual-review / visibility / unlink forms are raw
+    <form>s, not WTForms — each must carry its own csrf_token input.
+    Without it the POST 400s wherever CSRF is enabled (production),
+    while the suite (CSRF off) never noticed."""
+
+    def test_every_post_form_on_linked_page_has_csrf_token(
+            self, app, client, sample_user, login_as):
+        import re
+        _link(sample_user, 'github', 'bio_link')
+        login_as(client, sample_user.email, 'TestPass123!')
+        # hidden_tag() only renders the token when CSRF is on.
+        app.config['WTF_CSRF_ENABLED'] = True
+        html = client.get('/profile/linked').data.decode()
+        forms = re.findall(
+            r'<form[^>]*method="POST"[^>]*>(.*?)</form>', html, re.S
+        )
+        # The github card alone renders check + manual-review +
+        # visibility + unlink; the other platforms render add forms.
+        assert len(forms) >= 4
+        for body in forms:
+            assert 'csrf_token' in body
+
+    def test_unlink_works_with_csrf_enabled(
+            self, app, client, sample_user, login_as):
+        import re
+        account = _link(sample_user, 'github', 'bio_link')
+        login_as(client, sample_user.email, 'TestPass123!')
+        app.config['WTF_CSRF_ENABLED'] = True
+        # No token at all: rejected, proving CSRF is actually on.
+        r = client.post(f'/profile/linked/{account.id}/unlink')
+        assert r.status_code == 400
+        # The token rendered in the form: unlink succeeds.
+        html = client.get('/profile/linked').data.decode()
+        token = re.search(
+            r'name="csrf_token" value="([^"]+)"', html
+        ).group(1)
+        r = client.post(
+            f'/profile/linked/{account.id}/unlink',
+            data={'csrf_token': token},
+        )
+        assert r.status_code == 302
+        assert LinkedAccount.query.filter_by(id=account.id).first() is None
 
 
 class TestCheckRoute:

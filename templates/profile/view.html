@@ -36,22 +36,22 @@
             </div>
             <div class="profile-actions">
                 <a href="{{ url_for('profile.edit') }}" class="btn btn-primary">
-                    {{ icon('pencil', 16) }} Edit Profile
+                    {{ icon('pencil', 16) }} {{ _('Edit Profile') }}
                 </a>
                 <a href="{{ url_for('profile.linked_accounts') }}" class="btn btn-outline-primary">
-                    {{ icon('link', 16) }} Linked Accounts
+                    {{ icon('link', 16) }} {{ _('Linked Accounts') }}
                 </a>
                 <a href="{{ url_for('payments.bump_packs') }}" class="btn btn-outline-secondary">
-                    {{ icon('arrow-up', 16) }} Bump Packs
+                    {{ icon('arrow-up', 16) }} {{ _('Bump Packs') }}
                 </a>
                 {% if profile.remote_ok %}
                     <span class="btn btn-outline-success btn-sm">
-                        {{ icon('globe', 14) }} Open to Remote
+                        {{ icon('globe', 14) }} {{ _('Open to Remote') }}
                     </span>
                 {% endif %}
                 {% if profile.relocation_assistance %}
                     <span class="btn btn-outline-info btn-sm">
-                        {{ icon('map-pin', 14) }} Needs Relocation
+                        {{ icon('map-pin', 14) }} {{ _('Needs Relocation') }}
                     </span>
                 {% endif %}
             </div>
@@ -73,7 +73,7 @@
             <span class="profile-trust-item">{{ icon('link', 16) }} {{ verified_linked_count }} {{ _('verified linked account') if verified_linked_count == 1 else _('verified linked accounts') }}</span>
             {% endif %}
             {% if pledge and pledge.status == 'suspended' %}
-            <span class="profile-trust-item text-warning">{{ icon('triangle-alert', 16) }} Pledge suspended — a referral response is overdue</span>
+            <span class="profile-trust-item text-warning">{{ icon('triangle-alert', 16) }} {{ _('Pledge suspended — a referral response is overdue') }}</span>
             {% endif %}
             {% if endorsements %}
             <a class="profile-trust-item text-decoration-none" href="#tab-referrals" data-bs-toggle="tab" data-bs-target="#tab-referrals" title="{{ _('People who vouch for you') }}">{{ icon('award', 16) }} {{ endorsements|length }} {{ _('vouch') if endorsements|length == 1 else _('vouches') }}</a>
@@ -263,7 +263,7 @@
                 {% for breach in open_breaches %}
                 <p class="small mb-1">
                     <a href="{{ url_for('bounties.detail', slug_code=breach.bounty.url_slug) }}">{{ breach.bounty.title }}</a>
-                    — due {{ breach.due_at.strftime('%Y-%m-%d') }}
+                    — {{ _('due %(date)s', date=breach.due_at.strftime('%Y-%m-%d')) }}
                 </p>
                 {% endfor %}
             </div>
@@ -275,7 +275,7 @@
             <div class="profile-card">
                 <h5 class="profile-card-title">{{ _('About') }}</h5>
                 {% if profile.bio %}
-                    <p>{{ profile.bio | replace('\n', '<br>') | safe }}</p>
+                    <p>{{ profile.bio | nl2br }}</p>
                 {% else %}
                     <p class="text-muted">{{ _('No bio added yet.') }}</p>
                 {% endif %}
@@ -351,7 +351,7 @@
             <div class="profile-card">
                 <h5 class="profile-card-title">{{ _('Verification') }}</h5>
                 {% if profile.verified %}
-                <p class="text-success mb-0">{{ icon('circle-check', 16) }} Your profile is verified.</p>
+                <p class="text-success mb-0">{{ icon('circle-check', 16) }} {{ _('Your profile is verified.') }}</p>
                 {% elif verification_request %}
                 <p class="text-muted mb-0">{{ _('Your verification request is pending admin review.') }}</p>
                 {% else %}
@@ -389,7 +389,7 @@
                     </div>
                 {% else %}
                     <div class="alert alert-success py-2 mb-0">
-                        {{ icon('circle-check', 16) }} Profile complete!
+                        {{ icon('circle-check', 16) }} {{ _('Profile complete!') }}
                     </div>
                 {% endif %}
             </div>

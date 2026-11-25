@@ -25,7 +25,8 @@ class Poll(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now)
 
     post = db.relationship(
-        'Post', backref=db.backref('poll', uselist=False),
+        'Post',
+        backref=db.backref('poll', uselist=False, cascade='all, delete-orphan'),
     )
     options = db.relationship(
         'PollOption', backref='poll', lazy='dynamic',

@@ -154,7 +154,7 @@
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <span class="helper-rank rank-{{ loop.index }}" style="width: 28px; height: 28px; font-size: 0.875rem; margin: 0;">{{ loop.index }}</span>
                     <a href="{{ url_for('profile.public_profile', user_id=profile.user.handle or profile.user_id) }}" class="text-decoration-none text-truncate">{{ profile.display_name or profile.user.full_name }}</a>
-                    <span class="text-muted small ms-auto flex-shrink-0">{{ profile.karma or 0 }} karma</span>
+                    <span class="text-muted small ms-auto flex-shrink-0">{{ profile.karma or 0 }} {{ _('karma') }}</span>
                 </div>
                 {% endfor %}
             </div>

@@ -10,6 +10,7 @@
                 <h2 class="mb-0">{{ _('Notifications') }}</h2>
                 {% if unread %}
                 <form method="POST" action="{{ url_for('social.read_all_notifications') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-secondary btn-sm">{{ _('Mark all read') }}</button>
                 </form>
                 {% endif %}

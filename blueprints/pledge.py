@@ -10,6 +10,7 @@ from flask import Blueprint, flash, redirect, render_template, url_for
 from flask_babel import gettext as _, lazy_gettext as _l
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
+from sqlalchemy.exc import IntegrityError
 from wtforms import BooleanField, StringField, SubmitField
 from wtforms.validators import DataRequired, Length
 
@@ -74,7 +75,19 @@ def new_pledge():
             status='pending',
         )
         db.session.add(pledge)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            # Lost the race: another request created an active
+            # pledge between the active_for_user check above and
+            # this commit (the partial unique index enforces the
+            # one-active rule). Same friendly outcome as the check.
+            db.session.rollback()
+            flash(
+                _('You already have an active pledge.'),
+                'info',
+            )
+            return redirect(url_for('pledge.register'))
         flash(
             _('Your pledge was submitted for review. An admin will '
               'approve it once it is checked.'),

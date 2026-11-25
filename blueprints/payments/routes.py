@@ -333,6 +333,10 @@ def subscribe_recurring_bump(post_id):
             'user_id': current_user.id,
             'post_id': post.id,
         },
+        # One recurring bump per post: a double-click returns the
+        # same session instead of a second subscription that would
+        # keep charging with no local row.
+        idempotency_key=f'recurring-bump-{post.id}',
     )
     if not checkout_url:
         flash('Stripe is not configured — please try again later.', 'danger')

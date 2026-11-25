@@ -13,4 +13,10 @@ COPY . .
 # .mo files are build artifacts. (Committed .mo files are also in the repo
 # so a plain checkout works without a build step.)
 RUN pybabel compile -d translations
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:create_app()"]
+# Serve through wsgi:app, NOT app:create_app(): the factory defaults to
+# the DEVELOPMENT config when FLASK_ENV is unset (DEBUG on, secure
+# session cookies off), while wsgi.py defaults to production. Depending
+# on an undocumented FLASK_ENV=production in the container env for the
+# live site to run the right config is a footgun; the image must be
+# production by default. FLASK_ENV still overrides when set (staging).
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "wsgi:app"]

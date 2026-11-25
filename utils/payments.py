@@ -40,11 +40,13 @@ from decimal import Decimal, ROUND_HALF_UP
 
 import stripe
 from flask import current_app
+from sqlalchemy.exc import IntegrityError
 
 from extensions import db
 from models import (
     AdminSettings,
     ConnectAccount,
+    Dispute,
     Match,
     Payout,
     utc_now,
@@ -135,11 +137,16 @@ def compute_payout_amounts(reward, fee_percent):
 # ---------------------------------------------------------------------------
 
 def create_checkout_session(success_url, cancel_url, amount_cents,
-                            description, metadata=None, capture_method='automatic'):
+                            description, metadata=None, capture_method='automatic',
+                            idempotency_key=None):
     """Create a Stripe Checkout session (CAD) and return its URL, or
     None when Stripe is unavailable. ``capture_method='manual'``
     authorizes without capturing — the escrow flow for securing a
-    need. Upgrades stay immediate-capture ('automatic')."""
+    need. Upgrades stay immediate-capture ('automatic').
+    ``idempotency_key`` (when given) makes a double-click or a
+    retried request return the SAME session instead of creating a
+    second charge — pass a deterministic key for flows where a
+    duplicate session would orphan money (escrow)."""
     if not stripe_enabled():
         return None
     if not _set_api_key():
@@ -161,6 +168,8 @@ def create_checkout_session(success_url, cancel_url, amount_cents,
     }
     if capture_method == 'manual':
         params['payment_intent_data'] = {'capture_method': 'manual'}
+    if idempotency_key:
+        params['idempotency_key'] = idempotency_key
     try:
         session = stripe.checkout.Session.create(**params)
     except stripe.error.StripeError as exc:
@@ -171,12 +180,16 @@ def create_checkout_session(success_url, cancel_url, amount_cents,
 
 def create_subscription_checkout_session(success_url, cancel_url,
                                          amount_cents, description,
-                                         metadata=None, interval='month'):
+                                         metadata=None, interval='month',
+                                         idempotency_key=None):
     """Create a Stripe Checkout session in subscription mode (M3: Pro
     $9/month, recurring bumps $5/month). The price is built inline
     (no pre-created Price in the Stripe dashboard), so the code works
     the moment the platform account is approved. Returns the Checkout
-    URL, or None when Stripe is unavailable."""
+    URL, or None when Stripe is unavailable. ``idempotency_key``
+    (when given) makes a double-click return the SAME session
+    instead of creating a second subscription that would keep
+    charging with no local row."""
     if not stripe_enabled():
         return None
     if not _set_api_key():
@@ -197,6 +210,7 @@ def create_subscription_checkout_session(success_url, cancel_url,
             success_url=success_url,
             cancel_url=cancel_url,
             metadata=metadata or {},
+            **({'idempotency_key': idempotency_key} if idempotency_key else {}),
         )
     except stripe.error.StripeError as exc:
         logger.error('Subscription checkout creation failed: %s', exc)
@@ -326,7 +340,12 @@ def refresh_connect_account(connect):
 def ensure_captured(payment_intent_id):
     """Capture a PaymentIntent if it is still awaiting capture.
     Returns (ok, error). A PI that is already captured (pre-M2
-    immediate-capture payments) counts as success."""
+    immediate-capture payments) counts as success. Loads the API
+    key first — earlier versions relied on whatever key a previous
+    call in the same process had set, so in a fresh worker the
+    capture failed even with keys configured."""
+    if not _set_api_key():
+        return False, 'Stripe is not configured.'
     try:
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
     except stripe.error.StripeError as exc:
@@ -346,7 +365,10 @@ def ensure_captured(payment_intent_id):
 def cancel_authorization(payment_intent_id):
     """Cancel an uncaptured PaymentIntent (releases the hold on the
     poster's card). Returns (ok, error). A captured PI cannot be
-    cancelled — refund it instead."""
+    cancelled — refund it instead. Loads the API key first (see
+    ensure_captured)."""
+    if not _set_api_key():
+        return False, 'Stripe is not configured.'
     try:
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
     except stripe.error.StripeError as exc:
@@ -377,13 +399,17 @@ def payment_intent_status(payment_intent_id):
 
 def create_refund(payment_intent_id, amount_cents):
     """Refund a captured PaymentIntent (partial refunds allowed).
-    Returns (refund_id, error)."""
+    Returns (refund_id, error). Idempotent: the same
+    (payment_intent, amount) refunded twice within Stripe's 24h
+    idempotency window creates only ONE refund, so a double-clicked
+    cancel or a retried request cannot refund the poster twice."""
     if not _set_api_key():
         return None, 'Stripe is not configured.'
     try:
         refund = stripe.Refund.create(
             payment_intent=payment_intent_id,
             amount=int(amount_cents),
+            idempotency_key=f'refund-{payment_intent_id}-{int(amount_cents)}',
         )
     except stripe.error.StripeError as exc:
         return None, str(exc)
@@ -393,6 +419,24 @@ def create_refund(payment_intent_id, amount_cents):
 # ---------------------------------------------------------------------------
 # Escrow release (capture + transfer)
 # ---------------------------------------------------------------------------
+
+def _locked_payout_amounts(match):
+    """(gross, fee, net) for a match, honoring the fee locked in at
+    match creation. confirm_match records match.platform_fee /
+    match.payout_amount when the match is created; those figures
+    are what the referrer was promised. Recomputing from the
+    CURRENT fee setting would silently change the payout if an
+    admin changed the rate (or the referrer's founding flag)
+    between the first and second confirmation. Legacy matches
+    with no recorded fee fall back to the current rate."""
+    if match.platform_fee is not None and match.payout_amount is not None:
+        gross = Decimal(str(match.payout_amount))
+        fee = Decimal(str(match.platform_fee))
+        return gross, fee, gross - fee
+    return compute_payout_amounts(
+        float(match.bounty.reward_amount or 0), fee_rate_for(match.hunter)
+    )
+
 
 def _find_or_create_payouts(match):
     """The (referrer, chain) Payout rows for a match, creating them
@@ -412,10 +456,7 @@ def _find_or_create_payouts(match):
     ).first()
     if referrer_payout is not None:
         return referrer_payout, chain_payout, False
-    fee_pct = fee_rate_for(match.hunter)
-    gross, fee, net = compute_payout_amounts(
-        float(match.bounty.reward_amount or 0), fee_pct
-    )
+    gross, fee, net = _locked_payout_amounts(match)
     sharer_id = resolve_chain_sharer(match)
     if sharer_id:
         referrer_amount, sharer_amount = compute_chain_split(net)
@@ -449,7 +490,39 @@ def _find_or_create_payouts(match):
     db.session.add(referrer_payout)
     match.platform_fee = fee
     match.payout_amount = gross
-    db.session.flush()
+    try:
+        # SAVEPOINT, not a bare flush: two simultaneous releases
+        # race here, and the loser must fall back to the winner's
+        # rows without rolling back the caller's other work (a
+        # session rollback in retry_pending_payouts would discard
+        # earlier releases in the same loop).
+        with db.session.begin_nested():
+            db.session.flush()
+    except IntegrityError:
+        # Lost the race — another process created the payouts
+        # first (uq_payouts_match_kind). Expunge the failed rows
+        # (they stay pending in the session after the savepoint
+        # rolls back, and a later flush would re-raise) and use
+        # the winner's rows.
+        logger.info(
+            'Payout creation raced for match %s — using existing rows',
+            match.id,
+        )
+        db.session.expunge(referrer_payout)
+        if chain_payout is not None:
+            db.session.expunge(chain_payout)
+        referrer_payout = Payout.query.filter_by(
+            match_id=match.id, kind='referral'
+        ).first()
+        chain_payout = Payout.query.filter_by(
+            match_id=match.id, kind='chain_share'
+        ).first()
+        if referrer_payout is None:
+            # The flush failed for some other reason than a race
+            # (no winner exists) — hiding that would return
+            # (None, None) and crash release_escrow, so re-raise.
+            raise
+        return referrer_payout, chain_payout, False
     return referrer_payout, chain_payout, True
 
 
@@ -460,9 +533,12 @@ def release_escrow(match):
     sharer's cut when the referral came through a share (M4 chains).
     Returns (ok, message). Idempotent — safe to call twice; a retry
     after a failed transfer never re-captures (``captured_at`` guards
-    it) and never re-transfers a payout that already went out. A
-    payout whose recipient has not finished Connect onboarding waits
-    without blocking the other payout. Does not commit."""
+    it) and never re-transfers a payout that already went out (each
+    transfer carries an idempotency key derived from the payout id,
+    so even a crash between the Stripe call and the DB commit cannot
+    double-pay). A payout whose recipient has not finished Connect
+    onboarding waits without blocking the other payout. Does not
+    commit."""
     if not (match.hunter_confirmed and match.employer_confirmed):
         return False, 'Match is not confirmed by both sides yet.'
     bounty = match.bounty
@@ -471,6 +547,19 @@ def release_escrow(match):
         if match.payout_status != 'completed':
             match.set_payout_status('completed')
         return True, 'Free need — nothing to pay out.'
+
+    # An open dispute freezes the money: releasing escrow while the
+    # match is contested would defeat the dispute process (the
+    # referrer would already have been paid before the admin
+    # rules). The payout resumes once the dispute is resolved.
+    open_dispute = Dispute.query.filter_by(
+        match_id=match.id, status='open'
+    ).first()
+    if open_dispute is not None:
+        return False, (
+            'This match has an open dispute — the payout is on hold '
+            'until the dispute is resolved.'
+        )
 
     referrer_payout, chain_payout, created = _find_or_create_payouts(match)
     payouts = [p for p in (referrer_payout, chain_payout) if p is not None]
@@ -573,12 +662,18 @@ def release_escrow(match):
             # payout in to_transfer. This cannot happen.
             continue
         try:
+            # Idempotency key: one payout row can only ever create
+            # one transfer. Without it, a crash between the Stripe
+            # call and the DB commit would make the retry transfer
+            # the same payout a second time (the row still says
+            # 'pending' — the transfer id was never persisted).
             transfer = stripe.Transfer.create(
                 amount=to_cents(payout.amount),
                 currency=CURRENCY,
                 destination=account.stripe_account_id,
                 source_transaction=bounty.stripe_payment_intent,
                 metadata={'match_id': match.id, 'payout_id': payout.id},
+                idempotency_key=f'payout-{payout.id}',
             )
         except stripe.error.StripeError as exc:
             # The money was captured but the transfer failed — the
@@ -651,6 +746,16 @@ def record_manual_payout(match, amount, reference, admin_user,
     commit."""
     if payout_kind not in ('referral', 'chain_share'):
         raise ValueError(f'unknown payout kind {payout_kind!r}')
+    # An open dispute freezes the money (see release_escrow) — an
+    # admin records a manual payout only once it is resolved.
+    open_dispute = Dispute.query.filter_by(
+        match_id=match.id, status='open'
+    ).first()
+    if open_dispute is not None:
+        raise ValueError(
+            'This match has an open dispute — resolve it before '
+            'recording a payout.'
+        )
     payout = Payout.query.filter_by(
         match_id=match.id, kind=payout_kind
     ).first()
@@ -673,10 +778,7 @@ def record_manual_payout(match, amount, reference, admin_user,
                 status='pending',
             )
         else:
-            fee_pct = fee_rate_for(match.hunter)
-            gross, fee, _net = compute_payout_amounts(
-                float(match.bounty.reward_amount or 0), fee_pct
-            )
+            gross, fee, _net = _locked_payout_amounts(match)
             payout = Payout(
                 match_id=match.id,
                 referrer_id=match.hunter_id,
@@ -692,7 +794,25 @@ def record_manual_payout(match, amount, reference, admin_user,
             match.platform_fee = fee
             match.payout_amount = gross
         db.session.add(payout)
-        db.session.flush()
+        try:
+            # SAVEPOINT: two admins recording the same payout at
+            # once race here — the loser falls back to the
+            # winner's row (uq_payouts_match_kind) instead of
+            # 500ing.
+            with db.session.begin_nested():
+                db.session.flush()
+        except IntegrityError:
+            db.session.expunge(payout)
+            payout = Payout.query.filter_by(
+                match_id=match.id, kind=payout_kind
+            ).first()
+            if payout is None:
+                raise
+    # Defense in depth (the admin route checks this too): recording
+    # a manual payout over a completed or in-flight Stripe payout
+    # would pay the referrer twice and corrupt the ledger.
+    if payout.status in ('completed', 'processing'):
+        raise ValueError('This payout is already completed or in progress.')
     payout.method = 'manual'
     payout.amount = amount
     payout.manual_reference = reference or None
@@ -832,8 +952,8 @@ def handle_transfer_event(event_type, transfer_obj):
                 payout.referrer_id,
                 'payout_failed',
                 'Your payout failed',
-                'Stripe could not send your payout. We will retry it — '
-                'no action needed from you.',
+                'Stripe could not send your payout. Please check your '
+                'payout details, then retry it from your payouts page.',
                 link_url='/payments/payouts',
             )
     # transfer.created: the payout is already 'processing' — nothing to do.

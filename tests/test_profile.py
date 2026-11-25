@@ -142,6 +142,52 @@ class TestProfilePublic:
         r = client.get('/profile/nonexistent-id-00000')
         assert r.status_code == 404
 
+
+class TestBioEscaping:
+    """The bio is user-controlled text. It used to render with
+    `| replace('\\n', '<br>') | safe`, which skipped escaping
+    entirely — a <script> tag in a bio ran on every visitor's
+    profile view (stored XSS). The nl2br filter escapes first and
+    only then turns newlines into <br>."""
+
+    _EVIL_BIO = ('Hello\n<script>alert("pwned")</script>'
+                 '<img src=x onerror=alert(2)>')
+
+    def _set_bio(self, app, user_id, bio):
+        with app.app_context():
+            from extensions import db
+            from models.profile import Profile
+            profile = Profile.query.filter_by(user_id=user_id).first()
+            profile.bio = bio
+            db.session.commit()
+
+    def test_public_profile_escapes_bio(self, client, sample_user, app):
+        self._set_bio(app, sample_user.id, self._EVIL_BIO)
+        r = client.get(f'/profile/{sample_user.handle}')
+        assert r.status_code == 200
+        assert b'<script>alert("pwned")' not in r.data
+        assert b'<img src=x' not in r.data
+        assert b'&lt;script&gt;' in r.data
+        assert b'&lt;img src=x onerror=alert(2)&gt;' in r.data
+        # Newlines still render as line breaks.
+        assert b'Hello<br>&lt;script&gt;' in r.data
+
+    def test_own_profile_view_escapes_bio(
+            self, logged_in_user, client, sample_user, app):
+        self._set_bio(app, sample_user.id, self._EVIL_BIO)
+        r = logged_in_user.get('/profile/')
+        assert r.status_code == 200
+        assert b'<script>alert("pwned")' not in r.data
+        assert b'<img src=x' not in r.data
+        assert b'&lt;script&gt;' in r.data
+
+    def test_nl2br_filter(self, app):
+        nl2br = app.jinja_env.filters['nl2br']
+        assert str(nl2br(None)) == ''
+        assert str(nl2br('')) == ''
+        assert str(nl2br('a\nb')) == 'a<br>b'
+        assert str(nl2br('<b>x</b>')) == '&lt;b&gt;x&lt;/b&gt;'
+
 class TestProfileLinkedInFields:
     """M0: the LinkedIn-style fields must actually persist (they were
     silently discarded before — setup even crashed with a TypeError)."""

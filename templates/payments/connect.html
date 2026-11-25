@@ -1,41 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}Payout setup{% endblock %}
+{% block title %}{{ _('Payout setup') }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-7">
-            <h1 class="mb-4"><i class="fas fa-wallet"></i> Payout setup</h1>
+            <h1 class="mb-4"><i class="fas fa-wallet"></i> {{ _('Payout setup') }}</h1>
 
             {% if not payments_enabled %}
             <div class="alert alert-warning">
-                Payments are currently unavailable. Payout setup will be
-                available again once payments are re-enabled.
+                {{ _('Payments are currently unavailable. Payout setup will be available again once payments are re-enabled.') }}
             </div>
             {% endif %}
 
             {% if not account %}
             <div class="card">
                 <div class="card-body">
-                    <h5>Set up how you get paid</h5>
+                    <h5>{{ _('Set up how you get paid') }}</h5>
                     <p class="text-muted">
-                        Payouts go through Stripe Connect. You will be taken
-                        to Stripe to verify your identity and add your bank
-                        details — Paid2Match never sees your banking
-                        information.
+                        {{ _('Payouts go through Stripe Connect. You will be taken to Stripe to verify your identity and add your bank details — Paid2Match never sees your banking information.') }}
                     </p>
                     {% if payouts_pending %}
                     <div class="alert alert-info">
-                        You have {{ payouts_pending }} payout(s) waiting on
-                        payout setup — they will be released automatically
-                        once your Stripe account is ready.
+                        {{ _('You have %(count)s payout(s) waiting on payout setup — they will be released automatically once your Stripe account is ready.', count=payouts_pending) }}
                     </div>
                     {% endif %}
                     <form method="POST" action="{{ url_for('payments.connect_start') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary" {% if not payments_enabled %}disabled{% endif %}>
-                            Set up payouts with Stripe
+                            {{ _('Set up payouts with Stripe') }}
                         </button>
                     </form>
                 </div>
@@ -43,46 +37,45 @@
             {% elif account.is_ready %}
             <div class="card border-success">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> Payouts are set up</h5>
+                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> {{ _('Payouts are set up') }}</h5>
                 </div>
                 <div class="card-body">
-                    <p>Your Stripe account is ready — payouts can be sent to you.</p>
+                    <p>{{ _('Your Stripe account is ready — payouts can be sent to you.') }}</p>
                     <table class="table table-sm mb-0">
                         <tr>
-                            <td><strong>Charges enabled:</strong></td>
-                            <td>{{ 'Yes' if account.charges_enabled else 'No' }}</td>
+                            <td><strong>{{ _('Charges enabled:') }}</strong></td>
+                            <td>{{ _('Yes') if account.charges_enabled else _('No') }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Payouts enabled:</strong></td>
-                            <td>{{ 'Yes' if account.payouts_enabled else 'No' }}</td>
+                            <td><strong>{{ _('Payouts enabled:') }}</strong></td>
+                            <td>{{ _('Yes') if account.payouts_enabled else _('No') }}</td>
                         </tr>
                         {% if account.last_payout_at %}
                         <tr>
-                            <td><strong>Last bank payout:</strong></td>
+                            <td><strong>{{ _('Last bank payout:') }}</strong></td>
                             <td>
                                 ${{ "{:,.2f}".format(account.last_payout_amount) }} CAD
-                                on {{ account.last_payout_at.strftime('%B %d, %Y') }}
+                                {{ _('on') }} {{ account.last_payout_at.strftime('%B %d, %Y') }}
                             </td>
                         </tr>
                         {% endif %}
                     </table>
                     <a href="{{ url_for('payments.payout_dashboard') }}" class="btn btn-outline-primary mt-3">
-                        View my payouts
+                        {{ _('View my payouts') }}
                     </a>
                 </div>
             </div>
             {% else %}
             <div class="card border-warning">
                 <div class="card-header bg-warning">
-                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Payout setup in progress</h5>
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> {{ _('Payout setup in progress') }}</h5>
                 </div>
                 <div class="card-body">
                     <p>
-                        Your Stripe account is not ready yet. Please finish
-                        the remaining steps in Stripe.
+                        {{ _('Your Stripe account is not ready yet. Please finish the remaining steps in Stripe.') }}
                     </p>
                     {% if account.requirements_list %}
-                    <p class="mb-1"><strong>Stripe still needs:</strong></p>
+                    <p class="mb-1"><strong>{{ _('Stripe still needs:') }}</strong></p>
                     <ul>
                         {% for req in account.requirements_list %}
                         <li><code>{{ req }}</code></li>
@@ -91,23 +84,23 @@
                     {% endif %}
                     <table class="table table-sm">
                         <tr>
-                            <td><strong>Details submitted:</strong></td>
-                            <td>{{ 'Yes' if account.details_submitted else 'No' }}</td>
+                            <td><strong>{{ _('Details submitted:') }}</strong></td>
+                            <td>{{ _('Yes') if account.details_submitted else _('No') }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Charges enabled:</strong></td>
-                            <td>{{ 'Yes' if account.charges_enabled else 'No' }}</td>
+                            <td><strong>{{ _('Charges enabled:') }}</strong></td>
+                            <td>{{ _('Yes') if account.charges_enabled else _('No') }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Payouts enabled:</strong></td>
-                            <td>{{ 'Yes' if account.payouts_enabled else 'No' }}</td>
+                            <td><strong>{{ _('Payouts enabled:') }}</strong></td>
+                            <td>{{ _('Yes') if account.payouts_enabled else _('No') }}</td>
                         </tr>
                     </table>
                     <a href="{{ url_for('payments.connect_refresh') }}" class="btn btn-primary">
-                        Continue setup in Stripe
+                        {{ _('Continue setup in Stripe') }}
                     </a>
                     <a href="{{ url_for('payments.connect_return') }}" class="btn btn-outline-secondary">
-                        I finished — check my status
+                        {{ _('I finished — check my status') }}
                     </a>
                 </div>
             </div>

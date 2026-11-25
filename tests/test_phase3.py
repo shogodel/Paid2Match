@@ -311,6 +311,47 @@ class TestDigest:
         assert outbox[0].subject == 'Your week on Paid2Match'
         assert 'Your week' in outbox[0].body
 
+    def test_digest_excludes_unsecured_needs(self, app, sample_user,
+                                             second_user):
+        # An unsecured paid need in one of the user's spaces must not
+        # leak into the digest; once secured it appears.
+        from models.space import Space, SpaceMembership
+        from models.user import User
+        from utils.digest import build_digest
+        from utils.feed import create_need_post
+        with app.app_context():
+            space = Space(
+                slug='tech', name='Tech & Software',
+                description='Seeded space.')
+            db.session.add(space)
+            db.session.flush()
+            db.session.add(SpaceMembership(
+                user_id=sample_user.id, space_id=space.id))
+            bounty = Bounty(
+                poster_id=second_user.id,
+                title='Digest-leak need, paid and unsecured',
+                description='A need that must stay out of digests.',
+                bounty_type='recruitment',
+                bounty_direction='seeking_opportunity',
+                reward_amount=2000, status='open',
+                payment_status='unsecured', is_free=False)
+            db.session.add(bounty)
+            db.session.flush()
+            post = create_need_post(bounty)
+            post.space_id = space.id
+            db.session.commit()
+            user = db.session.get(User, sample_user.id)
+            with app.test_request_context(
+                    base_url='https://paid2match.work'):
+                _subject, body = build_digest(user)
+            assert 'Digest-leak need' not in body
+            bounty.payment_status = 'secured'
+            db.session.commit()
+            with app.test_request_context(
+                    base_url='https://paid2match.work'):
+                _subject, body = build_digest(user)
+            assert 'Digest-leak need, paid and unsecured' in body
+
 
 # ---------------------------------------------------------------- trust visibility
 

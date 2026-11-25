@@ -53,7 +53,7 @@ function copyLink() {
     copyText.select();
     copyText.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(copyText.value);
-    alert('Link copied to clipboard!');
+    alert('{{ _('Link copied to clipboard!') }}');
 }
 </script>
 {% endblock %}

@@ -70,6 +70,60 @@ class TestAdminChangeEmail:
             assert AuditLog.query.filter_by(
                 action='change_user_email').count() == 0
 
+    def test_change_email_duplicate_case_insensitive_rejected(
+            self, logged_in_admin, client, app, sample_user):
+        # Another user's row holds a mixed-case email; '=' is
+        # case-sensitive, so a plain filter_by would miss the clash
+        # and create two accounts for the same address.
+        from werkzeug.security import generate_password_hash
+        with app.app_context():
+            other = User(
+                email='MixedCase@Example.com',
+                full_name='Mixed Case',
+                password_hash=generate_password_hash('x'),
+                role='user', is_active=True, email_verified=True,
+            )
+            db.session.add(other)
+            db.session.commit()
+        r = logged_in_admin.post(
+            f'/admin/users/{sample_user.id}/change-email',
+            data={'new_email': 'mixedcase@example.com'},
+            follow_redirects=False)
+        assert r.status_code == 302
+        with app.app_context():
+            assert db.session.get(User, sample_user.id).email == \
+                sample_user.email
+            assert AuditLog.query.filter_by(
+                action='change_user_email').count() == 0
+
+    def test_change_email_same_address_different_case_is_noop(
+            self, logged_in_admin, client, app):
+        # The user's own email in a different case is the same
+        # address — not a change (and not a re-verification reset).
+        from werkzeug.security import generate_password_hash
+        with app.app_context():
+            user = User(
+                email='MixedCase@Example.com',
+                full_name='Mixed Case',
+                password_hash=generate_password_hash('x'),
+                role='user', is_active=True, email_verified=True,
+            )
+            db.session.add(user)
+            db.session.commit()
+            user_id = user.id
+        r = logged_in_admin.post(
+            f'/admin/users/{user_id}/change-email',
+            data={'new_email': 'mixedcase@example.com'},
+            follow_redirects=True)
+        assert r.status_code == 200
+        assert b'already the user' in r.data
+        with app.app_context():
+            user = db.session.get(User, user_id)
+            assert user.email == 'MixedCase@Example.com'
+            assert user.email_verified is True
+            assert AuditLog.query.filter_by(
+                action='change_user_email').count() == 0
+
     def test_change_email_invalid_rejected(
             self, logged_in_admin, client, app, sample_user):
         r = logged_in_admin.post(

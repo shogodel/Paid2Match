@@ -54,7 +54,7 @@
     </div>
 
     <div class="mb-3">
-        <span class="badge bg-primary">{{ pagination.total }} Services Needs</span>
+        <span class="badge bg-primary">{{ ngettext('%(num)s Services Need', '%(num)s Services Needs', pagination.total) }}</span>
     </div>
 
     {% if bounties %}
@@ -76,7 +76,7 @@
                                 {% if bounty.reward_amount and bounty.reward_amount > 0 %}
                                     {{ bounty.reward_amount|money(bounty.currency) }}
                                 {% else %}
-                                    Free
+                                    {{ _('Free') }}
                                 {% endif %}
                             </span>
                             {% if bounty.location %}
