@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /messages/
+Disallow: /payments/
+Disallow: /profile/linked
+Disallow: /social/notifications
+Disallow: /social/analytics
+Disallow: /referrals/
+Disallow: /stakes/
+Disallow: /video-vouches/
+
+Sitemap: https://paid2match.work/sitemap.xml

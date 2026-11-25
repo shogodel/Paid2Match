@@ -1,6 +1,6 @@
 """Flask application factory."""
 import os
-from flask import Flask, flash, g, jsonify, render_template, redirect, url_for, session, request
+from flask import Flask, Response, flash, g, jsonify, render_template, redirect, url_for, session, request
 from flask_login import current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -409,6 +409,81 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
             'Content-Type': 'application/javascript',
             'Cache-Control': 'no-cache',
         }
+
+    # SEO: robots.txt and the sitemap must be served from the site
+    # root. robots.txt is a static file; the sitemap is generated
+    # dynamically so it grows as public content is created.
+    @app.route('/robots.txt')
+    def robots():
+        return app.send_static_file('robots.txt'), 200, {
+            'Content-Type': 'text/plain',
+        }
+
+    @app.route('/sitemap.xml')
+    def sitemap():
+        from models.space import Space
+        from models.post import Post
+        from models.bounty import Bounty
+        from models.user import User
+        from models.profile import Profile
+        urls = [
+            ('/', 'daily', '1.0'),
+            ('/needs/', 'daily', '0.9'),
+            ('/wins/', 'daily', '0.8'),
+            ('/pledge/', 'weekly', '0.7'),
+            ('/intros/', 'daily', '0.8'),
+            ('/social/spaces', 'weekly', '0.8'),
+            ('/social/people', 'weekly', '0.7'),
+        ]
+        for space in Space.query.order_by(Space.name).all():
+            urls.append((f'/social/spaces/{space.slug}', 'daily', '0.8'))
+        # Open, publicly visible needs only — the exact filter the board
+        # itself uses (status open, deadline not passed,
+        # publicly_visible_filter()). url_slug is '<slug>-<shortcode>';
+        # never list the old /bounties/ URLs (they 301) or bare UUIDs.
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        for bounty in Bounty.query.filter(
+            Bounty.status == 'open',
+            db.or_(
+                Bounty.deadline.is_(None),
+                Bounty.deadline > now,
+            ),
+            Bounty.publicly_visible_filter(),
+        ).order_by(Bounty.created_at.desc()).limit(500).all():
+            urls.append((f'/needs/{bounty.url_slug}', 'weekly', '0.8'))
+        # Public handle profiles only: user must have a handle AND a
+        # profile AND privacy_level != 2 (private). Never list UUIDs.
+        for user in User.query.filter(
+            User.handle.isnot(None),
+            User.is_deleted.is_(False),
+        ).all():
+            profile = Profile.query.filter_by(user_id=user.id).first()
+            if profile and profile.privacy_level != 2:
+                urls.append((f'/profile/{user.handle}', 'weekly', '0.6'))
+        # Public posts only: not hidden AND publicly visible to a
+        # stranger. A post linked to an unsecured paid bounty is not
+        # public (`_post_is_public` in blueprints/social/routes.py —
+        # same rule as the bounty detail page), so check the linked
+        # bounty's is_publicly_visible; posts with no bounty are public.
+        for post in Post.query.filter_by(is_hidden=False).order_by(
+            Post.created_at.desc()
+        ).limit(500).all():
+            if post.bounty is None or post.bounty.is_publicly_visible:
+                urls.append((f'/social/posts/{post.id}', 'weekly', '0.6'))
+        base = 'https://paid2match.work'
+        items = ''.join(
+            f'<url><loc>{base}{path}</loc>'
+            f'<changefreq>{freq}</changefreq>'
+            f'<priority>{prio}</priority></url>'
+            for path, freq, prio in urls
+        )
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            f'{items}</urlset>'
+        )
+        return Response(xml, mimetype='application/xml')
 
     @app.route('/offline')
     def offline():
