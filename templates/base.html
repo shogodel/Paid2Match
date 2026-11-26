@@ -125,6 +125,7 @@
                     <li class="nav-item d-lg-none">
                         <a class="nav-link" href="{{ url_for('messages.inbox') }}">
                             {{ icon('message-circle', 18) }} {{ _('Messages') }}
+                            {% if unread_messages %}<span class="badge bg-primary ms-1">{{ unread_messages if unread_messages <= 99 else '99+' }}</span>{% endif %}
                         </a>
                     </li>
                     <li class="nav-item d-lg-none">
@@ -244,6 +245,7 @@
                     <li class="nav-item d-none d-lg-block">
                         <a class="nav-icon-btn" href="{{ url_for('messages.inbox') }}" aria-label="{{ _('Messages') }}">
                             {{ icon('message-circle', 20) }}
+                            {% if unread_messages %}<span class="nav-badge" id="nav-messages-badge">{{ unread_messages if unread_messages <= 99 else '99+' }}</span>{% endif %}
                         </a>
                     </li>
                     {% else %}
@@ -407,6 +409,10 @@
         <a class="tab-item {{ 'active' if request.endpoint == 'social.notifications' }}" href="{{ url_for('social.notifications') }}">
             {{ icon('bell', 22) }}<span>{{ _('Alerts') }}</span>
             {% if unread_notifications %}<span class="tab-badge">{{ unread_notifications if unread_notifications <= 99 else '99+' }}</span>{% endif %}
+        </a>
+        <a class="tab-item {{ 'active' if request.endpoint in ('messages.inbox', 'messages.thread', 'messages.sent', 'messages.compose') }}" href="{{ url_for('messages.inbox') }}">
+            {{ icon('message-circle', 22) }}<span>{{ _('Messages') }}</span>
+            {% if unread_messages %}<span class="tab-badge">{{ unread_messages if unread_messages <= 99 else '99+' }}</span>{% endif %}
         </a>
         <a class="tab-item {{ 'active' if request.endpoint in ('profile.view', 'profile.public_profile') }}" href="{{ url_for('profile.view') }}">
             {{ icon('user', 22) }}<span>{{ _('Profile') }}</span>

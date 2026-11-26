@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-24 15:38+0000\n"
+"POT-Creation-Date: 2026-11-26 02:57+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -251,6 +251,40 @@ msgstr ""
 
 #: blueprints/bounties/forms.py:104
 msgid "Submit Referral"
+msgstr ""
+
+#: blueprints/messages/routes.py:280 blueprints/messages/routes.py:282
+#: blueprints/messages/routes.py:438 blueprints/messages/routes.py:506
+msgid "Write a message first."
+msgstr ""
+
+#: blueprints/messages/routes.py:294 blueprints/messages/routes.py:296
+#: blueprints/messages/routes.py:448 blueprints/messages/routes.py:513
+msgid "You cannot message this user."
+msgstr ""
+
+#: blueprints/messages/routes.py:324 blueprints/messages/routes.py:540
+msgid "Reply sent!"
+msgstr ""
+
+#: blueprints/messages/routes.py:395 blueprints/messages/routes.py:397
+msgid "You cannot delete this message."
+msgstr ""
+
+#: blueprints/messages/routes.py:407
+msgid "Message deleted."
+msgstr ""
+
+#: blueprints/messages/routes.py:432
+msgid "User not found"
+msgstr ""
+
+#: blueprints/messages/routes.py:469
+msgid "Message sent!"
+msgstr ""
+
+#: blueprints/messages/routes.py:483 blueprints/messages/routes.py:501
+msgid "Access denied"
 msgstr ""
 
 #: blueprints/profile/forms.py:13 templates/profile/setup.html:36
@@ -509,8 +543,8 @@ msgstr ""
 msgid "Poll options (one per line)"
 msgstr ""
 
-#: blueprints/social/forms.py:44 templates/base.html:185
-#: templates/base.html:379 templates/base.html:380
+#: blueprints/social/forms.py:44 templates/base.html:193
+#: templates/base.html:406 templates/base.html:407
 #: templates/social/_composer.html:92 templates/social/_post_card.html:164
 #: templates/social/analytics.html:84 templates/social/analytics.html:113
 #: templates/social/post_detail.html:2
@@ -712,12 +746,12 @@ msgstr ""
 msgid "Video removed."
 msgstr ""
 
-#: models/bounty.py:29 templates/base.html:107 templates/base.html:338
+#: models/bounty.py:29 templates/base.html:107 templates/base.html:365
 #: templates/bounties/board.html:30
 msgid "Recruitment"
 msgstr ""
 
-#: models/bounty.py:30 templates/base.html:108 templates/base.html:341
+#: models/bounty.py:30 templates/base.html:108 templates/base.html:368
 #: templates/bounties/board.html:31
 msgid "Services"
 msgstr ""
@@ -891,11 +925,11 @@ msgstr ""
 msgid "Hired candidate"
 msgstr ""
 
-#: templates/base.html:73 templates/base.html:250
+#: templates/base.html:73 templates/base.html:259
 msgid "Toggle dark mode"
 msgstr ""
 
-#: templates/base.html:87 templates/base.html:374 templates/social/feed.html:3
+#: templates/base.html:87 templates/base.html:401 templates/social/feed.html:3
 #: templates/social/feed.html:37 tests/test_phase2.py:169
 msgid "Feed"
 msgstr ""
@@ -906,7 +940,7 @@ msgstr ""
 msgid "People"
 msgstr ""
 
-#: templates/base.html:97 templates/base.html:142
+#: templates/base.html:97 templates/base.html:143
 #: templates/social/spaces.html:3 templates/social/spaces.html:6
 msgid "Spaces"
 msgstr ""
@@ -920,177 +954,177 @@ msgstr ""
 msgid "All Opportunities"
 msgstr ""
 
-#: templates/base.html:109 templates/base.html:344
+#: templates/base.html:109 templates/base.html:371
 #: templates/social/pledges.html:2 templates/social/pledges.html:5
 msgid "Human-reviewed hiring pledge"
 msgstr ""
 
-#: templates/base.html:110 templates/base.html:347
+#: templates/base.html:110 templates/base.html:374
 msgid "Employer pledge register"
 msgstr ""
 
-#: templates/base.html:116 templates/base.html:178
+#: templates/base.html:116 templates/base.html:186
 #: templates/bounties/board.html:43
 #: templates/bounties/recruitment_board.html:21
-#: templates/bounties/services_board.html:21 templates/social/people.html:17
-#: templates/social/search.html:3 templates/social/search.html:9
-#: templates/social/search.html:12 templates/social/search.html:13
+#: templates/bounties/services_board.html:21 templates/messages/inbox.html:20
+#: templates/social/people.html:17 templates/social/search.html:3
+#: templates/social/search.html:9 templates/social/search.html:12
+#: templates/social/search.html:13
 msgid "Search"
 msgstr ""
 
-#: templates/base.html:121 templates/base.html:199 templates/base.html:208
+#: templates/base.html:121 templates/base.html:207 templates/base.html:216
 #: templates/social/notifications.html:3 templates/social/notifications.html:10
 msgid "Notifications"
 msgstr ""
 
-#: templates/base.html:127 templates/base.html:238
+#: templates/base.html:127 templates/base.html:246 templates/base.html:414
 #: templates/messages/inbox.html:3 templates/messages/index.html:3
 #: templates/messages/index.html:7
 msgid "Messages"
 msgstr ""
 
-#: templates/base.html:132 templates/base.html:277 templates/base.html:387
+#: templates/base.html:133 templates/base.html:286 templates/base.html:418
 #: templates/profile/public.html:3 templates/profile/view.html:87
 msgid "Profile"
 msgstr ""
 
-#: templates/base.html:137 templates/base.html:278
+#: templates/base.html:138 templates/base.html:287
 #: templates/social/saved.html:3
 msgid "Saved"
 msgstr ""
 
-#: templates/base.html:147 templates/base.html:279
+#: templates/base.html:148 templates/base.html:288
 msgid "My Referrals"
 msgstr ""
 
-#: templates/base.html:152 templates/base.html:280
+#: templates/base.html:153 templates/base.html:289
 #: templates/stakes/my_stakes.html:3 templates/stakes/my_stakes.html:6
 msgid "My Stakes"
 msgstr ""
 
-#: templates/base.html:157 templates/base.html:293
+#: templates/base.html:159 templates/base.html:294
+msgid "Admin"
+msgstr ""
+
+#: templates/base.html:165 templates/base.html:302
 msgid "Logout"
 msgstr ""
 
-#: templates/base.html:162 templates/base.html:256
+#: templates/base.html:170 templates/base.html:265
 msgid "Language"
 msgstr ""
 
-#: templates/base.html:178
+#: templates/base.html:186
 msgid "Search people, posts, opportunities…"
 msgstr ""
 
-#: templates/base.html:209 templates/social/notifications.html:14
+#: templates/base.html:217 templates/social/notifications.html:14
 msgid "Mark all read"
 msgstr ""
 
-#: templates/base.html:215 templates/messages/inbox.html:26
-#: templates/social/notifications.html:48
+#: templates/base.html:223 templates/social/notifications.html:48
 msgid "New"
 msgstr ""
 
-#: templates/base.html:223 templates/social/notifications.html:55
+#: templates/base.html:231 templates/social/notifications.html:55
 msgid "Earlier"
 msgstr ""
 
-#: templates/base.html:231
+#: templates/base.html:239
 msgid "No notifications yet."
 msgstr ""
 
-#: templates/base.html:234
+#: templates/base.html:242
 msgid "View all notifications"
 msgstr ""
 
-#: templates/auth/login.html:3 templates/base.html:244
+#: templates/auth/login.html:3 templates/base.html:253
 msgid "Login"
 msgstr ""
 
-#: templates/base.html:268
+#: templates/base.html:277
 msgid "Account menu"
 msgstr ""
 
-#: templates/base.html:281 templates/social/notifications.html:29
+#: templates/base.html:290 templates/social/notifications.html:29
 msgid "Payouts"
 msgstr ""
 
-#: templates/base.html:282
+#: templates/base.html:291
 msgid "Analytics"
 msgstr ""
 
-#: templates/base.html:283 templates/social/analytics.html:105
+#: templates/base.html:292 templates/social/analytics.html:105
 #: templates/social/analytics.html:243
 msgid "Pro"
 msgstr ""
 
-#: templates/base.html:285
-msgid "Admin"
-msgstr ""
-
-#: templates/base.html:288
+#: templates/base.html:297
 msgid "Appearance"
 msgstr ""
 
-#: templates/base.html:289
+#: templates/base.html:298
 msgid "Light"
 msgstr ""
 
-#: templates/base.html:290
+#: templates/base.html:299
 msgid "Dark"
 msgstr ""
 
-#: templates/base.html:291
+#: templates/base.html:300
 msgid "System"
 msgstr ""
 
-#: templates/base.html:331
+#: templates/base.html:358
 msgid "Connecting talent with opportunity across the globe."
 msgstr ""
 
-#: templates/base.html:335
+#: templates/base.html:362
 msgid "Our Opportunities"
 msgstr ""
 
-#: templates/base.html:353
+#: templates/base.html:380
 msgid "Legal"
 msgstr ""
 
-#: templates/auth/settings.html:40 templates/base.html:355
+#: templates/auth/settings.html:40 templates/base.html:382
 #: templates/help.html:3 templates/help.html:9
 msgid "Help"
 msgstr ""
 
-#: templates/base.html:356 templates/legal/privacy.html:3
+#: templates/base.html:383 templates/legal/privacy.html:3
 #: templates/legal/privacy.html:9
 msgid "Privacy Policy"
 msgstr ""
 
-#: templates/base.html:357 templates/legal/terms.html:3
+#: templates/base.html:384 templates/legal/terms.html:3
 #: templates/legal/terms.html:9
 msgid "Terms of Service"
 msgstr ""
 
-#: templates/base.html:358 templates/legal/cookies.html:3
+#: templates/base.html:385 templates/legal/cookies.html:3
 #: templates/legal/cookies.html:9
 msgid "Cookie Policy"
 msgstr ""
 
-#: templates/base.html:364
+#: templates/base.html:391
 msgid "All rights reserved."
 msgstr ""
 
-#: templates/base.html:365
+#: templates/base.html:392
 msgid "Made in Canada"
 msgstr ""
 
-#: templates/base.html:372
+#: templates/base.html:399
 msgid "Primary"
 msgstr ""
 
-#: templates/base.html:377
+#: templates/base.html:404
 msgid "Discover"
 msgstr ""
 
-#: templates/base.html:383
+#: templates/base.html:410
 msgid "Alerts"
 msgstr ""
 
@@ -1401,7 +1435,7 @@ msgstr ""
 #: templates/bounties/edit.html:142 templates/bounties/post.html:266
 #: templates/bounties/rate.html:48
 #: templates/bounties/secure_third_party.html:54
-#: templates/intro_bounties/new.html:47 templates/messages/compose.html:27
+#: templates/intro_bounties/new.html:47 templates/messages/compose.html:37
 #: templates/referrals/refer_form.html:44 templates/social/_composer.html:91
 #: templates/social/convert.html:37 templates/social/post_form.html:62
 #: templates/social/report_form.html:20
@@ -1947,7 +1981,7 @@ msgid "Referred %(date)s"
 msgstr ""
 
 #: templates/bounties/detail.html:294 templates/bounties/detail.html:296
-#: templates/messages/compose.html:21 templates/profile/public.html:50
+#: templates/messages/compose.html:31 templates/profile/public.html:50
 msgid "Message"
 msgstr ""
 
@@ -2944,6 +2978,19 @@ msgstr ""
 msgid "Changes"
 msgstr ""
 
+#: templates/messages/_message.html:6
+msgid "You"
+msgstr ""
+
+#: templates/messages/_message.html:11
+msgid "Seen"
+msgstr ""
+
+#: templates/messages/_message.html:16 templates/social/_post_card.html:56
+#: templates/social/post_detail.html:17
+msgid "Delete"
+msgstr ""
+
 #: templates/messages/compose.html:3
 msgid "Compose Message"
 msgstr ""
@@ -2952,12 +2999,32 @@ msgstr ""
 msgid "New Message"
 msgstr ""
 
+#: templates/messages/compose.html:13
+msgid "Find someone"
+msgstr ""
+
+#: templates/messages/compose.html:14
+msgid "Type a name, handle or email..."
+msgstr ""
+
 #: templates/messages/compose.html:16
-msgid "To (Email)"
+msgid "Pick a person to open a conversation with them."
+msgstr ""
+
+#: templates/messages/compose.html:20
+msgid "Or send by email:"
 msgstr ""
 
 #: templates/messages/compose.html:26
+msgid "To (Email)"
+msgstr ""
+
+#: templates/messages/compose.html:36
 msgid "Send"
+msgstr ""
+
+#: templates/messages/compose.html:63
+msgid "No matches found."
 msgstr ""
 
 #: templates/messages/inbox.html:10 templates/messages/sent.html:11
@@ -2969,7 +3036,28 @@ msgstr ""
 msgid "Sent"
 msgstr ""
 
-#: templates/messages/inbox.html:31
+#: templates/messages/inbox.html:19
+msgid "Search messages or people..."
+msgstr ""
+
+#: templates/messages/inbox.html:19
+msgid "Search messages"
+msgstr ""
+
+#: templates/messages/inbox.html:21
+msgid "Clear"
+msgstr ""
+
+#: templates/messages/inbox.html:43 templates/payments/payouts.html:113
+#: templates/referrals/detail.html:2 templates/referrals/detail.html:9
+msgid "Referral"
+msgstr ""
+
+#: templates/messages/inbox.html:46
+msgid "You:"
+msgstr ""
+
+#: templates/messages/inbox.html:55
 msgid "No messages yet."
 msgstr ""
 
@@ -2981,15 +3069,15 @@ msgstr ""
 msgid "From:"
 msgstr ""
 
-#: templates/messages/read.html:15
+#: templates/messages/read.html:15 templates/messages/thread.html:23
 msgid "Back"
 msgstr ""
 
-#: templates/messages/read.html:18
+#: templates/messages/read.html:18 templates/messages/thread.html:51
 msgid "Write a reply..."
 msgstr ""
 
-#: templates/messages/read.html:19
+#: templates/messages/read.html:19 templates/messages/thread.html:52
 msgid "Send Reply"
 msgstr ""
 
@@ -3003,6 +3091,35 @@ msgstr ""
 
 #: templates/messages/sent.html:27
 msgid "No sent messages."
+msgstr ""
+
+#: templates/messages/thread.html:3
+#, python-format
+msgid "Conversation with %(name)s"
+msgstr ""
+
+#: templates/messages/thread.html:18
+msgid "About:"
+msgstr ""
+
+#: templates/messages/thread.html:20
+msgid "Referral conversation"
+msgstr ""
+
+#: templates/messages/thread.html:30 templates/messages/thread.html:42
+msgid "Could not send — try again."
+msgstr ""
+
+#: templates/messages/thread.html:31 templates/messages/thread.html:43
+msgid "Could not delete."
+msgstr ""
+
+#: templates/messages/thread.html:32 templates/messages/thread.html:44
+msgid "Delete this message?"
+msgstr ""
+
+#: templates/messages/thread.html:38 templates/referrals/detail.html:47
+msgid "No messages yet — start the conversation below."
 msgstr ""
 
 #: templates/partials/hiring_strip.html:10
@@ -3452,11 +3569,6 @@ msgstr ""
 
 #: templates/payments/payouts.html:111
 msgid "Chain share"
-msgstr ""
-
-#: templates/payments/payouts.html:113 templates/referrals/detail.html:2
-#: templates/referrals/detail.html:9
-msgid "Referral"
 msgstr ""
 
 #: templates/payments/payouts.html:128
@@ -4337,10 +4449,6 @@ msgstr ""
 msgid "Conversation about this referral"
 msgstr ""
 
-#: templates/referrals/detail.html:47
-msgid "No messages yet — start the conversation below."
-msgstr ""
-
 #: templates/referrals/detail.html:53
 msgid "Message about this referral…"
 msgstr ""
@@ -4520,10 +4628,6 @@ msgstr ""
 
 #: templates/social/_post_card.html:55
 msgid "Bump / boost"
-msgstr ""
-
-#: templates/social/_post_card.html:56 templates/social/post_detail.html:17
-msgid "Delete"
 msgstr ""
 
 #: templates/social/_post_card.html:59

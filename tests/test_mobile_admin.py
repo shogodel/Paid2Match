@@ -147,7 +147,7 @@ class TestAdminMobileCss:
     def test_service_worker_cache_bumped(self, client):
         r = client.get('/sw.js')
         assert r.status_code == 200
-        assert 'p2m-v3' in r.data.decode()
+        assert 'p2m-v4' in r.data.decode()
 
 
 class TestAdminLinkInMobileMenu:

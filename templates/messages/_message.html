@@ -1,0 +1,19 @@
+{# One message bubble. Used by the server-rendered thread view and
+   by the AJAX send / polling responses (rendered server-side, so the
+   client just appends the HTML). Expects ``msg`` and ``current_user``. #}
+<div class="list-group-item {{ 'text-end' if msg.sender_id == current_user.id }}" data-message-id="{{ msg.id }}">
+    <div class="d-flex justify-content-between gap-2 {{ 'flex-row-reverse' if msg.sender_id == current_user.id }}">
+        <strong>{{ _('You') if msg.sender_id == current_user.id else msg.sender.full_name }}</strong>
+        <small class="text-muted">{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+    </div>
+    <p class="mb-0">{{ msg.content }}</p>
+    {% if msg.sender_id == current_user.id and msg.read_at %}
+    <small class="text-muted message-seen">{{ _('Seen') }} {{ msg.read_at.strftime('%Y-%m-%d %H:%M') }}</small>
+    {% endif %}
+    {% if msg.sender_id == current_user.id %}
+    <form method="POST" action="{{ url_for('messages.delete_message', message_id=msg.id) }}" class="message-delete-form d-inline">
+        {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+        <button type="submit" class="btn btn-link btn-sm text-muted p-0 message-delete-btn">{{ _('Delete') }}</button>
+    </form>
+    {% endif %}
+</div>

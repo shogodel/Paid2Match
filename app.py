@@ -309,13 +309,18 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
         from utils.notifications import (
             recent_notifications, unread_count,
         )
+        from models.message import Message
         if not current_user.is_authenticated:
             return {
                 'unread_notifications': 0,
+                'unread_messages': 0,
                 'recent_notifications': [],
             }
         return {
             'unread_notifications': unread_count(current_user.id),
+            'unread_messages': Message.query.filter_by(
+                recipient_id=current_user.id, is_read=False,
+            ).count(),
             'recent_notifications': recent_notifications(
                 current_user.id, limit=10,
             ),

@@ -3,12 +3,22 @@
 {% block title %}{{ _('Compose Message') }}{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container messages-view">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">{{ _('New Message') }}</div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="user-search">{{ _('Find someone') }}</label>
+                        <input type="text" id="user-search" class="form-control" autocomplete="off" placeholder="{{ _('Type a name, handle or email...') }}">
+                        <div id="user-search-results" class="list-group mt-1"></div>
+                        <small class="text-muted">{{ _('Pick a person to open a conversation with them.') }}</small>
+                    </div>
+
+                    <hr>
+                    <p class="text-muted">{{ _('Or send by email:') }}</p>
+
                     <form method="POST">
                         {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
 
@@ -32,4 +42,71 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var input = document.getElementById('user-search');
+    var results = document.getElementById('user-search-results');
+    if (!input || !results || typeof apiRequest !== 'function') {
+        return;
+    }
+    var timer = null;
+    var lastQuery = '';
+
+    function render(users) {
+        results.innerHTML = '';
+        if (!users.length) {
+            var empty = document.createElement('div');
+            empty.className = 'list-group-item text-muted';
+            empty.textContent = '{{ _('No matches found.') }}';
+            results.appendChild(empty);
+            return;
+        }
+        users.forEach(function (u) {
+            var item = document.createElement('a');
+            item.className = 'list-group-item list-group-item-action';
+            item.href = '/messages/thread/' + encodeURIComponent(u.id);
+            var name = document.createElement('strong');
+            name.textContent = u.full_name || u.email;
+            item.appendChild(name);
+            if (u.handle) {
+                var handle = document.createElement('small');
+                handle.className = 'text-muted';
+                handle.textContent = ' @' + u.handle;
+                item.appendChild(handle);
+            }
+            var email = document.createElement('div');
+            email.className = 'text-muted small';
+            email.textContent = u.email;
+            item.appendChild(email);
+            results.appendChild(item);
+        });
+    }
+
+    input.addEventListener('input', function () {
+        var q = input.value.trim();
+        if (timer) {
+            clearTimeout(timer);
+        }
+        if (q.length < 2) {
+            results.innerHTML = '';
+            lastQuery = '';
+            return;
+        }
+        timer = setTimeout(function () {
+            if (q === lastQuery) {
+                return;
+            }
+            lastQuery = q;
+            apiRequest('/messages/api/users?q=' + encodeURIComponent(q), { method: 'GET' })
+                .then(render)
+                .catch(function () {
+                    results.innerHTML = '';
+                });
+        }, 200);
+    });
+})();
+</script>
 {% endblock %}

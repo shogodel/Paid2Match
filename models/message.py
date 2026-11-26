@@ -14,6 +14,7 @@ class Message(db.Model):
     pitch_id = db.Column(db.String(36), db.ForeignKey('pitches.id'), nullable=True, index=True)
     content = db.Column(db.Text, nullable=False)
     is_read = db.Column(db.Boolean, default=False)
+    read_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=utc_now, index=True)
 
     def __repr__(self):
@@ -28,5 +29,6 @@ class Message(db.Model):
             'pitch_id': self.pitch_id,
             'content': self.content,
             'is_read': self.is_read,
+            'read_at': self.read_at.isoformat() if self.read_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

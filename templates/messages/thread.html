@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Conversation with %(name)s', name=other_user.full_name) }}{% endblock %}
+
+{% block content %}
+<div class="container py-4 messages-view">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                {% if other_profile and other_profile.avatar_url %}
+                <img src="{{ other_profile.avatar_url }}" alt="" class="avatar avatar-48 flex-shrink-0">
+                {% else %}
+                <span class="avatar-placeholder avatar-48 flex-shrink-0 avatar-tone-{{ other_user.id|avatar_tone }}" aria-hidden="true">{{ (other_user.full_name or 'P')[0] | upper }}</span>
+                {% endif %}
+                <div class="min-w-0">
+                    <h2 class="h5 mb-0 text-truncate">{{ other_profile.display_name if other_profile and other_profile.display_name else other_user.full_name }}</h2>
+                    {% if bounty %}
+                    <small class="text-muted">{{ _('About:') }} {{ bounty.title }}</small>
+                    {% elif pitch_id %}
+                    <small class="text-muted">{{ _('Referral conversation') }}</small>
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('messages.inbox') }}" class="btn btn-secondary btn-sm ms-auto flex-shrink-0">{{ _('Back') }}</a>
+            </div>
+
+            {% if messages %}
+            <div class="list-group mb-4" id="thread-messages"
+                 data-updates-url="{{ url_for('messages.thread_updates', other_user_id=other_user.id, bounty_id=bounty_id, pitch_id=pitch_id) }}"
+                 data-last-message-id="{{ messages[-1].id }}"
+                 data-send-error="{{ _('Could not send — try again.') }}"
+                 data-delete-error="{{ _('Could not delete.') }}"
+                 data-delete-confirm="{{ _('Delete this message?') }}">
+                {% for msg in messages %}
+                {% include 'messages/_message.html' %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted" id="thread-empty">{{ _('No messages yet — start the conversation below.') }}</p>
+            <div class="list-group mb-4" id="thread-messages"
+                 data-updates-url="{{ url_for('messages.thread_updates', other_user_id=other_user.id, bounty_id=bounty_id, pitch_id=pitch_id) }}"
+                 data-last-message-id=""
+                 data-send-error="{{ _('Could not send — try again.') }}"
+                 data-delete-error="{{ _('Could not delete.') }}"
+                 data-delete-confirm="{{ _('Delete this message?') }}"></div>
+            {% endif %}
+
+            <form method="POST" id="thread-reply-form" action="{{ url_for('messages.thread', other_user_id=other_user.id, bounty_id=bounty_id, pitch_id=pitch_id) }}">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                <input type="hidden" name="bounty_id" value="{{ bounty_id or '' }}">
+                <input type="hidden" name="pitch_id" value="{{ pitch_id or '' }}">
+                <textarea name="content" id="thread-reply-content" class="form-control mb-2" rows="3" placeholder="{{ _('Write a reply...') }}" required></textarea>
+                <button class="btn btn-primary" id="thread-reply-submit">{{ _('Send Reply') }}</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

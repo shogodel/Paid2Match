@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initDelegatedActions();
     initNotificationsPanel();
     initNotificationPoll();
+    initThreadMessaging();
     initTabIndicator();
 });
 
@@ -1099,6 +1100,127 @@ function initDelegatedActions() {
             });
             return;
         }
+    });
+}
+
+// ---------------------------------------------------------------- thread messaging (AJAX)
+
+var THREAD_POLL_MS = 5000;
+
+function initThreadMessaging() {
+    var list = document.getElementById('thread-messages');
+    if (!list) return;
+    var form = document.getElementById('thread-reply-form');
+    var input = document.getElementById('thread-reply-content');
+    var submit = document.getElementById('thread-reply-submit');
+    var lastId = list.getAttribute('data-last-message-id') || '';
+    var updatesUrl = list.getAttribute('data-updates-url');
+    if (!updatesUrl) return;
+    // User-facing strings live in the template as data attributes
+    // (rendered by Jinja, so they translate); static JS has no gettext.
+    // The English literals are fallbacks only.
+    var sendError = list.getAttribute('data-send-error') || 'Could not send — try again.';
+    var deleteError = list.getAttribute('data-delete-error') || 'Could not delete.';
+    var deleteConfirm = list.getAttribute('data-delete-confirm') || 'Delete this message?';
+    var polling = false;
+
+    function scrollToBottom() {
+        var last = list.lastElementChild;
+        if (last) last.scrollIntoView({ block: 'end' });
+    }
+
+    function appendMessage(html, id) {
+        // Dedupe: a poll can re-deliver a message already on the page
+        // (same-second sends share a timestamp).
+        if (id && list.querySelector(
+            '[data-message-id="' + id + '"]'
+        )) return false;
+        var empty = document.getElementById('thread-empty');
+        if (empty) empty.remove();
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = (html || '').trim();
+        var node = wrapper.firstChild;
+        if (!node) return false;
+        list.appendChild(node);
+        if (id) lastId = id;
+        return true;
+    }
+
+    function poll() {
+        // Hidden tab: skip the request entirely (battery) — the next
+        // visible tick picks up everything missed, since `after` is
+        // the last message id actually on the page.
+        if (document.hidden || polling) return;
+        polling = true;
+        var sep = updatesUrl.indexOf('?') === -1 ? '?' : '&';
+        apiRequest(updatesUrl + sep + 'after=' + encodeURIComponent(lastId))
+            .then(function (data) {
+                var added = false;
+                (data.messages || []).forEach(function (item) {
+                    if (appendMessage(
+                        item.html, item.message && item.message.id
+                    )) added = true;
+                });
+                if (added) scrollToBottom();
+            })
+            .catch(function () { /* next poll retries */ })
+            .finally(function () { polling = false; });
+    }
+
+    setInterval(poll, THREAD_POLL_MS);
+    // Open on the latest message.
+    scrollToBottom();
+
+    // AJAX send: no page reload — the server returns the rendered
+    // bubble and the client appends it.
+    if (form && input && submit) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!input.value.trim()) return;
+            submit.disabled = true;
+            apiRequest(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+            }).then(function (data) {
+                if (appendMessage(
+                    data.html, data.message && data.message.id
+                )) scrollToBottom();
+                input.value = '';
+                input.focus();
+            }).catch(function (err) {
+                if (err.message !== 'auth') {
+                    showToast(
+                        err.message || sendError,
+                        'danger'
+                    );
+                }
+            }).finally(function () {
+                submit.disabled = false;
+            });
+        });
+    }
+
+    // Delete own message — delegated, so bubbles that arrived via
+    // polling carry a working button too. The form also works as a
+    // plain POST (redirect) when JavaScript is off.
+    document.addEventListener('submit', function (e) {
+        var delForm = e.target.closest
+            ? e.target.closest('.message-delete-form')
+            : null;
+        if (!delForm) return;
+        e.preventDefault();
+        if (!window.confirm(deleteConfirm)) return;
+        var bubble = delForm.closest('[data-message-id]');
+        apiRequest(delForm.action, {
+            method: 'POST',
+            body: new FormData(delForm),
+        }).then(function (data) {
+            if (data.ok && bubble) bubble.remove();
+        }).catch(function (err) {
+            if (err.message !== 'auth') {
+                showToast(err.message || deleteError, 'danger');
+            }
+        });
     });
 }
 

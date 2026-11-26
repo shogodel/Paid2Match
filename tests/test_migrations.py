@@ -30,12 +30,12 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         # Every table the models declare exists after the upgrade.
         expected = set(db.metadata.tables.keys())
         assert expected <= tables, f'missing tables: {expected - tables}'
-        # The head revision is the money_audit_fixes
+        # The head revision is the message_read_at
         # migration.
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()
-        assert version == 'money_audit_fixes'
+        assert version == 'message_read_at'
         # Prove the migration really ran on THIS file (not the
         # shared test DB): read the version straight out of the
         # tmp file with a fresh sqlite3 connection, bypassing the
@@ -45,7 +45,7 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
             file_version = conn.execute(
                 'SELECT version_num FROM alembic_version'
             ).fetchone()[0]
-        assert file_version == 'money_audit_fixes'
+        assert file_version == 'message_read_at'
         # Columns match the models exactly for every table.
         for table in expected:
             actual_cols = {c['name'] for c in inspector.get_columns(table)}
@@ -216,7 +216,7 @@ def test_baseline_is_the_chain_root(tmp_path):
     )
     script = ScriptDirectory.from_config(cfg)
     heads = script.get_heads()
-    assert heads == ['money_audit_fixes'], (
+    assert heads == ['message_read_at'], (
         f'multiple heads: {heads}'
     )
     roots = [r for r in script.walk_revisions() if r.down_revision is None]
@@ -295,7 +295,7 @@ def test_upgrade_tolerates_live_db_without_recruitment_check(tmp_path):
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()
-        assert version == 'money_audit_fixes'
+        assert version == 'message_read_at'
         # And a services bounty still inserts on the upgraded DB.
         from models.user import User
         from models.bounty import Bounty

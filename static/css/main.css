@@ -2590,3 +2590,33 @@ input.admin-email-input { width: 180px !important; }
     .navbar-toggler,
     .nav-icon-btn { min-height: 44px; min-width: 44px; }
 }
+
+/* ---------------- Messaging on mobile (msg-polish, 2026-11-25) ---------------- */
+/* .min-w-0 is used by the messaging templates but Bootstrap ships no such
+   utility: without it a flex child keeps min-width:auto (its min-content),
+   so a long name or a nowrap truncated preview forces the whole inbox row
+   / thread header wider than the viewport. The page clips horizontal
+   overflow (html, body { overflow-x: clip }), so the row was silently
+   sliced at the right edge instead of scrolling. min-width:0 lets the
+   flex child shrink and .text-truncate actually truncate. */
+.min-w-0 { min-width: 0; }
+
+/* Bounty titles in inbox rows are unbounded user text inside a .badge
+   (Bootstrap .badge is white-space:nowrap) — let the bounty badge wrap
+   instead of blowing the row out. Scoped to .bg-light so the unread-count
+   pill keeps its centred number. */
+.messages-view .list-group-item .badge.bg-light {
+    white-space: normal;
+    text-align: left;
+}
+
+@media (max-width: 767.98px) {
+    /* Messaging tap targets: Bootstrap .btn is 38px tall, .btn-sm 31px,
+       the delete link 23px — all below the 44px minimum. */
+    .messages-view .btn { min-height: 44px; }
+    .messages-view .message-delete-btn {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+    }
+}
