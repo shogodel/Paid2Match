@@ -5,6 +5,7 @@ from flask import Blueprint, abort, render_template, redirect, url_for, flash, r
 from flask_login import login_required, current_user
 from sqlalchemy import desc, func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from werkzeug.utils import secure_filename
 from extensions import db, get_or_404
 from models.user import User
@@ -28,6 +29,7 @@ from models.video_vouch import VideoVouch
 from blueprints.staked_vouches.routes import can_resolve as _stake_can_resolve
 from models.verification import VerificationRequest
 from utils.analytics import get_analytics
+from utils.feed import engagement_counts
 from utils.endorsements import endorsements_for, give_endorsement
 from utils.linked_accounts import (
     exchange_oauth_code,
@@ -202,7 +204,10 @@ def view():
         followed_id=current_user.id).count()
     following_count = Follow.query.filter_by(
         follower_id=current_user.id).count()
-    posts = Post.query.filter_by(
+    posts = Post.query.options(
+        selectinload(Post.author), selectinload(Post.bounty),
+        selectinload(Post.poll),
+    ).filter_by(
         author_id=current_user.id, is_hidden=False
     ).order_by(desc(Post.created_at)).limit(20).all()
     liked_ids, shared_ids = _liked_and_shared_ids([p.id for p in posts])
@@ -269,6 +274,7 @@ def view():
                         shared_ids=shared_ids,
                         saved_ids=saved_ids,
                         poll_votes=poll_votes,
+                        post_counts=engagement_counts([p.id for p in posts]),
                         author_levels=_author_levels(posts),
                         author_profiles=_author_profiles(posts),
                         share_form=ShareForm(),
@@ -375,7 +381,9 @@ def public_profile(user_id):
     level, trust_score, _breakdown = trust_level(user)
     # M2: revealed reviews + rating summary for the public card.
     reviews = revealed_reviews_for_user(user_id)
-    ratings_avg, ratings_count, _positive = ratings_summary(user_id)
+    ratings_avg, ratings_count, _positive = ratings_summary(
+        user_id, reviews=reviews
+    )
     # M3: endorsements, visible linked accounts, "Verified elsewhere"
     # marker (2+ verified links), and the user's pledge if any.
     endorsements = endorsements_for(user_id)
@@ -403,7 +411,10 @@ def public_profile(user_id):
         _author_levels, _author_profiles, _liked_and_shared_ids,
         _poll_votes, _saved_ids,
     )
-    posts = Post.query.filter_by(
+    posts = Post.query.options(
+        selectinload(Post.author), selectinload(Post.bounty),
+        selectinload(Post.poll),
+    ).filter_by(
         author_id=user_id, is_hidden=False
     ).order_by(desc(Post.created_at)).limit(20).all()
     liked_ids, shared_ids = _liked_and_shared_ids([p.id for p in posts])
@@ -457,6 +468,7 @@ def public_profile(user_id):
                         shared_ids=shared_ids,
                         saved_ids=saved_ids,
                         poll_votes=poll_votes,
+                        post_counts=engagement_counts([p.id for p in posts]),
                         author_levels=_author_levels(posts),
                         author_profiles=_author_profiles(posts),
                         share_form=ShareForm(),

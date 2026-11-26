@@ -6,11 +6,11 @@ week's stats. Sent by the ``flask send-weekly-digest`` CLI command
 (app.py) — the cron line lives in DEPLOYMENT.md.
 
 Sending follows utils/email.py conventions exactly: ``send_simple_email``
-logs a warning and returns False when MAIL_SERVER is unset, so on the
-live container (no MAIL_* env vars) the command runs, reports 0 sent,
-and does not crash. That is expected until SMTP is configured — the
-digest must never invent mail credentials or work around the missing
-config.
+logs a warning and returns False when no mail path is configured
+(neither RESEND_API_KEY nor MAIL_SERVER), so on a host with no mail
+configured the command runs, reports 0 sent, and does not crash.
+On the live container mail goes through Resend (configured since
+2026-11-23), so the digest sends for real there.
 
 Content is English, like the other transactional emails.
 """

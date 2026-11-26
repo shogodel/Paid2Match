@@ -8,7 +8,6 @@
    Expects: composer_form (PostForm), my_bounties (your open
    bounties), spaces (topic spaces for the space picker). #}
 {% from 'partials/icon.html' import icon %}
-{% set my_profile = current_user.profiles.first() %}
 <div class="composer-card" id="composer">
     <div class="composer-collapsed" id="composer-collapsed" role="button" tabindex="0" aria-label="{{ _('Write a post') }}">
         {% if my_profile and my_profile.avatar_url %}

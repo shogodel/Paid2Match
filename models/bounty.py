@@ -149,7 +149,7 @@ class Bounty(db.Model):
     is_free = db.Column(db.Boolean, default=False)
     stripe_payment_intent = db.Column(db.String(100), nullable=True)
 
-    created_at = db.Column(db.DateTime, default=utc_now)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     pitches = db.relationship('Pitch', backref='bounty', lazy='dynamic', cascade='all, delete-orphan')

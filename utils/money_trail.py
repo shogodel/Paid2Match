@@ -41,7 +41,11 @@ from models.match import Match
 from models.payout import Payout
 from models.referral import Referral
 from models.user import User
-from utils.chains import compute_chain_split, resolve_chain_sharer
+from utils.chains import (
+    _NO_REFERRAL,
+    compute_chain_split,
+    resolve_chain_sharer,
+)
 
 ROLE_LABELS = {
     'poster': _l('Posted the need'),
@@ -104,13 +108,21 @@ def _derived_amounts(match, reward, sharer_id):
     return gross, fee, referrer_amount, sharer_amount
 
 
-def build_trail(bounty, match=None):
+def build_trail(bounty, match=None, payouts=None, referral_by_pitch=None):
     """The ordered money-trail hops for a bounty, or [] when no
     hire has completed yet. Read-only — no rows are written. When
     `match` is given, the trail is built for that match — it must
     be a completed match for this bounty; anything else falls back
     to the latest completed match, so a trail is never built for
-    an uncompleted hire (the wins wall passes a story's match)."""
+    an uncompleted hire (the wins wall passes a story's match).
+
+    ``payouts`` / ``referral_by_pitch`` are bulk preloads: the wins
+    wall builds one trail per story, and without them each trail
+    issued 2 Payout queries + up to 2 Referral queries. Pass
+    ``payouts={(match_id, kind): Payout}`` and
+    ``referral_by_pitch={pitch_id: Referral | None}`` to skip those
+    lookups; both default to per-trail queries (the bounty detail
+    page builds a single trail)."""
     if match is not None and (
         match.bounty_id != bounty.id
         or not match.hunter_confirmed
@@ -126,12 +138,16 @@ def build_trail(bounty, match=None):
     is_free = bounty.is_free_bounty
     reward = Decimal(str(bounty.reward_amount or 0))
 
-    referrer_payout = Payout.query.filter_by(
-        match_id=match.id, kind='referral'
-    ).first()
-    chain_payout = Payout.query.filter_by(
-        match_id=match.id, kind='chain_share'
-    ).first()
+    if payouts is not None:
+        referrer_payout = payouts.get((match.id, 'referral'))
+        chain_payout = payouts.get((match.id, 'chain_share'))
+    else:
+        referrer_payout = Payout.query.filter_by(
+            match_id=match.id, kind='referral'
+        ).first()
+        chain_payout = Payout.query.filter_by(
+            match_id=match.id, kind='chain_share'
+        ).first()
 
     # The sharer is the chain payout's recipient when a chain payout
     # exists; otherwise the chain is re-resolved from the pitch /
@@ -141,7 +157,14 @@ def build_trail(bounty, match=None):
     if chain_payout is not None:
         sharer_id = chain_payout.referrer_id
     else:
-        sharer_id = resolve_chain_sharer(match)
+        preloaded_referral = (
+            referral_by_pitch.get(match.pitch_id)
+            if referral_by_pitch is not None and match.pitch_id
+            else _NO_REFERRAL
+        )
+        sharer_id = resolve_chain_sharer(
+            match, referral=preloaded_referral
+        )
 
     if is_free:
         gross = fee = referrer_amount = sharer_amount = None
@@ -163,7 +186,12 @@ def build_trail(bounty, match=None):
     # no name attached.
     referral = None
     if match.pitch_id:
-        referral = Referral.query.filter_by(pitch_id=match.pitch_id).first()
+        if referral_by_pitch is not None:
+            referral = referral_by_pitch.get(match.pitch_id)
+        else:
+            referral = Referral.query.filter_by(
+                pitch_id=match.pitch_id
+            ).first()
     hired_user = referral.referred_user if referral else None
     hired_name = (
         referral.referred_name

@@ -2,6 +2,12 @@
 from extensions import db
 from models import generate_uuid, utc_now
 
+# Longest message body accepted on any send path (thread, compose,
+# legacy reply, referral thread). No cap existed: a multi-megabyte
+# POST was stored verbatim. 5000 chars is generous for a DM — the
+# app's other user-text caps are 1000–2000 (pitch message, bio).
+MAX_MESSAGE_LENGTH = 5000
+
 
 class Message(db.Model):
     """Messaging between users."""

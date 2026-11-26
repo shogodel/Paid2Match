@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Paid2Match Pro — $9/month') }} - Paid2Match{% endblock %}
+{% block title %}{{ _('Paid2Match Pro — $9/month') }} (CAD) - Paid2Match{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <h2>{{ _('Paid2Match Pro — $9/month') }}</h2>
+    <h2>{{ _('Paid2Match Pro — $9/month') }} (CAD)</h2>
     <p class="text-muted">{{ _('Advanced analytics for people who live on their referrals. The basics stay free for everyone — Pro adds the depth.') }}</p>
     <div class="row mb-4">
         <div class="col-md-8">
@@ -38,7 +38,7 @@
                     {% endif %}
                     <a href="{{ url_for('social.analytics') }}" class="btn btn-primary mt-2">{{ _('See my Pro analytics') }}</a>
                     {% else %}
-                    <h5>{{ _('$9/month') }}</h5>
+                    <h5>{{ _('$9/month') }} (CAD)</h5>
                     <p class="text-muted small">{{ _('Cancel anytime — access runs to the end of the paid month.') }}</p>
                     <form method="POST" action="{{ url_for('payments.subscribe_pro') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

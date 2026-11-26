@@ -6,7 +6,6 @@
     <div class="feed-layout">
         <!-- Left rail: mini profile card. -->
         <aside class="feed-rail">
-            {% set my_profile = current_user.profiles.first() %}
             <div class="rail-card text-center">
                 <a href="{{ url_for('profile.view') }}">
                     {% if my_profile and my_profile.avatar_url %}
@@ -126,7 +125,9 @@
                 <h5>{{ _('People to follow') }}</h5>
                 {% if suggested %}
                     {% for user in suggested %}
-                    {% set s_profile = user.profiles.first() %}
+                    {# Audit 2026-11-25: bulk-loaded by the route (was
+                       user.profiles.first() per row). #}
+                    {% set s_profile = suggested_profiles.get(user.id) if suggested_profiles is defined else user.profiles.first() %}
                     <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                         <a href="{{ url_for('profile.public_profile', user_id=user.handle or user.id) }}" class="d-flex align-items-center gap-2 text-decoration-none text-truncate">
                             {% if s_profile and s_profile.avatar_url %}

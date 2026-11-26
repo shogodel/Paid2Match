@@ -317,13 +317,29 @@ def change_role(id):
 @admin_required
 def toggle_founding_referrer(id):
     """POST /admin/users/<id>/founding-referrer - Toggle the founding
-    referrer flag (15% platform fee instead of the configured rate).
-    The 12-month founding window is enforced by the admin removing
-    the flag, not by code."""
+    referrer flag (15% platform fee instead of the configured rate,
+    plus free Pro). Granting the flag starts the 12-month window
+    (User.founding_referrer_since); removing it clears the window,
+    so a later re-grant starts a fresh 12 months."""
+    from datetime import timedelta
+
+    from utils.payments import FOUNDING_WINDOW_DAYS
+
     user = get_or_404(User, id)
     user.founding_referrer = not user.founding_referrer
+    if user.founding_referrer:
+        user.founding_referrer_since = utc_now()
+        expires = user.founding_referrer_since + timedelta(
+            days=FOUNDING_WINDOW_DAYS
+        )
+        state = (
+            'a founding referrer (15% fee until '
+            f'{expires.strftime("%b %d, %Y")})'
+        )
+    else:
+        user.founding_referrer_since = None
+        state = 'a standard referrer'
     db.session.commit()
-    state = 'a founding referrer (15% fee)' if user.founding_referrer else 'a standard referrer'
     flash(f'{user.email} is now {state}.', 'success')
     return redirect(url_for('admin.users'))
 
@@ -817,8 +833,13 @@ def create_admin():
     password = request.form.get('password')
 
     if not email or not password:
-        return '''
+        # CSRFProtect guards every POST: the bootstrap form must
+        # carry a token like every other form, or the submit 400s.
+        from flask_wtf.csrf import generate_csrf
+        token = generate_csrf()
+        return f'''
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{token}">
             <p>Token: <input type="text" name="token" required></p>
             <p>Email: <input type="email" name="email" required></p>
             <p>Password: <input type="password" name="password" required></p>

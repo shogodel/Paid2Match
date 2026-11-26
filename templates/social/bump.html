@@ -43,16 +43,16 @@
                         {% endif %}
                         <form method="POST" action="{{ url_for('payments.buy_single_bump', post_id=post.id) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-primary">{{ _('Buy a bump — $%(price)s', price="%.2f"|format(single_price_cents / 100)) }}</button>
+                            <button type="submit" class="btn btn-outline-primary">{{ _('Buy a bump — CA$%(price)s', price="%.2f"|format(single_price_cents / 100)) }}</button>
                         </form>
                     </div>
-                    <p class="text-muted small mt-2 mb-0">{{ _('Limits: 1 bump per post per 24 hours, 3 bumps per day.') }} <a href="{{ url_for('payments.bump_packs') }}">{{ _('Buy a pack') }}</a> {{ _('(5 for $8, 10 for $15).') }}</p>
+                    <p class="text-muted small mt-2 mb-0">{{ _('Limits: 1 bump per post per 24 hours, 3 bumps per day.') }} <a href="{{ url_for('payments.bump_packs') }}">{{ _('Buy a pack') }}</a> {{ _('(5 for CA$8, 10 for CA$15).') }}</p>
                     {% endif %}
                 </div>
             </div>
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5>{{ _('Recurring bump') }} — ${{ "%.2f"|format(recurring_price_cents / 100) }}/{{ _('month') }}</h5>
+                    <h5>{{ _('Recurring bump') }} — CA${{ "%.2f"|format(recurring_price_cents / 100) }}/{{ _('month') }}</h5>
                     {% if recurring %}
                     <p class="text-success">{{ _('Active — auto-bumps this post every 3 days. Next bump:') }} {{ recurring.next_bump_at.strftime('%b %d, %Y') if recurring.next_bump_at }}.</p>
                     {% if recurring.cancel_at_period_end %}
@@ -64,7 +64,7 @@
                     </form>
                     {% endif %}
                     {% else %}
-                    <p class="text-muted small">{{ _('Auto-bump this post every 3 days, $5/month. Cancel anytime — it runs to the end of the paid month.') }}</p>
+                    <p class="text-muted small">{{ _('Auto-bump this post every 3 days, CA$5/month. Cancel anytime — it runs to the end of the paid month.') }}</p>
                     {% if eligible %}
                     <form method="POST" action="{{ url_for('payments.subscribe_recurring_bump', post_id=post.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -78,7 +78,7 @@
         <div class="col-md-6">
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5>{{ _('Boost') }} — ${{ "%.2f"|format(boost_price_per_day_cents / 100) }}/{{ _('day') }}</h5>
+                    <h5>{{ _('Boost') }} — CA${{ "%.2f"|format(boost_price_per_day_cents / 100) }}/{{ _('day') }}</h5>
                     <p class="text-muted small">{{ _('Extra Discover visibility beyond your followers, labeled "Boosted".') }}</p>
                     {% if eligible %}
                     <form method="POST" action="{{ url_for('payments.buy_boost', post_id=post.id) }}" class="d-flex gap-2 align-items-end">

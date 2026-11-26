@@ -147,7 +147,7 @@ class TestAdminMobileCss:
     def test_service_worker_cache_bumped(self, client):
         r = client.get('/sw.js')
         assert r.status_code == 200
-        assert 'p2m-v4' in r.data.decode()
+        assert 'p2m-v5' in r.data.decode()
 
 
 class TestAdminLinkInMobileMenu:
@@ -168,3 +168,46 @@ class TestAdminLinkInMobileMenu:
         r = logged_in_user.get('/')
         assert r.status_code == 200
         assert '/admin' not in r.data.decode()
+
+
+class TestLongUnbrokenTextWraps:
+    """Audit 2026-11-25: a 62-char unbroken word, a 140-char bare URL
+    or a 200-char bounty title has no spaces to wrap at, so with the
+    default overflow-wrap it ran past the card edge and was silently
+    sliced (html/body use overflow-x: clip). overflow-wrap:anywhere —
+    not break-word — is what these need: anywhere also makes the
+    min-content of a FLEX ITEM breakable, so a long name/title inside
+    a flex row can shrink instead of forcing the row wider than the
+    viewport. Regression: the rules and the row classes exist."""
+
+    def test_wrapping_rules_exist(self, app):
+        css_path = os.path.join(app.static_folder, 'css', 'main.css')
+        with open(css_path) as f:
+            css = f.read()
+        for selector in (
+            '.post-meta',
+            '.post-author-name',
+            '.bounty-nested-title',
+            '.profile-name',
+            '.profile-headline',
+            '.profile-meta-line',
+            '.hiring-strip-list a',
+            '.messages-view .list-group-item p',
+            '.break-anywhere',
+        ):
+            assert selector in css, selector
+        assert 'overflow-wrap: anywhere' in css
+        assert '.hiring-strip-list li { min-width: 0; }' in css
+
+    def test_people_and_search_rows_can_shrink(self, app):
+        root = app.root_path
+        for template in (
+            'templates/social/people.html',
+            'templates/social/search.html',
+        ):
+            with open(os.path.join(root, template)) as f:
+                html = f.read()
+            # Text column shrinks; Follow button keeps its size.
+            assert 'd-flex align-items-center gap-2 min-w-0' in html, template
+            assert 'min-w-0 break-anywhere' in html, template
+            assert 'btn-follow btn-primary btn-sm flex-shrink-0' in html, template

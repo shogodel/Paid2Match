@@ -2610,6 +2610,39 @@ input.admin-email-input { width: 180px !important; }
     text-align: left;
 }
 
+/* ---------------- Long unbroken user text (audit 2026-11-25) ---------------- */
+/* Same bug class as the messaging .min-w-0 fix above, in the other
+   places user text renders: a 62-char unbroken word, a 140-char bare
+   URL or a 200-char bounty title has no spaces to wrap at, so with
+   the default overflow-wrap it runs past the card edge and is silently
+   sliced (the page clips horizontal overflow). overflow-wrap:anywhere
+   — not break-word — is what these need: anywhere also makes the
+   min-content of a FLEX ITEM breakable, so a long name/title inside a
+   flex row (profile name, meta line, hiring strip) can shrink instead
+   of forcing the row wider than the viewport. Normal words are
+   unaffected: anywhere only breaks a word that cannot fit on a line
+   by itself. The message bubble content, the post-card meta line and
+   the nested bounty title are the same fix on plain block text. */
+.post-meta,
+.post-author-name,
+.bounty-nested-title,
+.profile-name,
+.profile-headline,
+.profile-meta-line,
+.hiring-strip-list a,
+.messages-view .list-group-item p {
+    overflow-wrap: anywhere;
+}
+
+/* Hiring-strip items are flex items: the link alone cannot shrink the
+   item below its min-content (the longest word of the title). */
+.hiring-strip-list li { min-width: 0; }
+
+/* Utility for the people/search rows (templates add it to the text
+   column next to min-w-0): lets a long name/headline break instead of
+   pushing the Follow button off the screen. */
+.break-anywhere { overflow-wrap: anywhere; }
+
 @media (max-width: 767.98px) {
     /* Messaging tap targets: Bootstrap .btn is 38px tall, .btn-sm 31px,
        the delete link 23px — all below the 44px minimum. */

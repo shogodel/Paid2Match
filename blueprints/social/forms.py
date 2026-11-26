@@ -5,7 +5,7 @@ from flask_wtf.file import FileField
 from wtforms import (
     DecimalField, HiddenField, SelectField, StringField, SubmitField, TextAreaField,
 )
-from wtforms.validators import DataRequired, Length, NumberRange, Optional
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, URL
 
 from models.bounty import MIN_PAID_BOUNTY_CAD
 
@@ -124,6 +124,9 @@ class PledgeForm(FlaskForm):
         DataRequired(), Length(min=2, max=200),
     ])
     website = StringField(_l('Company website (optional)'), validators=[
-        Optional(), Length(max=500),
+        # URL() requires an http(s) scheme: without it a
+        # 'javascript:...' website would render as a clickable link
+        # on the public pledge register (stored XSS on click).
+        Optional(), URL(), Length(max=500),
     ])
     submit = SubmitField(_l('Publish my pledge'))

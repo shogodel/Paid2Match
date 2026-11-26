@@ -56,7 +56,7 @@ class WinStory(db.Model):
     author_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, index=True)
     role = db.Column(db.String(10), nullable=False)
     body = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=utc_now)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
 
     bounty = db.relationship('Bounty', backref='win_stories')
     match = db.relationship('Match', backref='win_stories')

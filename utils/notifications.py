@@ -36,6 +36,15 @@ def notify(recipient_id, type, title, body=None, actor_id=None,
     """
     if not recipient_id or recipient_id == actor_id:
         return None
+    recipient = db.session.get(User, recipient_id)
+    if recipient is not None and recipient.is_deleted:
+        # A soft-deleted account can never log in again, and its
+        # email is a placeholder (deleted_<id>@example.com) — a
+        # notification here would send real mail to a fake address
+        # and stack up rows nobody will ever read. The caller's
+        # action itself (like, comment, match, ...) still lands;
+        # only the dead-account notification is skipped.
+        return None
     notification = Notification(
         recipient_id=recipient_id,
         actor_id=actor_id,
@@ -49,7 +58,6 @@ def notify(recipient_id, type, title, body=None, actor_id=None,
 
     should_email = send_email if send_email is not None else type in Notification.EMAIL_TYPES
     if should_email:
-        recipient = db.session.get(User, recipient_id)
         if recipient and recipient.email:
             email_body = body or title
             url = _absolute_url(link_url)

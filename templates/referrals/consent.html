@@ -24,7 +24,7 @@
                             {% else %}{{ _('This referral is %(status)s.', status=referral.status) }}{% endif %}
                         </div>
                     {% elif not current_user.is_authenticated %}
-                        <p class="text-muted">{{ _("Sign in with Google or GitHub to confirm or decline. Your email (%(email)s) is the one this invite was sent to — signing in creates your account if you don't have one yet.", email=referral.referred_email) }}</p>
+                        <p class="text-muted">{{ _("Sign in with Google, GitHub, Facebook or LinkedIn to confirm or decline. Your email (%(email)s) is the one this invite was sent to — signing in creates your account if you don't have one yet.", email=referral.referred_email) }}</p>
                         <a href="{{ url_for('auth.login', next=url_for('referrals.consent', token=referral.invite_token)) }}" class="btn btn-primary">{{ _('Sign in to answer') }}</a>
                     {% elif current_user.email.lower() != referral.referred_email.lower() %}
                         <div class="alert alert-warning mb-0">{{ _("This invite was sent to %(invited)s — you're logged in as %(current)s. Only the invited person can answer it.", invited=referral.referred_email, current=current_user.email) }}</div>

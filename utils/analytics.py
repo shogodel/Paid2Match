@@ -41,12 +41,17 @@ def get_analytics(user_id):
     week_ago = now - timedelta(days=7)
 
     posts = Post.query.filter_by(author_id=user_id, is_hidden=False).all()
+    # Audit 2026-11-25: post_rows used the per-post like/comment/
+    # share COUNT properties — 3 queries per post. One GROUP BY per
+    # kind replaces them all.
+    from utils.feed import engagement_counts
+    counts = engagement_counts([p.id for p in posts])
     post_rows = [{
         'post': p,
         'views': p.view_count or 0,
-        'likes': p.like_count,
-        'comments': p.comment_count,
-        'shares': p.share_count,
+        'likes': counts.get(p.id, (0, 0, 0))[0],
+        'comments': counts.get(p.id, (0, 0, 0))[1],
+        'shares': counts.get(p.id, (0, 0, 0))[2],
     } for p in posts]
     post_rows.sort(key=lambda r: r['views'], reverse=True)
 
@@ -156,16 +161,34 @@ def _members_reached(post_id):
     one browser session could be the same person twice, so the
     template labels reached as an estimate where anonymous views
     are included)."""
-    logged_in = db.session.query(
-        func.count(func.distinct(PostView.viewer_id))
+    return _members_reached_many([post_id]).get(post_id, 0)
+
+
+def _members_reached_many(post_ids):
+    """{post_id: members reached} for many posts — the bulk form of
+    _members_reached.
+
+    Audit 2026-11-25: Pro analytics called _members_reached per
+    post (2 queries each). Two GROUP BY queries replace them all."""
+    ids = list(post_ids)
+    reached = {pid: 0 for pid in ids}
+    if not ids:
+        return reached
+    for post_id, n in db.session.query(
+        PostView.post_id, func.count(func.distinct(PostView.viewer_id))
     ).filter(
-        PostView.post_id == post_id,
+        PostView.post_id.in_(ids),
         PostView.viewer_id.isnot(None),
-    ).scalar() or 0
-    anonymous = PostView.query.filter_by(
-        post_id=post_id, viewer_id=None
-    ).count()
-    return logged_in + anonymous
+    ).group_by(PostView.post_id).all():
+        reached[post_id] += n
+    for post_id, n in db.session.query(
+        PostView.post_id, func.count()
+    ).filter(
+        PostView.post_id.in_(ids),
+        PostView.viewer_id.is_(None),
+    ).group_by(PostView.post_id).all():
+        reached[post_id] += n
+    return reached
 
 
 def _engagement_rate(engagements, reached):
@@ -190,7 +213,8 @@ def _profile_views_90d(user_id):
         created = _as_aware(view.created_at)
         if created and created >= start_30d:
             trend[created.date().isoformat()] += 1
-    # Named viewers, opt-in only.
+    # Named viewers, opt-in only — one bulk user load, not one
+    # db.session.get per viewer (audit 2026-11-25).
     viewer_ids = {v.viewer_id for v in views if v.viewer_id}
     named = []
     if viewer_ids:
@@ -202,10 +226,15 @@ def _profile_views_90d(user_id):
                 Profile.profile_view_names.is_(True),
             ).all()
         }
+        names_by_id = {
+            u.id: u.full_name
+            for u in User.query.filter(
+                User.id.in_(sorted(viewer_ids & opted_in))
+            ).all()
+        }
         for viewer_id in sorted(viewer_ids & opted_in):
-            viewer = db.session.get(User, viewer_id)
-            if viewer:
-                named.append(viewer.full_name)
+            if viewer_id in names_by_id:
+                named.append(names_by_id[viewer_id])
     return {
         'total_90d': len(views),
         'trend_30d': sorted(trend.items()),
@@ -239,10 +268,20 @@ def _demographics(user_id):
         .filter(Follow.followed_id == user_id)
         .all()
     )
+    # The join above already selected the profiles' rows for the
+    # filter, but not the Profile objects — the old code re-queried
+    # Profile once per follower. One bulk load instead (audit
+    # 2026-11-25).
+    profiles_by_user = {
+        p.user_id: p
+        for p in Profile.query.filter(
+            Profile.user_id.in_([f.id for f in followers])
+        ).all()
+    } if followers else {}
     locations = Counter()
     roles = Counter()
     for follower in followers:
-        profile = Profile.query.filter_by(user_id=follower.id).first()
+        profile = profiles_by_user.get(follower.id)
         if profile:
             if profile.location:
                 locations[profile.location.split(',')[0].strip()] += 1
@@ -262,13 +301,40 @@ def _referral_funnel(user_id):
     matches whose payout completed."""
     from models.bounty import Bounty
     bounties = Bounty.query.filter_by(poster_id=user_id).all()
+    # Audit 2026-11-25: the old code issued 3 queries per bounty
+    # (its need post, its referral count, its matches). Three bulk
+    # queries cover every bounty at once.
+    bounty_ids = [b.id for b in bounties]
+    views_by_bounty = {}
+    if bounty_ids:
+        # .first() semantics: the first linked post per bounty wins
+        # (several posts can link to one need after a convert).
+        for p in Post.query.filter(
+            Post.bounty_id.in_(bounty_ids)
+        ).all():
+            if p.bounty_id and p.bounty_id not in views_by_bounty:
+                views_by_bounty[p.bounty_id] = p.view_count or 0
+    referrals_by_bounty = {}
+    if bounty_ids:
+        referrals_by_bounty = {
+            bounty_id: n for bounty_id, n in db.session.query(
+                Referral.bounty_id, func.count()
+            ).filter(
+                Referral.bounty_id.in_(bounty_ids)
+            ).group_by(Referral.bounty_id).all()
+        }
+    matches_by_bounty = {}
+    if bounty_ids:
+        for m in Match.query.filter(
+            Match.bounty_id.in_(bounty_ids)
+        ).all():
+            matches_by_bounty.setdefault(m.bounty_id, []).append(m)
     rows = []
     totals = {'views': 0, 'referrals': 0, 'confirms': 0, 'paid': 0}
     for bounty in bounties:
-        post = Post.query.filter_by(bounty_id=bounty.id).first()
-        views = (post.view_count or 0) if post else 0
-        referrals = Referral.query.filter_by(bounty_id=bounty.id).count()
-        matches = Match.query.filter_by(bounty_id=bounty.id).all()
+        views = views_by_bounty.get(bounty.id, 0)
+        referrals = referrals_by_bounty.get(bounty.id, 0)
+        matches = matches_by_bounty.get(bounty.id, [])
         confirms = sum(
             1 for m in matches
             if m.hunter_confirmed and m.employer_confirmed
@@ -301,12 +367,18 @@ def _best_time_to_post(user_id):
     if not post_ids:
         return None
     hours = Counter()
-    for like in Like.query.filter(Like.post_id.in_(post_ids)).all():
-        if like.created_at:
-            hours[like.created_at.hour] += 1
-    for comment in Comment.query.filter(Comment.post_id.in_(post_ids)).all():
-        if comment.created_at:
-            hours[comment.created_at.hour] += 1
+    # Only the timestamps are needed — not whole Like/Comment rows
+    # (audit 2026-11-25).
+    for (created_at,) in Like.query.filter(
+        Like.post_id.in_(post_ids)
+    ).with_entities(Like.created_at).all():
+        if created_at:
+            hours[created_at.hour] += 1
+    for (created_at,) in Comment.query.filter(
+        Comment.post_id.in_(post_ids)
+    ).with_entities(Comment.created_at).all():
+        if created_at:
+            hours[created_at.hour] += 1
     if not hours:
         return None
     best_hour, count = hours.most_common(1)[0]
@@ -315,22 +387,32 @@ def _best_time_to_post(user_id):
 
 def get_pro_analytics(user_id):
     """Return the Pro analytics dict for one user (§1.4)."""
-    from utils.bumps import bump_performance_for_post
+    from utils.bumps import bump_performance_for_posts
+    from utils.feed import engagement_counts
 
     posts = Post.query.filter_by(author_id=user_id, is_hidden=False).all()
+    post_ids = [p.id for p in posts]
+    # Audit 2026-11-25: the old code issued 2 _members_reached
+    # queries + 1 bump-performance call (itself ~4 queries per bump)
+    # + 3 COUNT properties per post. All three are bulk now.
+    counts = engagement_counts(post_ids)
+    reached = _members_reached_many(post_ids)
+    performances = bump_performance_for_posts(post_ids)
     post_rows = []
     for post in posts:
-        reached = _members_reached(post.id)
-        engagements = post.like_count + post.comment_count + post.share_count
+        likes, comments, shares = counts.get(post.id, (0, 0, 0))
+        engagements = likes + comments + shares
         post_rows.append({
             'post': post,
             'views': post.view_count or 0,
-            'reached': reached,
-            'engagement_rate': _engagement_rate(engagements, reached),
-            'likes': post.like_count,
-            'comments': post.comment_count,
-            'shares': post.share_count,
-            'bump_performance': bump_performance_for_post(post.id),
+            'reached': reached.get(post.id, 0),
+            'engagement_rate': _engagement_rate(
+                engagements, reached.get(post.id, 0)
+            ),
+            'likes': likes,
+            'comments': comments,
+            'shares': shares,
+            'bump_performance': performances.get(post.id, []),
         })
     post_rows.sort(key=lambda r: r['views'], reverse=True)
 

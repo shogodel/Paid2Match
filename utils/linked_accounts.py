@@ -258,15 +258,73 @@ def fetch_linkedin_userinfo(access_token):
     return data, None
 
 
-def _fetch_page(url):
-    """Fetch a page's text, or (None, error)."""
+def _is_safe_fetch_url(url):
+    """True when url is safe for the server to fetch: an http(s) URL
+    whose host is not a literal private/loopback/link-local IP and
+    not a localhost-style name. Linked-account URLs come from the
+    user (WTForms URL() accepts http://127.0.0.1/ and
+    http://169.254.169.254/ — the cloud metadata endpoint — as
+    "valid"), so the fetch itself must refuse them: the server
+    would otherwise make requests to internal services on the
+    user's behalf (SSRF). Hostnames are not resolved here — in
+    this deployment DNS answers through the egress proxy, so a
+    resolved-IP check would reject ordinary public hosts; the
+    literal-IP, localhost-name and redirect checks below close
+    the direct vectors, and a DNS-rebinding host remains a
+    residual risk (see _fetch_page)."""
+    import ipaddress
+    from urllib.parse import urlparse
     try:
-        resp = requests.get(url, headers=FETCH_HEADERS, timeout=FETCH_TIMEOUT)
-    except requests.RequestException as exc:
-        return None, f'Could not fetch the page ({exc.__class__.__name__}).'
-    if resp.status_code != 200:
-        return None, f'The page returned HTTP {resp.status_code}.'
-    return resp.text, None
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    if parsed.scheme not in ('http', 'https'):
+        return False
+    host = (parsed.hostname or '').lower().rstrip('.')
+    if not host:
+        return False
+    if host in ('localhost', 'metadata', 'metadata.google.internal'):
+        return False
+    if host.endswith(('.localhost', '.local', '.internal', '.lan')):
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    if ip is not None and not ip.is_global:
+        return False
+    return True
+
+
+def _fetch_page(url):
+    """Fetch a page's text, or (None, error). Follows redirects
+    manually (max 5), re-validating each hop: requests follows
+    redirects by default, so a public URL that 302s to
+    http://169.254.169.254/ would otherwise bypass the check above."""
+    if not _is_safe_fetch_url(url):
+        return None, 'That URL cannot be fetched (private or local address).'
+    current_url = url
+    for _hop in range(6):
+        try:
+            resp = requests.get(
+                current_url, headers=FETCH_HEADERS,
+                timeout=FETCH_TIMEOUT, allow_redirects=False,
+            )
+        except requests.RequestException as exc:
+            return None, f'Could not fetch the page ({exc.__class__.__name__}).'
+        if resp.status_code in (301, 302, 303, 307, 308):
+            location = resp.headers.get('Location')
+            if not location:
+                return None, f'The page returned HTTP {resp.status_code}.'
+            from urllib.parse import urljoin
+            current_url = urljoin(current_url, location)
+            if not _is_safe_fetch_url(current_url):
+                return None, 'That URL cannot be fetched (private or local address).'
+            continue
+        if resp.status_code != 200:
+            return None, f'The page returned HTTP {resp.status_code}.'
+        return resp.text, None
+    return None, 'Too many redirects.'
 
 
 def verify_bio_link(account, profile_url):

@@ -60,12 +60,15 @@ logger = logging.getLogger(__name__)
 CURRENCY = 'cad'
 
 # Platform fee: admin-configurable, default 20%. Founding referrers
-# (admin-set flag) pay 15% for their first 12 months (the 12-month
-# window is enforced by the admin removing the flag, not by code —
-# see the M2 report).
+# (admin-set flag) pay 15% for their first 12 months — the window is
+# enforced by founding_benefit_active() below, from
+# User.founding_referrer_since (set when the admin grants the flag).
+# A flag with no start date is grandfathered (flagged before the
+# window was tracked — e.g. set directly in the DB or in tests).
 PLATFORM_FEE_SETTING_KEY = 'PLATFORM_FEE_PERCENT'
 DEFAULT_PLATFORM_FEE_PERCENT = 20
 FOUNDING_REFERRER_FEE_PERCENT = 15
+FOUNDING_WINDOW_DAYS = 365
 MAX_PLATFORM_FEE_PERCENT = 50
 
 
@@ -105,6 +108,21 @@ def to_cents(amount):
     )
 
 
+def idempotency_key_for(prefix, *parts):
+    """A deterministic idempotency key for a Checkout creation, with
+    a one-minute bucket: a double-click (same buyer, same item, same
+    price, same minute) returns the SAME Stripe session instead of
+    a second charge, while a deliberate repeat purchase a minute
+    later gets a fresh key. Every price-determining value belongs
+    in the parts — two purchases that differ in price must never
+    share a key (Stripe rejects a reused key with different
+    parameters)."""
+    import time
+
+    bucket = int(time.time()) // 60
+    return '-'.join([prefix, *[str(p) for p in parts], str(bucket)])
+
+
 def get_platform_fee_percent():
     """The platform fee percentage from settings, clamped to 0–50."""
     raw = AdminSettings.get(PLATFORM_FEE_SETTING_KEY)
@@ -115,10 +133,31 @@ def get_platform_fee_percent():
     return max(0, min(MAX_PLATFORM_FEE_PERCENT, value))
 
 
+def founding_benefit_active(user):
+    """Whether a founding referrer is still inside the 12-month
+    window: the flag is set and the grant started less than
+    FOUNDING_WINDOW_DAYS ago. A flag with no recorded start date is
+    grandfathered (it predates window tracking). Used for both the
+    15% fee and free Pro — the two founding benefits share one
+    window, so they expire together."""
+    if user is None or not getattr(user, 'founding_referrer', False):
+        return False
+    since = getattr(user, 'founding_referrer_since', None)
+    if since is None:
+        return True
+    if since.tzinfo is not None:
+        since = since.replace(tzinfo=None)
+    now = utc_now()
+    if now.tzinfo is not None:
+        now = now.replace(tzinfo=None)
+    return (now - since).days < FOUNDING_WINDOW_DAYS
+
+
 def fee_rate_for(referrer):
     """The fee percentage that applies to one referrer: 15% for
-    founding referrers, the configured platform fee otherwise."""
-    if referrer is not None and getattr(referrer, 'founding_referrer', False):
+    founding referrers inside their 12-month window, the configured
+    platform fee otherwise."""
+    if founding_benefit_active(referrer):
         return FOUNDING_REFERRER_FEE_PERCENT
     return get_platform_fee_percent()
 
@@ -262,6 +301,10 @@ def create_connect_account(user):
                 'transfers': {'requested': True},
             },
             metadata={'user_id': user.id},
+            # One Connect account per user: a double-clicked setup
+            # returns the same Stripe account instead of creating an
+            # orphaned second one.
+            idempotency_key=f'connect-{user.id}',
         )
     except stripe.error.StripeError as exc:
         logger.error('Connect account creation failed for %s: %s', user.id, exc)
@@ -272,7 +315,17 @@ def create_connect_account(user):
         onboarding_status='pending',
     )
     db.session.add(connect)
-    db.session.flush()
+    try:
+        db.session.flush()
+    except IntegrityError:
+        # Two simultaneous setups raced past the existing-row check
+        # — the loser reuses the winner's row (user_id is unique)
+        # instead of 500ing.
+        db.session.rollback()
+        existing = ConnectAccount.query.filter_by(user_id=user.id).first()
+        if existing is None:
+            raise
+        return existing, None
     return connect, None
 
 

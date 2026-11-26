@@ -53,6 +53,11 @@ class User(db.Model, UserMixin):
     # Founding referrer (M2): admin-set flag. Founding referrers pay a
     # 15% platform fee instead of the standard 20% for 12 months.
     founding_referrer = db.Column(db.Boolean, default=False)
+    # When the flag was granted (set by the admin toggle; cleared
+    # when the flag is removed). The 12-month window runs from here
+    # — see utils.payments.founding_benefit_active. NULL means the
+    # flag predates window tracking and is grandfathered.
+    founding_referrer_since = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=utc_now)
     last_login = db.Column(db.DateTime, nullable=True)
 

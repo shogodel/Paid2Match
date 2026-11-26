@@ -20,6 +20,7 @@ Feed items are dicts: {'kind': 'post'|'share', 'post': Post,
 """
 from datetime import timedelta, timezone
 
+from flask import g, has_request_context
 from flask_babel import lazy_gettext as _l
 from sqlalchemy import or_
 
@@ -64,9 +65,21 @@ def _as_aware(dt):
 
 def hidden_author_ids(viewer_id):
     """Authors whose content the viewer must not see: people the viewer
-    blocked or muted, plus people who blocked the viewer."""
+    blocked or muted, plus people who blocked the viewer.
+
+    Audit 2026-11-25: cached per request — a feed render called this
+    twice (once for the post list, once for suggested connections),
+    2 queries each time. Outside a request (CLI/tests calling the
+    feed helpers directly) there is no g to cache in, so it just
+    queries."""
     if not viewer_id:
         return set()
+    if has_request_context():
+        cache = g.get('_hidden_author_ids')
+        if cache is None:
+            cache = g._hidden_author_ids = {}
+        if viewer_id in cache:
+            return cache[viewer_id]
     hidden = {
         b.blocked_id
         for b in Block.query.filter_by(blocker_id=viewer_id).all()
@@ -75,6 +88,8 @@ def hidden_author_ids(viewer_id):
         b.blocker_id
         for b in Block.query.filter_by(blocked_id=viewer_id, kind='block').all()
     }
+    if has_request_context():
+        g._hidden_author_ids[viewer_id] = hidden
     return hidden
 
 
@@ -90,11 +105,70 @@ def _public_post_clause():
     )
 
 
-def _visible_posts_query(viewer_id):
-    query = Post.query.filter_by(is_hidden=False).outerjoin(
+def engagement_counts(post_ids):
+    """{(post_id): (likes, comments, shares)} for many posts.
+
+    Audit 2026-11-25: Post.like_count / comment_count / share_count
+    are per-post COUNT queries, and the feed scores, sorts and
+    renders each post several times — a 120-post Discover render
+    issued ~800 of them. Three GROUP BY queries replace all of
+    them. The comment count matches the property exactly (non-hidden
+    comments only). Cached per request keyed by the post-id set: the
+    ranking function and the route each call this for the same page
+    of posts (6 queries instead of 3)."""
+    from sqlalchemy import func
+    from models.post import Comment, Like, Share
+    ids = list(post_ids)
+    counts = {pid: [0, 0, 0] for pid in ids}
+    if not ids:
+        return {}
+    cache_key = tuple(sorted(ids))
+    if has_request_context():
+        cache = g.get('_engagement_counts')
+        if cache is None:
+            cache = g._engagement_counts = {}
+        if cache_key in cache:
+            return cache[cache_key]
+    for post_id, n in db.session.query(
+        Like.post_id, func.count()
+    ).filter(Like.post_id.in_(ids)).group_by(Like.post_id).all():
+        counts[post_id][0] = n
+    for post_id, n in db.session.query(
+        Comment.post_id, func.count()
+    ).filter(
+        Comment.post_id.in_(ids),
+        Comment.is_hidden == False,  # noqa: E712
+    ).group_by(Comment.post_id).all():
+        counts[post_id][1] = n
+    for post_id, n in db.session.query(
+        Share.post_id, func.count()
+    ).filter(Share.post_id.in_(ids)).group_by(Share.post_id).all():
+        counts[post_id][2] = n
+    result = {pid: tuple(v) for pid, v in counts.items()}
+    if has_request_context():
+        g._engagement_counts[cache_key] = result
+    return result
+
+
+def _visible_posts_query(viewer_id, hidden=None):
+    from sqlalchemy.orm import selectinload
+    # Audit 2026-11-25: the post card reads post.author and
+    # post.bounty per card — eager-load both (2 extra queries total
+    # instead of 2 per post). The Bounty outerjoin above is only for
+    # the visibility filter; it does not populate post.bounty.
+    query = Post.query.options(
+        selectinload(Post.author), selectinload(Post.bounty),
+        # The card includes the poll partial, which reads post.poll
+        # on every card (audit 2026-11-25: 1 query per post).
+        selectinload(Post.poll),
+    ).filter_by(is_hidden=False).outerjoin(
         Bounty, Post.bounty_id == Bounty.id,
     ).filter(_public_post_clause())
-    hidden = hidden_author_ids(viewer_id)
+    # Audit 2026-11-25: the feed functions called hidden_author_ids
+    # twice per render (once here, once for the shares filter) — pass
+    # the set in when the caller already has it.
+    if hidden is None:
+        hidden = hidden_author_ids(viewer_id)
     if hidden:
         query = query.filter(~Post.author_id.in_(hidden))
     return query
@@ -133,7 +207,8 @@ def get_following_feed(viewer_id, page=1, per_page=20, flair=None):
     }
     author_ids = followed_ids | {viewer_id}
 
-    posts_q = _visible_posts_query(viewer_id).filter(
+    hidden = hidden_author_ids(viewer_id)
+    posts_q = _visible_posts_query(viewer_id, hidden=hidden).filter(
         Post.author_id.in_(author_ids)
     )
     types = _flair_types(flair)
@@ -146,7 +221,6 @@ def get_following_feed(viewer_id, page=1, per_page=20, flair=None):
         for p in posts
     ]
 
-    hidden = hidden_author_ids(viewer_id)
     shares = Share.query.join(Post, Share.post_id == Post.id).outerjoin(
         Bounty, Post.bounty_id == Bounty.id,
     ).filter(
@@ -180,7 +254,8 @@ def get_latest_feed(viewer_id, page=1, per_page=20, flair=None):
     your own. No ranking, no algorithm; the bump cap still applies so
     a bumped post can't crowd out everything else."""
     types = _flair_types(flair)
-    posts_q = _visible_posts_query(viewer_id)
+    hidden = hidden_author_ids(viewer_id)
+    posts_q = _visible_posts_query(viewer_id, hidden=hidden)
     if types:
         posts_q = posts_q.filter(Post.post_type.in_(types))
     items = [
@@ -189,7 +264,6 @@ def get_latest_feed(viewer_id, page=1, per_page=20, flair=None):
         for p in posts_q.all()
     ]
 
-    hidden = hidden_author_ids(viewer_id)
     shares = Share.query.join(Post, Share.post_id == Post.id).outerjoin(
         Bounty, Post.bounty_id == Bounty.id,
     ).filter(
@@ -250,17 +324,27 @@ def apply_bump_cap(items):
     return out
 
 
-def discover_score(post):
+def discover_score(post, counts=None):
     """Engagement + recency + trust. Engagement: likes x2, comments x3,
     shares x2. Recency: up to 48 points, decaying to zero over 48 hours
     from the post's effective time (a bump refreshes it — the only
     Discover effect a bump has). Trust: author's trust score / 10
-    (0–10). A boost adds a fixed lift (BOOST_DISCOVER_LIFT)."""
+    (0–10). A boost adds a fixed lift (BOOST_DISCOVER_LIFT).
+
+    ``counts`` is engagement_counts() output for the page: without it
+    each call issues 3 COUNT queries, and get_discover_feed used to
+    call this twice per post (sort + items)."""
     from models.bump import BOOST_DISCOVER_LIFT
     now = utc_now()
     created = post.effective_at or now
     hours_old = max((now - created).total_seconds() / 3600.0, 0)
-    engagement = post.like_count * 2 + post.comment_count * 3 + post.share_count * 2
+    if counts is not None:
+        likes, comments, shares = counts.get(post.id, (0, 0, 0))
+    else:
+        likes, comments, shares = (
+            post.like_count, post.comment_count, post.share_count,
+        )
+    engagement = likes * 2 + comments * 3 + shares * 2
     recency = max(0, RECENCY_WINDOW_HOURS - hours_old)
     trust = compute_trust_score(post.author)[0] / 10.0 if post.author else 0
     score = engagement + recency + trust
@@ -301,22 +385,34 @@ def get_discover_feed(viewer_id, page=1, per_page=20, flair=None):
     if types:
         posts_q = posts_q.filter(Post.post_type.in_(types))
     posts = posts_q.all()
-    ranked = sorted(posts, key=discover_score, reverse=True)
+    # Score each post once (the old code scored twice: once for the
+    # sort, once for the items list) with bulk engagement counts.
+    counts = engagement_counts([p.id for p in posts])
+    scores = {p.id: discover_score(p, counts=counts) for p in posts}
+    ranked = sorted(posts, key=lambda p: scores[p.id], reverse=True)
     capped = apply_need_cap(ranked)
     items = [
         {'kind': 'post', 'post': p, 'share': None,
-         'score': discover_score(p), 'sort_key': _as_aware(p.created_at)}
+         'score': scores[p.id], 'sort_key': _as_aware(p.created_at)}
         for p in capped
     ]
     return _paginate(items, page, per_page)
 
 
-def trending_score(post):
+def trending_score(post, counts=None):
     """Pure recent-engagement velocity: likes + 2x comments + shares.
     No trust component, no decay curve, no boost lift — the 7-day
     window is the only recency rule. Comments count double because a
-    comment costs more than a tap."""
-    return post.like_count + 2 * post.comment_count + post.share_count
+    comment costs more than a tap.
+
+    ``counts`` is engagement_counts() output (see discover_score)."""
+    if counts is not None:
+        likes, comments, shares = counts.get(post.id, (0, 0, 0))
+    else:
+        likes, comments, shares = (
+            post.like_count, post.comment_count, post.share_count,
+        )
+    return likes + 2 * comments + shares
 
 
 def get_trending_feed(viewer_id, page=1, per_page=20, flair=None):
@@ -338,13 +434,17 @@ def get_trending_feed(viewer_id, page=1, per_page=20, flair=None):
     if types:
         posts_q = posts_q.filter(Post.post_type.in_(types))
     posts = posts_q.all()
+    # Score each post once (the old code scored twice: sort + items)
+    # with bulk engagement counts.
+    counts = engagement_counts([p.id for p in posts])
+    scores = {p.id: trending_score(p, counts=counts) for p in posts}
     posts.sort(
-        key=lambda p: (trending_score(p), _as_aware(p.created_at)),
+        key=lambda p: (scores[p.id], _as_aware(p.created_at)),
         reverse=True,
     )
     items = [
         {'kind': 'post', 'post': p, 'share': None,
-         'score': trending_score(p), 'sort_key': _as_aware(p.created_at)}
+         'score': scores[p.id], 'sort_key': _as_aware(p.created_at)}
         for p in posts
     ]
     return _paginate(items, page, per_page)
@@ -379,7 +479,7 @@ def suggested_connections(user_id, limit=5):
     from models.profile import Profile
     from models.space import SpaceMembership
     from models.user import User
-    from utils.trust import completed_referrals_count
+    from utils.trust import completed_referrals_counts
 
     my_profile = Profile.query.filter_by(user_id=user_id).first()
     my_city = ''
@@ -421,6 +521,11 @@ def suggested_connections(user_id, limit=5):
             Profile.user_id.in_([u.id for u in candidates])
         ).all()
     }
+    # One completed-referrals count for all candidates (was one COUNT
+    # query per candidate inside score()).
+    completed_by_user = completed_referrals_counts(
+        [u.id for u in candidates]
+    )
 
     def score(user):
         profile = profiles_by_user.get(user.id)
@@ -432,7 +537,7 @@ def suggested_connections(user_id, limit=5):
                 points += 5
         karma = (profile.karma or 0) if profile else 0
         points += min(karma / 100.0, 10)
-        points += min(completed_referrals_count(user.id) * 2, 10)
+        points += min(completed_by_user.get(user.id, 0) * 2, 10)
         points += compute_trust_score(user)[0] / 10.0
         return points
 

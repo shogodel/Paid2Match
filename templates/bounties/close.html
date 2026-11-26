@@ -1,7 +1,6 @@
 {% extends "base.html" %}
-{% set refund_fee_percent = 3.0 %}
-{% set stripe_fee_percent = 2.9 %}
-{% set stripe_fee_fixed = 0.30 %}
+{# Fee rates come from the route (config), not literals here — the
+   refund route charges from the same config values. #}
 
 {% block title %}{{ _('Close Referral Need') }} - Paid2Match{% endblock %}
 
@@ -44,8 +43,8 @@
                         <div class="form-check mb-3 p-3 border rounded">
                             <input type="radio" class="form-check-input" name="close_action" value="reuse" id="actionReuse">
                             <label class="form-check-label" for="actionReuse">
-                                <strong>{{ _('Post Another Referral Need') }}</strong>
-                                <p class="text-muted mb-0 small">{{ _('Use this payment for a new need of the same amount') }}</p>
+                                <strong>{{ _('Close Without Refund') }}</strong>
+                                <p class="text-muted mb-0 small">{{ _('Close the need and let the card authorization expire — no refund is sent.') }}</p>
                             </label>
                         </div>
                         
@@ -54,35 +53,35 @@
                             <table class="table table-sm mb-2">
                                 <tr>
                                     <td>{{ _('Original Amount') }}</td>
-                                    <td class="text-end">{{ bounty.reward_amount|money(bounty.currency) }}</td>
+                                    <td class="text-end">{{ (bounty.reward_amount|float * (1 + transaction_fee_percent / 100))|money(bounty.currency) }}</td>
                                 </tr>
                                 <tr>
-                                    <td>{{ _('Transaction Fee (%(pct)s%%)', pct=refund_fee_percent) }}</td>
-                                    <td class="text-end">-{{ (bounty.reward_amount * refund_fee_percent / 100)|money(bounty.currency) }}</td>
+                                    <td>{{ _('Transaction Fee (%(pct)s%%)', pct=transaction_fee_percent) }}</td>
+                                    <td class="text-end">-{{ (bounty.reward_amount|float * transaction_fee_percent / 100)|money(bounty.currency) }}</td>
                                 </tr>
                                 <tr>
                                     <td>{{ _('Stripe Fee (%(pct)s%% + %(fixed)s)', pct=stripe_fee_percent, fixed=stripe_fee_fixed|money(bounty.currency)) }}</td>
-                                    <td class="text-end">-{{ (bounty.reward_amount * stripe_fee_percent / 100 + stripe_fee_fixed)|money(bounty.currency) }}</td>
+                                    <td class="text-end">-{{ (bounty.reward_amount|float * stripe_fee_percent / 100 + stripe_fee_fixed)|money(bounty.currency) }}</td>
                                 </tr>
                                 <tr class="fw-bold">
                                     <td>{{ _('Total Refund') }}</td>
                                     <td class="text-end">
-                                        {{ (bounty.reward_amount
-                                            - (bounty.reward_amount * refund_fee_percent / 100)
-                                            - (bounty.reward_amount * stripe_fee_percent / 100 + stripe_fee_fixed))|money(bounty.currency) }}
+                                        {{ (bounty.reward_amount|float
+                                            - (bounty.reward_amount|float * stripe_fee_percent / 100 + stripe_fee_fixed))|money(bounty.currency) }}
                                     </td>
                                 </tr>
                             </table>
+                            <p class="text-muted small mb-2">{{ _('Payments are processed in Canadian dollars (CAD) at the amount shown.') }}</p>
                             <div class="alert alert-danger mb-0 py-2">
                                 <small><i class="fas fa-info-circle"></i> 
-                                    {{ _('The transaction fee and Stripe fees are non-refundable and will be deducted from your refund. You will receive approximately') }} <strong>{{ (bounty.reward_amount * 0.971 - stripe_fee_fixed)|money(bounty.currency) }}</strong> {{ _('back.') }}
+                                    {{ _('The transaction fee and Stripe fees are non-refundable and will be deducted from your refund. You will receive approximately') }} <strong>{{ (bounty.reward_amount|float * (1 - stripe_fee_percent / 100) - stripe_fee_fixed)|money(bounty.currency) }}</strong> {{ _('back.') }}
                                 </small>
                             </div>
                         </div>
                         
                         <div id="reuseDetails" class="alert alert-success d-none">
-                            <p class="mb-0"><i class="fas fa-check-circle"></i> 
-                                {{ _('Your payment of') }} <strong>{{ bounty.reward_amount|money(bounty.currency) }}</strong> {{ _('will be kept secure and applied to your next bounty. No additional fees will be charged.') }}
+                            <p class="mb-0"><i class="fas fa-info-circle"></i> 
+                                {{ _('The need will close without a refund. Your payment was never captured, so nothing was charged — the card authorization will expire on its own.') }}
                             </p>
                         </div>
                         

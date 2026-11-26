@@ -121,9 +121,7 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
             return lang
         # 2. User profile preference (if logged in).
         if current_user.is_authenticated:
-            profile = db.session.query(Profile).filter_by(
-                user_id=current_user.id
-            ).first()
+            profile = _current_profile()
             if profile and profile.language in ['en', 'fr', 'es']:
                 g._p2m_locale = profile.language
                 return profile.language
@@ -239,6 +237,29 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
 
     app.jinja_env.globals['poster_reputation'] = _cached_reputation_metrics
 
+    # Audit 2026-11-25: the viewer's own profile was loaded once per
+    # template that wanted it — base.html (navbar), feed.html (mini
+    # profile card) and _composer.html each issued
+    # current_user.profiles.first(), and get_locale() above loaded it
+    # a fourth time. One g-cached load per request serves all of
+    # them (and the my_profile context processor below).
+    _PROFILE_MISSING = object()
+
+    def _current_profile():
+        profile = g.get('_current_profile', _PROFILE_MISSING)
+        if profile is _PROFILE_MISSING:
+            profile = None
+            if current_user.is_authenticated:
+                profile = db.session.query(Profile).filter_by(
+                    user_id=current_user.id
+                ).first()
+            g._current_profile = profile
+        return profile
+
+    @app.context_processor
+    def inject_my_profile():
+        return {'my_profile': _current_profile()}
+
     # Flask-Login configured in extensions.py
 
     @login_manager.user_loader
@@ -301,30 +322,59 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
     app.register_blueprint(staked_vouches_bp, url_prefix='/stakes')
     app.register_blueprint(wins_bp, url_prefix='/wins')
 
+    # Security headers on every response. The nginx config in
+    # APP_STRUCTURE.txt documents the same headers, but the app
+    # must not depend on the proxy for them — a direct gunicorn
+    # exposure or a proxy misconfiguration would otherwise serve
+    # pages with no clickjacking / MIME-sniffing protection at all.
+    # No Content-Security-Policy here: the app ships inline scripts
+    # (theme bootstrap, countdown) that a CSP would need nonces for
+    # — that is a separate, larger change.
+    @app.after_request
+    def _security_headers(response):
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+        response.headers.setdefault(
+            'Referrer-Policy', 'strict-origin-when-cross-origin'
+        )
+        return response
+
     # M1: unread notification count for the navbar badge. Phase 3:
     # the bell panel also needs the latest items (with actor avatars),
     # server-rendered so the panel works before any JS runs.
     @app.context_processor
     def inject_notifications():
+        # Audit 2026-11-25: context processors run on EVERY
+        # render_template call — including each AJAX message bubble
+        # (thread polling rendered 15 bubbles = 45 notification
+        # queries). Cache per request: the values cannot change
+        # mid-request for the viewer (a send notifies the OTHER
+        # user; _mark_read runs before any bubble is rendered).
+        cached = g.get('_notifications_ctx')
+        if cached is not None:
+            return cached
         from utils.notifications import (
             recent_notifications, unread_count,
         )
         from models.message import Message
         if not current_user.is_authenticated:
-            return {
+            result = {
                 'unread_notifications': 0,
                 'unread_messages': 0,
                 'recent_notifications': [],
             }
-        return {
-            'unread_notifications': unread_count(current_user.id),
-            'unread_messages': Message.query.filter_by(
-                recipient_id=current_user.id, is_read=False,
-            ).count(),
-            'recent_notifications': recent_notifications(
-                current_user.id, limit=10,
-            ),
-        }
+        else:
+            result = {
+                'unread_notifications': unread_count(current_user.id),
+                'unread_messages': Message.query.filter_by(
+                    recipient_id=current_user.id, is_read=False,
+                ).count(),
+                'recent_notifications': recent_notifications(
+                    current_user.id, limit=10,
+                ),
+            }
+        g._notifications_ctx = result
+        return result
 
     # Phase 2: the active locale for <html lang> and the switcher's
     # active-language indicator.
@@ -358,10 +408,9 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
             print('Spaces already seeded — nothing to do.')
 
     # Phase 3: weekly digest email (utils/digest.py). Recipients are
-    # active users with a verified email. Mail is NOT configured on
-    # the live container (no MAIL_* env vars), so the command runs
-    # and reports 0 sent there until SMTP is fixed — expected, not a
-    # bug; see DEPLOYMENT.md for the cron line.
+    # active users with a verified email. Mail goes through Resend
+    # (RESEND_API_KEY, live since 2026-11-23) with SMTP as fallback —
+    # see EMAIL_SETUP.md for the cron line.
     @app.cli.command('send-weekly-digest')
     def send_weekly_digest_command():
         from utils.digest import send_weekly_digest
@@ -576,7 +625,12 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
 
         # M1: Top Helpers — the 3 highest-karma profiles with at least one
         # completed referral (helped_count > 0).
-        top_helpers = db.session.query(Profile).filter(
+        # Audit 2026-11-25: the rail reads profile.user per helper —
+        # eager-load the users (1 query, not 1 per helper).
+        from sqlalchemy.orm import selectinload
+        top_helpers = db.session.query(Profile).options(
+            selectinload(Profile.user),
+        ).filter(
             Profile.helped_count > 0
         ).order_by(
             Profile.karma.desc()
@@ -588,7 +642,7 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
         # with the same post-card component as the feed, so the card
         # needs the same context (like/share state, trust levels).
         from models.post import Post
-        from utils.feed import _visible_posts_query
+        from utils.feed import _visible_posts_query, engagement_counts
         from blueprints.social.forms import ShareForm
         from blueprints.social.routes import (
             _author_levels, _author_profiles, _liked_and_shared_ids,
@@ -614,6 +668,7 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
                           shared_ids=shared_ids,
                           saved_ids=_saved_ids(post_ids),
                           poll_votes=_poll_votes(post_ids),
+                          post_counts=engagement_counts(post_ids),
                           author_levels=_author_levels(recent_posts),
                           author_profiles=_author_profiles(recent_posts),
                           share_form=ShareForm())

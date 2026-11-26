@@ -32,19 +32,41 @@ def _make_app(db_file):
 
 
 def _make_users():
-    from models.user import User
-    sender = User(
-        email='read-at-sender@example.com', full_name='Read At Sender',
-        role='user', is_active=True, email_verified=True,
-    )
-    recipient = User(
-        email='read-at-recipient@example.com',
-        full_name='Read At Recipient',
-        role='user', is_active=True, email_verified=True,
-    )
-    db.session.add_all([sender, recipient])
+    """Insert the two fixture users with raw SQL and an explicit
+    column list: the DB may be at an older revision than the models
+    (test_migration_backfills_read_at stops at money_audit_fixes),
+    so an ORM insert would reference columns the table does not
+    have yet — e.g. users.founding_referrer_since, added by the
+    later founding_window migration. Returns namespace objects
+    with .id (callers only use the ids)."""
+    from types import SimpleNamespace
+
+    now = datetime(2026, 11, 20, 9, 0, 0).isoformat(sep=' ')
+    sender_id = str(uuid.uuid4())
+    recipient_id = str(uuid.uuid4())
+    db.session.execute(text(
+        'INSERT INTO users (id, email, full_name, handle, role, '
+        'is_active, email_verified, founding_referrer, created_at) '
+        'VALUES (:id, :email, :full_name, :handle, :role, '
+        ':is_active, :email_verified, :founding_referrer, :created_at)'
+    ), [
+        {
+            'id': sender_id, 'email': 'read-at-sender@example.com',
+            'full_name': 'Read At Sender', 'handle': 'read.at.sender',
+            'role': 'user', 'is_active': 1, 'email_verified': 1,
+            'founding_referrer': 0, 'created_at': now,
+        },
+        {
+            'id': recipient_id, 'email': 'read-at-recipient@example.com',
+            'full_name': 'Read At Recipient',
+            'handle': 'read.at.recipient',
+            'role': 'user', 'is_active': 1, 'email_verified': 1,
+            'founding_referrer': 0, 'created_at': now,
+        },
+    ])
     db.session.commit()
-    return sender, recipient
+    return (SimpleNamespace(id=sender_id),
+            SimpleNamespace(id=recipient_id))
 
 
 def test_migration_backfills_read_at(tmp_path):
@@ -91,8 +113,10 @@ def test_migration_backfills_read_at(tmp_path):
         ])
         db.session.commit()
 
-        # Run the migration under test.
-        flask_migrate.upgrade()
+        # Run the migration under test — to that revision exactly, not
+        # to head: a later migration (perf_audit25_indexes) now sits
+        # after it, and the version assertion below is about this one.
+        flask_migrate.upgrade(revision=REVISION)
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()

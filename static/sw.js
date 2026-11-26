@@ -11,7 +11,7 @@
 // network-only. NEVER cached: feed data, API responses, user profiles,
 // messages, search results, or any HTML other than /offline.
 
-const CACHE_VERSION = 'p2m-v4';
+const CACHE_VERSION = 'p2m-v5';
 const CACHE_NAME = CACHE_VERSION;
 const OFFLINE_URL = '/offline';
 

@@ -22,6 +22,7 @@ from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from wtforms import SelectField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length
 
@@ -89,7 +90,7 @@ def _available_roles(bounty, user_id):
     return [r for r in eligible_roles(bounty, user_id) if r not in taken]
 
 
-def _earned_for(story):
+def _earned_for(story, payouts=None, referral_by_pitch=None):
     """The amount the referrer earned on the hire behind a story,
     as ``(amount, currency)`` — or ``(None, None)`` when it is not
     known. Read from the money trail, the single source of truth
@@ -100,11 +101,16 @@ def _earned_for(story):
     referrer earns the net, not what the poster put up. A free
     need has no amount. The wall shows this badge on referrer
     stories only — the poster paid the reward (they earned
-    nothing) and the hired candidate got a job, not money."""
+    nothing) and the hired candidate got a job, not money.
+    ``payouts`` / ``referral_by_pitch`` are the wall's bulk preloads
+    (see wall()); without them build_trail queries per story."""
     bounty = story.bounty
     if bounty is None:
         return None, None
-    trail = build_trail(bounty, match=story.match)
+    trail = build_trail(
+        bounty, match=story.match, payouts=payouts,
+        referral_by_pitch=referral_by_pitch,
+    )
     referrer_hop = next(
         (hop for hop in trail if hop['role'] == 'referrer'), None
     )
@@ -128,6 +134,16 @@ def wall():
     ).distinct()
     stories = (
         WinStory.query
+        .options(
+            # Audit 2026-11-25: _earned_for read story.bounty,
+            # story.match, match.pitch, match.employer and
+            # match.hunter lazily — 5 queries per story. Eager-load
+            # them all (4 queries total, however many stories).
+            selectinload(WinStory.bounty),
+            selectinload(WinStory.match).selectinload(Match.pitch),
+            selectinload(WinStory.match).selectinload(Match.employer),
+            selectinload(WinStory.match).selectinload(Match.hunter),
+        )
         .outerjoin(Match, Match.id == WinStory.match_id)
         .filter(WinStory.bounty_id.in_(completed_bounty_ids))
         .filter(or_(
@@ -138,8 +154,33 @@ def wall():
         .order_by(WinStory.created_at.desc())
         .all()
     )
+    # One bulk load of the Payout rows and Referrals every trail
+    # below needs (was 2 Payout queries + up to 2 Referral queries
+    # per story, inside build_trail).
+    from models.payout import Payout
+    from models.referral import Referral
+    match_ids = [s.match_id for s in stories if s.match_id]
+    payouts = {
+        (p.match_id, p.kind): p
+        for p in Payout.query.filter(
+            Payout.match_id.in_(match_ids)
+        ).all()
+    } if match_ids else {}
+    pitch_ids = [
+        s.match.pitch_id for s in stories
+        if s.match is not None and s.match.pitch_id
+    ]
+    referral_by_pitch = {
+        r.pitch_id: r
+        for r in Referral.query.filter(
+            Referral.pitch_id.in_(pitch_ids)
+        ).all()
+    } if pitch_ids else {}
     for story in stories:
-        amount, currency = _earned_for(story)
+        amount, currency = _earned_for(
+            story, payouts=payouts,
+            referral_by_pitch=referral_by_pitch,
+        )
         story.earned_amount = amount
         story.earned_currency = currency
     return render_template('wins/wall.html', stories=stories)

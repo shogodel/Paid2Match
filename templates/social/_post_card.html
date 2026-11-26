@@ -124,21 +124,30 @@
         </div>
         {% endif %}
 
+        {# Audit 2026-11-25: routes that render many cards pass
+           post_counts={post_id: (likes, comments, shares)} — one
+           GROUP BY query per kind instead of 5 COUNT queries per
+           card. Single-card renders (new post, AJAX) omit it and
+           fall back to the per-post properties. #}
+        {% set _counts = post_counts.get(post.id) if post_counts is defined and post_counts else none %}
+        {% set _like_count = _counts[0] if _counts is not none else post.like_count %}
+        {% set _comment_count = _counts[1] if _counts is not none else post.comment_count %}
+        {% set _share_count = _counts[2] if _counts is not none else post.share_count %}
         <div class="post-counts">
-            <span data-like-count>{{ ngettext('%(num)s like', '%(num)s likes', post.like_count) }}</span>
-            <span data-comment-count>{{ ngettext('%(num)s comment', '%(num)s comments', post.comment_count) }}</span>
+            <span data-like-count>{{ ngettext('%(num)s like', '%(num)s likes', _like_count) }}</span>
+            <span data-comment-count>{{ ngettext('%(num)s comment', '%(num)s comments', _comment_count) }}</span>
             <span>{{ ngettext('%(num)s view', '%(num)s views', post.view_count or 0) }}</span>
         </div>
 
         <div class="post-actions">
             <button type="button" class="post-action post-like-btn {{ 'is-active' if post.id in liked_ids }}" data-like-url="{{ url_for('social.like_post', post_id=post.id) }}" data-liked="{{ '1' if post.id in liked_ids else '0' }}" aria-label="{{ _('Like') }}">
-                {{ icon('heart', 18) }} <span class="action-label">{{ _('Like') }}</span> <span class="action-count">{{ post.like_count }}</span>
+                {{ icon('heart', 18) }} <span class="action-label">{{ _('Like') }}</span> <span class="action-count">{{ _like_count }}</span>
             </button>
             <button type="button" class="post-action post-comment-btn" data-comments-url="{{ url_for('social.post_comments', post_id=post.id) }}" data-detail-url="{{ url_for('social.post_detail', post_id=post.id) }}" aria-label="{{ _('Comment') }}">
-                {{ icon('message-circle', 18) }} <span class="action-label">{{ _('Comment') }}</span> <span class="action-count">{{ post.comment_count }}</span>
+                {{ icon('message-circle', 18) }} <span class="action-label">{{ _('Comment') }}</span> <span class="action-count">{{ _comment_count }}</span>
             </button>
             <button type="button" class="post-action post-share-btn {{ 'is-active' if post.id in shared_ids }}" data-bs-toggle="collapse" data-bs-target="#share-{{ post.id }}" aria-expanded="false" aria-label="{{ _('Share') }}">
-                {{ icon('share-2', 18) }} <span class="action-label">{{ _('Share') }}</span> <span class="action-count">{{ post.share_count }}</span>
+                {{ icon('share-2', 18) }} <span class="action-label">{{ _('Share') }}</span> <span class="action-count">{{ _share_count }}</span>
             </button>
             <button type="button" class="post-action post-save-btn {{ 'is-active' if post.id in saved_ids }}" data-save-url="{{ url_for('social.save_post', post_id=post.id) }}" data-saved="{{ '1' if post.id in saved_ids else '0' }}" aria-label="{{ _('Save') }}">
                 {{ icon('bookmark', 18) }} <span class="action-label">{{ _('Save') }}</span>

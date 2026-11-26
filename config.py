@@ -137,13 +137,20 @@ class Config:
 
     # Refund fees
     REFUND_TRANSACTION_FEE_PERCENT = 3.0
+    # The transaction fee added to every paid need at secure time
+    # (reward + 3% is what Stripe actually charges). One constant —
+    # the old code hardcoded 0.03 in three places and the close page
+    # hardcoded 3.0 in the template, so a rate change silently
+    # diverged the charge, the match record and the refund quote.
+    TRANSACTION_FEE_PERCENT = 3.0
     STRIPE_FEE_PERCENT = 2.9
     STRIPE_FEE_FIXED = 0.30
 
-    # Email (Flask-Mail) — all from environment, see EMAIL_SETUP.md.
-    # If MAIL_SERVER is unset, the app runs without sending mail: signup
-    # still works, but confirmation/reset emails are skipped (and logged),
-    # and an admin must verify accounts manually until mail is configured.
+    # Email — Resend HTTPS API first (RESEND_API_KEY), SMTP
+    # (Flask-Mail) as fallback; see EMAIL_SETUP.md. If neither is
+    # set, the app runs without sending mail: signup still works, but
+    # notification/digest emails are skipped (and logged), and an
+    # admin must verify accounts manually until mail is configured.
     # RESEND_API_KEY switches sending to the Resend HTTPS API instead of
     # SMTP — required on hosts where outbound SMTP ports are blocked
     # (DigitalOcean blocks 25/465/587/2525 on this droplet).

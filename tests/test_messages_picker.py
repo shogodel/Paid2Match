@@ -63,7 +63,8 @@ class TestUserPicker:
         assert any(u['id'] == sample_hunter.id for u in data)
         match = next(u for u in data if u['id'] == sample_hunter.id)
         assert match['full_name'] == 'Hunter User'
-        assert match['email'] == 'hunter@example.com'
+        # Audit 2026-11-25: the picker must not leak email addresses.
+        assert 'email' not in match
         assert match['handle']
 
     def test_matches_by_handle(self, logged_in_user, client, app,

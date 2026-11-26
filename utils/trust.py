@@ -43,6 +43,7 @@ in it).
 """
 from datetime import timedelta, timezone
 
+from flask import g, has_request_context
 from flask_babel import lazy_gettext as _l
 
 from extensions import db
@@ -94,58 +95,95 @@ def completed_referrals_count(user_id):
     ).count()
 
 
+def completed_referrals_counts(user_ids):
+    """{user_id: completed referrals} for many users — one GROUP BY
+    query instead of one COUNT per user (suggested_connections scores
+    every candidate on the page)."""
+    from sqlalchemy import func
+    ids = list(user_ids)
+    counts = {uid: 0 for uid in ids}
+    if not ids:
+        return counts
+    for hunter_id, n in db.session.query(
+        Match.hunter_id, func.count()
+    ).filter(
+        Match.hunter_id.in_(ids),
+        Match.hunter_confirmed.is_(True),
+        Match.employer_confirmed.is_(True),
+    ).group_by(Match.hunter_id).all():
+        counts[hunter_id] = n
+    return counts
+
+
 def response_rate(user_id):
     """Share of referrals received (as a poster) that got a response
-    (interested or rejected). None when no referrals were received."""
-    received = Pitch.query.join(
+    (interested or rejected). None when no referrals were received.
+
+    Audit 2026-11-25: two COUNT queries (received, responded) in
+    every trust computation — one conditional-aggregation query
+    returns both numbers."""
+    from sqlalchemy import case, func
+    received, responded = db.session.query(
+        func.count(Pitch.id),
+        func.coalesce(func.sum(case(
+            (Pitch.status.in_(['interested', 'rejected', 'accepted']), 1),
+            else_=0,
+        )), 0),
+    ).join(
         Bounty, Pitch.bounty_id == Bounty.id
-    ).filter(Bounty.poster_id == user_id).count()
+    ).filter(Bounty.poster_id == user_id).first()
     if received == 0:
         return None
-    responded = Pitch.query.join(
-        Bounty, Pitch.bounty_id == Bounty.id
-    ).filter(
-        Bounty.poster_id == user_id,
-        # M3 fix: 'accepted' is a response too — a poster who accepts
-        # referrals was scoring a 0% response rate, which blocked the
-        # Trusted/Ambassador gates that require >= 90%.
-        Pitch.status.in_(['interested', 'rejected', 'accepted']),
-    ).count()
     return responded / received
 
 
 def upheld_reports_count(user_id):
     """Reports upheld (actioned) against this user's content or profile
-    in the last 12 months (§3.1 — penalties expire)."""
+    in the last 12 months (§3.1 — penalties expire).
+
+    Audit 2026-11-25: three COUNT queries (profile / post / comment
+    targets) in every trust computation — one query with the same
+    three disjoint target clauses returns the same total."""
+    from sqlalchemy import and_, func, or_
     cutoff = utc_now() - timedelta(days=365)
-    count = Report.query.filter_by(
-        target_type='profile', target_id=user_id, status='actioned'
-    ).filter(Report.created_at >= cutoff).count()
-    count += Report.query.join(
-        Post, Report.target_id == Post.id
-    ).filter(
-        Report.target_type == 'post',
+    return Report.query.filter(
+        Report.target_type.in_(['profile', 'post', 'comment']),
         Report.status == 'actioned',
-        Post.author_id == user_id,
         Report.created_at >= cutoff,
+        or_(
+            and_(
+                Report.target_type == 'profile',
+                Report.target_id == user_id,
+            ),
+            and_(
+                Report.target_type == 'post',
+                Report.target_id.in_(
+                    db.session.query(Post.id).filter(
+                        Post.author_id == user_id
+                    )
+                ),
+            ),
+            and_(
+                Report.target_type == 'comment',
+                Report.target_id.in_(
+                    db.session.query(Comment.id).filter(
+                        Comment.author_id == user_id
+                    )
+                ),
+            ),
+        ),
     ).count()
-    count += Report.query.join(
-        Comment, Report.target_id == Comment.id
-    ).filter(
-        Report.target_type == 'comment',
-        Report.status == 'actioned',
-        Comment.author_id == user_id,
-        Report.created_at >= cutoff,
-    ).count()
-    return count
 
 
-def ratings_summary(user_id):
+def ratings_summary(user_id, reviews=None):
     """(average rating 1–5, count, positive rate) over the user's
     revealed reviews — or (None, 0, None) when there are none. A
     review's rating is the mean of its two dimensions; positive means
-    an average of 4.0 or better."""
-    reviews = revealed_reviews_for_user(user_id)
+    an average of 4.0 or better. ``reviews`` may be passed in when
+    the caller already loaded them (the public profile page does —
+    otherwise this re-queries the same rows)."""
+    if reviews is None:
+        reviews = revealed_reviews_for_user(user_id)
     if not reviews:
         return None, 0, None
     averages = [(r.rating_primary + r.rating_secondary) / 2 for r in reviews]
@@ -158,17 +196,31 @@ def dispute_loss_penalty(user_id, now=None):
     """Penalty for disputes this user lost: -15 within 6 months of
     resolution, -7 between 6 and 12 months, 0 after a year. The loser
     is the respondent when the dispute was upheld, the raiser when it
-    was dismissed."""
+    was dismissed.
+
+    Audit 2026-11-25: this used to load EVERY resolved dispute in
+    the database (plus one Match lookup each) on every trust
+    computation — a full-table scan per author per feed render. It
+    now joins Match and keeps only disputes where the user was the
+    hunter or the employer (the loser is always one of the two), so
+    the result is identical with one indexed query."""
+    from sqlalchemy import or_
     now = _as_aware(now or utc_now())
-    disputes = Dispute.query.filter(
-        Dispute.status == 'resolved',
-        Dispute.outcome.isnot(None),
-    ).all()
+    rows = (
+        db.session.query(Dispute, Match)
+        .join(Match, Dispute.match_id == Match.id)
+        .filter(
+            Dispute.status == 'resolved',
+            Dispute.outcome.isnot(None),
+            or_(
+                Match.hunter_id == user_id,
+                Match.employer_id == user_id,
+            ),
+        )
+        .all()
+    )
     penalty = 0
-    for dispute in disputes:
-        match = db.session.get(Match, dispute.match_id)
-        if match is None:
-            continue
+    for dispute, match in rows:
         if dispute.outcome == 'upheld':
             # The respondent (the other party) lost.
             loser = (
@@ -190,37 +242,74 @@ def dispute_loss_penalty(user_id, now=None):
     return penalty
 
 
-def identity_points(user):
-    """Verified-identity points (max 20)."""
+def _trust_cache():
+    """Per-request cache for trust computations.
+
+    A feed render scores every author on the page (Discover), the
+    badges score them again, and endorsements score each endorser —
+    without a cache the same user is computed 3+ times per request
+    (measured: ~84 queries for one user, ~5,300 for a 120-post
+    Discover render). The cache lives on flask.g, so it dies with
+    the request; outside a request context (tests, CLI) there is no
+    cache and every call computes fresh."""
+    if not has_request_context():
+        return None
+    cache = g.get('_trust_cache')
+    if cache is None:
+        cache = g._trust_cache = {}
+    return cache
+
+
+# Sentinel: "no value was passed" — distinct from an explicitly
+# passed None (the user really has no profile / Connect account).
+# Audit 2026-11-25: the old `if profile is None` / `if connect is
+# None` fallbacks could not tell the two apart, so a user with no
+# Connect account was re-queried on every call.
+_UNSET = object()
+
+
+def identity_points(user, profile=_UNSET, connect=_UNSET,
+                    linked_verified=None):
+    """Verified-identity points (max 20). The profile, Connect
+    account and verified-linked count may be passed in when the
+    caller already loaded them (compute_trust_score does) so the
+    same rows are not fetched three times per computation."""
     points = 0
     if user.email_verified:
         points += 5
-    verified_profile = Profile.query.filter_by(
-        user_id=user.id, verified=True
-    ).first()
-    if verified_profile is not None:
+    if profile is _UNSET:
+        profile = Profile.query.filter_by(
+            user_id=user.id, verified=True
+        ).first()
+    if profile is not None and profile.verified:
         points += 5
-    connect = ConnectAccount.query.filter_by(user_id=user.id).first()
+    if connect is _UNSET:
+        connect = ConnectAccount.query.filter_by(user_id=user.id).first()
     if connect is not None and connect.kyc_passed:
         points += 5
     # M3: 2+ verified linked socials.
-    from utils.linked_accounts import verified_linked_count
-    if verified_linked_count(user.id) >= 2:
+    if linked_verified is None:
+        from utils.linked_accounts import verified_linked_count
+        linked_verified = verified_linked_count(user.id)
+    if linked_verified >= 2:
         points += 5
     return points
 
 
-def has_kyc(user_id):
+def has_kyc(user_id, connect=_UNSET):
     """Whether the user passed Stripe Connect KYC."""
-    connect = ConnectAccount.query.filter_by(user_id=user_id).first()
+    if connect is _UNSET:
+        connect = ConnectAccount.query.filter_by(user_id=user_id).first()
     return bool(connect is not None and connect.kyc_passed)
 
 
-def is_profile_verified(user_id):
+def is_profile_verified(user_id, profile=_UNSET):
     """Whether the user has an admin-verified profile."""
-    return Profile.query.filter_by(
-        user_id=user_id, verified=True
-    ).first() is not None
+    if profile is _UNSET:
+        return Profile.query.filter_by(
+            user_id=user_id, verified=True
+        ).first() is not None
+    return bool(profile is not None and profile.verified)
 
 
 def compute_trust_score(user, include_endorsements=True):
@@ -230,11 +319,34 @@ def compute_trust_score(user, include_endorsements=True):
     used when weighting an endorser's level inside endorsement_points,
     so the computation cannot recurse (A endorses B, B endorses A).
     """
+    cache = _trust_cache()
+    cache_key = (user.id, include_endorsements)
+    if cache is not None and cache_key in cache:
+        return cache[cache_key]
+    result = _compute_trust_score_uncached(user, include_endorsements)
+    if cache is not None:
+        cache[cache_key] = result
+    return result
+
+
+def _compute_trust_score_uncached(user, include_endorsements=True):
+    """The trust computation itself (see compute_trust_score)."""
     profile = Profile.query.filter_by(user_id=user.id).first()
     karma = (profile.karma or 0) if profile else 0
     completed = completed_referrals_count(user.id)
 
-    identity = identity_points(user)
+    # Load the identity inputs once and share them: identity_points,
+    # the KYC check and the verified-profile check each used to
+    # re-query the same rows (3 Profile loads per computation).
+    connect = ConnectAccount.query.filter_by(user_id=user.id).first()
+    from utils.linked_accounts import verified_linked_count
+    linked_verified = verified_linked_count(user.id)
+    profile_verified = bool(profile is not None and profile.verified)
+    kyc = bool(connect is not None and connect.kyc_passed)
+    identity = identity_points(
+        user, profile=profile, connect=connect,
+        linked_verified=linked_verified,
+    )
 
     ratings_avg, ratings_count, positive_rate = ratings_summary(user.id)
     if ratings_count > 0:
@@ -281,7 +393,9 @@ def compute_trust_score(user, include_endorsements=True):
         'ratings_count': ratings_count,
         'positive_rate': positive_rate,
         'sla_breaches': sla_90d,
-        'profile_verified': is_profile_verified(user.id),
+        'profile_verified': profile_verified,
+        'kyc': kyc,
+        'linked_verified_count': linked_verified,
         'endorsement_points': endorsement_pts,
         'tenure_months': months,
     }
@@ -296,20 +410,26 @@ def trust_level(user, include_endorsements=True):
     score, breakdown = compute_trust_score(
         user, include_endorsements=include_endorsements
     )
+    # Copy: the breakdown may be the request-cached dict, and the
+    # badge flag below must not leak into the cache.
+    breakdown = dict(breakdown)
     completed = breakdown['completed_referrals']
     positive_rate = breakdown['positive_rate']
     rate = breakdown['response_rate']
     badge_suspended = has_open_breach(user.id)
     breakdown['badge_suspended'] = badge_suspended
 
-    from utils.linked_accounts import verified_linked_count
+    # The gates reuse the identity inputs compute_trust_score already
+    # loaded (KYC, verified profile, linked count) instead of
+    # re-querying them — they used to cost 3 more queries per level
+    # check.
     if (
         score >= 85
-        and has_kyc(user.id)
+        and breakdown.get('kyc')
         and completed >= 15
         and positive_rate is not None and positive_rate >= 0.90
         and breakdown['tenure_months'] >= 12
-        and verified_linked_count(user.id) >= 2
+        and breakdown.get('linked_verified_count', 0) >= 2
     ):
         level = 'Ambassador'
     elif (

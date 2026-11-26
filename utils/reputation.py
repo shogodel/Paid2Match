@@ -25,6 +25,7 @@ from statistics import median
 
 from flask_babel import gettext as _
 
+from extensions import db
 from models.bounty import Bounty
 from models.match import Match
 from models.pitch import Pitch
@@ -51,14 +52,19 @@ def fill_rate(user_id):
     ).all()
     if not terminal:
         return None
-    filled = 0
-    for bounty in terminal:
-        if Match.query.filter_by(
-            bounty_id=bounty.id,
-            hunter_confirmed=True,
-            employer_confirmed=True,
-        ).first():
-            filled += 1
+    # Audit 2026-11-25: the old code issued one Match query per
+    # terminal bounty. One IN query covers them all.
+    terminal_ids = [b.id for b in terminal]
+    filled_ids = {
+        bounty_id for (bounty_id,) in db.session.query(
+            Match.bounty_id
+        ).filter(
+            Match.bounty_id.in_(terminal_ids),
+            Match.hunter_confirmed.is_(True),
+            Match.employer_confirmed.is_(True),
+        ).distinct().all()
+    } if terminal_ids else set()
+    filled = sum(1 for b in terminal if b.id in filled_ids)
     return filled / len(terminal)
 
 

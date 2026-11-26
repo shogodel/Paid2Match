@@ -105,6 +105,11 @@ def endorsement_points(user_id):
             if level in ('Trusted', 'Ambassador'):
                 weight = ENDORSEMENT_TRUSTED_WEIGHT
         total += weight
+        # Audit 2026-11-25: the result is capped at 5 — stop scoring
+        # endorsers once the cap is reached (each endorser costs a
+        # full trust computation).
+        if total >= ENDORSEMENT_MAX_POINTS:
+            break
     return min(ENDORSEMENT_MAX_POINTS, total)
 
 

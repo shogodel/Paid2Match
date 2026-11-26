@@ -35,7 +35,7 @@
                             <h4 class="mb-0">{{ info.badge }}</h4>
                         </div>
                         <div class="card-body">
-                            <h3 class="text-success mb-3">${{ "%.2f"|format(info.price_per_day) }}{{ _('/day') }}</h3>
+                            <h3 class="text-success mb-3">CA${{ "%.2f"|format(info.price_per_day) }}{{ _('/day') }}</h3>
                             <p class="small text-muted">{{ info.description }}</p>
                             
                             <hr>
@@ -46,11 +46,11 @@
                                 <div class="mb-3">
                                     <label class="form-label">{{ _('Duration (days)') }}</label>
                                     <select name="duration_days" class="form-select" required>
-                                        <option value="1">{{ ngettext('%(num)s day', '%(num)s days', 1) }} - ${{ "%.2f"|format(info.price_per_day) }}</option>
-                                        <option value="3">{{ ngettext('%(num)s day', '%(num)s days', 3) }} - ${{ "%.2f"|format(info.price_per_day * 3) }}</option>
-                                        <option value="7" selected>{{ ngettext('%(num)s day', '%(num)s days', 7) }} - ${{ "%.2f"|format(info.price_per_day * 7) }}</option>
-                                        <option value="14">{{ ngettext('%(num)s day', '%(num)s days', 14) }} - ${{ "%.2f"|format(info.price_per_day * 14) }}</option>
-                                        <option value="30">{{ ngettext('%(num)s day', '%(num)s days', 30) }} - ${{ "%.2f"|format(info.price_per_day * 30) }}</option>
+                                        <option value="1">{{ ngettext('%(num)s day', '%(num)s days', 1) }} - CA${{ "%.2f"|format(info.price_per_day) }}</option>
+                                        <option value="3">{{ ngettext('%(num)s day', '%(num)s days', 3) }} - CA${{ "%.2f"|format(info.price_per_day * 3) }}</option>
+                                        <option value="7" selected>{{ ngettext('%(num)s day', '%(num)s days', 7) }} - CA${{ "%.2f"|format(info.price_per_day * 7) }}</option>
+                                        <option value="14">{{ ngettext('%(num)s day', '%(num)s days', 14) }} - CA${{ "%.2f"|format(info.price_per_day * 14) }}</option>
+                                        <option value="30">{{ ngettext('%(num)s day', '%(num)s days', 30) }} - CA${{ "%.2f"|format(info.price_per_day * 30) }}</option>
                                     </select>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">

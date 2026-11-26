@@ -1,8 +1,10 @@
 """Pro analytics subscription service (M3, §1.4).
 
 Pro is $9/month via Stripe Checkout (subscription mode). Founding
-referrers get it free for 12 months — the founding flag is
-admin-managed, same as the 15% fee (M2).
+referrers get it free for 12 months — the window runs from when the
+admin granted the flag (User.founding_referrer_since) and is
+enforced by utils.payments.founding_benefit_active, same as the
+15% fee.
 
 Canceling keeps access until the end of the current period: Stripe
 keeps the subscription 'active' with cancel_at_period_end=True, and
@@ -24,6 +26,7 @@ from utils.payments import (
     _set_api_key,
     _stripe_get,
     create_subscription_checkout_session,
+    founding_benefit_active,
     stripe_enabled,
 )
 
@@ -31,11 +34,12 @@ logger = logging.getLogger(__name__)
 
 
 def is_pro(user):
-    """Whether the user has live Pro access: a founding referrer, or
-    an active Pro subscription whose period has not ended."""
+    """Whether the user has live Pro access: a founding referrer
+    inside the 12-month window, or an active Pro subscription whose
+    period has not ended."""
     if user is None:
         return False
-    if getattr(user, 'founding_referrer', False):
+    if founding_benefit_active(user):
         return True
     sub = ProSubscription.query.filter_by(user_id=user.id).first()
     return bool(sub and sub.is_current)
@@ -52,7 +56,7 @@ def create_pro_checkout(user, success_url, cancel_url):
         success_url=success_url,
         cancel_url=cancel_url,
         amount_cents=PRO_PRICE_CENTS,
-        description='Paid2Match Pro — advanced analytics ($9/month)',
+        description='Paid2Match Pro — advanced analytics (CA$9/month)',
         metadata={'m3_kind': 'pro', 'user_id': user.id},
         # One Pro subscription per user: a double-click returns the
         # same session instead of creating a second subscription

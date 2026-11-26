@@ -47,8 +47,8 @@ from utils.bumps import (
 from models.bump import RecurringBump
 from utils.feed import (
     PUBLISHED_DISCOVER_RULES, PUBLISHED_TRENDING_RULES,
-    create_need_post, get_discover_feed, get_following_feed,
-    get_latest_feed, get_trending_feed,
+    create_need_post, engagement_counts, get_discover_feed,
+    get_following_feed, get_latest_feed, get_trending_feed,
     suggested_connections,
 )
 from utils.mentions import notify_mentions
@@ -162,6 +162,27 @@ def _post_is_public(post):
     return current_user.is_authenticated and current_user.id == post.author_id
 
 
+def _post_visible_to_strangers(post):
+    """True when a stranger may see this post — the notification
+    gate. Same visibility rule as _post_is_public, but WITHOUT the
+    author exception: the author is never the notification audience,
+    so a post linked to an unsecured paid bounty is not visible
+    here even though the author can open it. Without this gate the
+    need's text leaked to strangers through space-member and
+    @mention notifications at creation time, while the feeds,
+    search, digest and sitemap all correctly hid it until escrow.
+
+    The bounty is resolved by id when the relationship is None: a
+    just-created post is still pending (create_need_post only adds
+    it), and a pending post's many-to-one loads as None until the
+    next flush — trusting the relationship alone would treat every
+    fresh need post as bounty-less (public)."""
+    bounty = post.bounty
+    if bounty is None and post.bounty_id:
+        bounty = db.session.get(Bounty, post.bounty_id)
+    return bounty is None or bounty.is_publicly_visible
+
+
 def _author_levels(posts):
     """Trust level per author id, for the badges on post cards (M3)."""
     levels = {}
@@ -174,15 +195,35 @@ def _author_levels(posts):
     return levels
 
 
+def _profiles_by_user(user_ids):
+    """{user_id: Profile} for many users — one query.
+
+    Audit 2026-11-25: the people directory, search results and the
+    suggested rail rendered user.profiles.first() per row in their
+    templates (up to 50 queries on the people page)."""
+    ids = list(user_ids)
+    if not ids:
+        return {}
+    return {
+        p.user_id: p
+        for p in Profile.query.filter(Profile.user_id.in_(ids)).all()
+    }
+
+
 def _author_profiles(posts):
-    """Profile per author id, for avatars/headlines on post cards."""
-    profiles = {}
-    for post in posts:
-        if post.author_id not in profiles:
-            profiles[post.author_id] = Profile.query.filter_by(
-                user_id=post.author_id
-            ).first()
-    return profiles
+    """Profile per author id, for avatars/headlines on post cards.
+
+    Audit 2026-11-25: this looped one Profile query per author
+    (6 queries for a 6-author page). One IN query replaces them."""
+    author_ids = {post.author_id for post in posts}
+    if not author_ids:
+        return {}
+    return {
+        p.user_id: p
+        for p in Profile.query.filter(
+            Profile.user_id.in_(author_ids)
+        ).all()
+    }
 
 
 def _comment_json(comment):
@@ -243,9 +284,15 @@ def feed():
     my_bounties = Bounty.query.filter_by(
         poster_id=current_user.id, status='open'
     ).order_by(desc(Bounty.created_at)).limit(10).all()
-    top_helpers = Profile.query.filter(
+    # Audit 2026-11-25: the rail reads profile.user per helper —
+    # eager-load the users (1 query, not 1 per helper).
+    from sqlalchemy.orm import selectinload
+    top_helpers = Profile.query.options(
+        selectinload(Profile.user),
+    ).filter(
         Profile.helped_count > 0
     ).order_by(desc(Profile.karma)).limit(3).all()
+    suggested = suggested_connections(current_user.id)
     newest = max(
         (item['sort_key'] for item in result['items']),
         default=None,
@@ -267,11 +314,14 @@ def feed():
         shared_ids=shared_ids,
         saved_ids=_saved_ids(post_ids),
         poll_votes=_poll_votes(post_ids),
+        post_counts=engagement_counts(post_ids),
         author_levels=_author_levels(posts),
         author_profiles=_author_profiles(posts),
         discover_rules=PUBLISHED_DISCOVER_RULES,
         trending_rules=PUBLISHED_TRENDING_RULES,
-        suggested=suggested_connections(current_user.id),
+        suggested=suggested,
+        suggested_profiles=_profiles_by_user(
+            [u.id for u in suggested]),
         share_form=ShareForm(),
         composer_form=PostForm(),
         my_bounties=my_bounties,
@@ -395,6 +445,7 @@ def space_detail(slug):
         shared_ids=shared_ids,
         saved_ids=_saved_ids(post_ids),
         poll_votes=_poll_votes(post_ids),
+        post_counts=engagement_counts(post_ids),
         author_levels=_author_levels(posts),
         author_profiles=_author_profiles(posts),
         share_form=ShareForm(),
@@ -523,12 +574,18 @@ def new_post():
                 post.space_id = space.id
             if poll_opts:
                 create_poll(post, poll_opts)
-            _notify_space_members(space, post)
-            db.session.flush()
-            notify_mentions(
-                post.body, current_user.id, current_user.full_name,
-                url_for('social.post_detail', post_id=post.id),
-            )
+            # An unsecured paid need is not public yet: its text must
+            # not reach strangers through notifications either (the
+            # feeds, search, digest and sitemap all hide it until
+            # escrow). Space members + @mentions hear about it when
+            # the payment is secured — the webhook notifies them then.
+            if _post_visible_to_strangers(post):
+                _notify_space_members(space, post)
+                db.session.flush()
+                notify_mentions(
+                    post.body, current_user.id, current_user.full_name,
+                    url_for('social.post_detail', post_id=post.id),
+                )
             db.session.commit()
             if form.post_type.data == 'need_paid':
                 secure_url = url_for('bounties.secure_payment', id=bounty.id)
@@ -563,11 +620,15 @@ def new_post():
         db.session.flush()
         if poll_opts:
             create_poll(post, poll_opts)
-        _notify_space_members(space, post)
-        notify_mentions(
-            post.body, current_user.id, current_user.full_name,
-            url_for('social.post_detail', post_id=post.id),
-        )
+        # Same gate as above: a plain post carrying an unsecured paid
+        # bounty (attached from the composer's bounty picker) is not
+        # public yet, so its audience hears nothing until escrow.
+        if _post_visible_to_strangers(post):
+            _notify_space_members(space, post)
+            notify_mentions(
+                post.body, current_user.id, current_user.full_name,
+                url_for('social.post_detail', post_id=post.id),
+            )
         db.session.commit()
         if _wants_json():
             return jsonify(_new_post_json(post))
@@ -644,6 +705,7 @@ def post_detail(post_id):
         shared=post_id in shared_ids,
         saved=post_id in _saved_ids([post_id]),
         poll_votes=_poll_votes([post_id]),
+        post_counts=engagement_counts([post_id]),
         author_trust=trust_level(post.author) if post.author else None,
         author_levels=_author_levels([post]),
         author_profiles=_author_profiles([post]),
@@ -814,13 +876,17 @@ def comment_post(post_id):
             )
         # Phase 2: @mentions in the comment notify the mentioned users
         # — except the post/parent authors, who already got a comment
-        # notification for this same comment.
-        notify_mentions(
-            form.body.data.strip(), current_user.id, current_user.full_name,
-            url_for('social.post_detail', post_id=post_id),
-            exclude_ids={post.author_id}
-            | ({parent.author_id} if parent else set()),
-        )
+        # notification for this same comment. Gated on stranger
+        # visibility: the author can comment on their own unsecured
+        # need post, and a mention there must not hand the text to a
+        # stranger before escrow.
+        if _post_visible_to_strangers(post):
+            notify_mentions(
+                form.body.data.strip(), current_user.id, current_user.full_name,
+                url_for('social.post_detail', post_id=post_id),
+                exclude_ids={post.author_id}
+                | ({parent.author_id} if parent else set()),
+            )
         db.session.commit()
         if _wants_json():
             return jsonify({
@@ -977,7 +1043,14 @@ def vote_poll(poll_id):
 def saved():
     """GET /social/saved — your saved posts, newest first."""
     page = request.args.get('page', 1, type=int)
-    pagination = Bookmark.query.filter_by(
+    # Audit 2026-11-25: b.post was lazy per bookmark, and the card
+    # then read post.author / post.bounty / post.poll per post.
+    from sqlalchemy.orm import selectinload
+    pagination = Bookmark.query.options(
+        selectinload(Bookmark.post).selectinload(Post.author),
+        selectinload(Bookmark.post).selectinload(Post.bounty),
+        selectinload(Bookmark.post).selectinload(Post.poll),
+    ).filter_by(
         user_id=current_user.id,
     ).order_by(desc(Bookmark.created_at)).paginate(
         page=page, per_page=20, error_out=False,
@@ -994,6 +1067,7 @@ def saved():
         shared_ids=shared_ids,
         saved_ids=set(post_ids),
         poll_votes=_poll_votes(post_ids),
+        post_counts=engagement_counts(post_ids),
         author_levels=_author_levels(posts),
         author_profiles=_author_profiles(posts),
         share_form=ShareForm(),
@@ -1192,6 +1266,8 @@ def people():
         suggested=suggested,
         following_ids=following_ids,
         verification_tiers=verification_tiers,
+        people_profiles=_profiles_by_user(
+            [u.id for u in users] + [u.id for u in suggested]),
         q=query_text, skill=skill, location=location,
     )
 
@@ -1277,8 +1353,11 @@ def search():
         shared_ids=shared_ids,
         saved_ids=_saved_ids(post_ids),
         poll_votes=_poll_votes(post_ids),
+        post_counts=engagement_counts(post_ids),
         author_levels=_author_levels(post_results),
         author_profiles=_author_profiles(post_results),
+        people_profiles=_profiles_by_user(
+            [u.id for u in people_results]),
         following_ids=following_ids,
         verification_tiers=verification_tiers,
         share_form=ShareForm(),

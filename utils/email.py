@@ -1,9 +1,10 @@
 """Email helpers for Paid2Match.
 
 Used for referral invites, notifications, and the weekly digest. Auth is
-OAuth-only (Google / GitHub) — there is no signup confirmation or
-password reset mail anymore. All settings come from environment
-variables (see config.py / EMAIL_SETUP.md) — nothing is hardcoded here.
+OAuth-only (Google, GitHub, Facebook, LinkedIn) — there is no signup
+confirmation or password reset mail anymore. All settings come from
+environment variables (see config.py / EMAIL_SETUP.md) — nothing is
+hardcoded here.
 
 Sending goes through the Resend HTTPS API when RESEND_API_KEY is set,
 and falls back to SMTP (Flask-Mail) otherwise. The API path exists

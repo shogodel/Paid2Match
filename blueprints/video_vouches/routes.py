@@ -39,6 +39,12 @@ def _safe_next(value, default):
     (e.g. the referrer) reduced to its path."""
     if not value:
         return default
+    # Browsers treat backslashes as slashes, so '/\evil.com' would
+    # navigate to //evil.com — reject any backslash outright (the
+    # same hole the auth/login and language-switcher validators
+    # already close).
+    if '\\' in value:
+        return default
     if value.startswith('/') and not value.startswith('//'):
         return value
     from urllib.parse import urlparse

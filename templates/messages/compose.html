@@ -69,7 +69,7 @@
             item.className = 'list-group-item list-group-item-action';
             item.href = '/messages/thread/' + encodeURIComponent(u.id);
             var name = document.createElement('strong');
-            name.textContent = u.full_name || u.email;
+            name.textContent = u.full_name || u.handle;
             item.appendChild(name);
             if (u.handle) {
                 var handle = document.createElement('small');
@@ -77,10 +77,6 @@
                 handle.textContent = ' @' + u.handle;
                 item.appendChild(handle);
             }
-            var email = document.createElement('div');
-            email.className = 'text-muted small';
-            email.textContent = u.email;
-            item.appendChild(email);
             results.appendChild(item);
         });
     }

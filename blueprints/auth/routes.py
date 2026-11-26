@@ -64,22 +64,27 @@ def login():
 def _is_safe_url(target: str) -> bool:
     """Validate that the redirect URL is internal to prevent open redirect attacks."""
     from urllib.parse import urlparse
+    if not target:
+        return False
     # Browsers treat backslashes as slashes, so '/\\evil.com' (which
     # urlparse sees as a same-origin path) navigates to //evil.com —
     # reject any backslash outright.
     if '\\' in target:
         return False
-    ref_url = urlparse(request.host_url)
+    # Browsers also normalize special-scheme URLs with missing or
+    # collapsed slashes to a host: 'http:/evil.com', 'http:evil.com'
+    # and 'http:///evil.com' all navigate to http://evil.com/ even
+    # though urlparse sees no netloc in them. A target with an http(s)
+    # scheme but no netloc is therefore never a same-origin path —
+    # reject it. Only a single-slash relative path, or an absolute
+    # URL on this host, is allowed.
+    if target.startswith('/'):
+        return not target.startswith('//')
     target_url = urlparse(target)
-    # Reject any URL with a disallowed scheme, or a host that is not this app's host
-    # (this also blocks protocol-relative URLs like //evil.com and the previous
-    # 'localhost'.evil.com substring bypass). Only relative paths or same-origin
-    # absolute URLs are allowed.
-    if target_url.scheme not in ('', 'http', 'https'):
+    if target_url.scheme not in ('http', 'https'):
         return False
-    if target_url.netloc and target_url.netloc != ref_url.netloc:
-        return False
-    return True
+    ref_url = urlparse(request.host_url)
+    return target_url.netloc == ref_url.netloc
 
 
 def _find_user_by_email(email):

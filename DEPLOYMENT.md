@@ -58,7 +58,8 @@ The uWSGI/Nginx notes below are the older setup and are kept for reference.
 ## Installed Components
 
 ### Python Packages (requirements.txt)
-- **uWSGI**: 2.0.31 (replaced Gunicorn 25.3.0)
+- **Gunicorn**: 25.3.0 (the Dockerfile serves the app with Gunicorn
+  via `wsgi:app`; uWSGI was removed — it cannot build on Python 3.12)
 - **Flask**: 3.1.3
 - **Flask extensions**: Babel, Bcrypt, Login, Migrate, SQLAlchemy, WTF
 - **Database**: PostgreSQL (psycopg2-binary)
@@ -131,12 +132,10 @@ Set in `.env` file or system environment:
 7. **Security headers** configured in Nginx
 
 ## Migration from Gunicorn
-- Removed: `gunicorn==25.3.0` from requirements.txt
-- Removed: `gunicorn_config.py`
-- Added: `uwsgi==2.0.31` to requirements.txt
-- Added: `uwsgi.ini` configuration file
-- Updated: `wsgi.py` for better environment handling
-- Updated: Nginx to use `uwsgi_pass` instead of `proxy_pass`
+> STALE SECTION (kept only so the history is visible): this described a
+> move *to* uWSGI that was later reversed. The live deploy runs
+> Gunicorn 25.3.0 (see "Docker deploy" above); uWSGI is NOT in
+> requirements.txt and must not be re-added.
 
 ## Verification
 ```bash
@@ -171,12 +170,25 @@ Cron line (Mondays at 08:00 UTC — run inside the app container):
 0 8 * * 1 cd /home/bogdan/apps && docker compose exec -T paid2match flask send-weekly-digest
 ```
 
-**Mail is NOT configured on the live container** (no `MAIL_*` env
-vars), so the digest currently sends nothing there: the command runs,
-logs a warning per user, and reports `0 sent, N skipped`. That is
-expected until SMTP is configured (see `EMAIL_SETUP.md`) — do not
-work around it, and do not invent mail credentials. Once `MAIL_SERVER`
-is set, the same command starts sending with no code change.
+**Mail is configured on the live container** via the Resend HTTPS API
+(`RESEND_API_KEY` set since 2026-11-23; domain `paid2match.work`
+verified, sender `support@paid2match.work`) — the digest sends for
+real there. SMTP (`MAIL_*`) is only a fallback for hosts where
+outbound SMTP works; DigitalOcean blocks SMTP ports on this droplet,
+so Resend is the live path (see `EMAIL_SETUP.md`). If neither
+`RESEND_API_KEY` nor `MAIL_SERVER` is set, the command runs, logs a
+warning per user, and reports `0 sent, N skipped`.
+
+### Recurring bumps (M3)
+
+`flask run-recurring-bumps` applies due $5/month auto-bumps (the admin
+panel has a manual button too). It prints a summary (`N recurring
+bumps applied, M deferred`) and never raises.
+
+Cron line (daily at 03:00 UTC — run inside the app container):
+```cron
+0 3 * * * cd /home/bogdan/apps && docker compose exec -T paid2match flask run-recurring-bumps
+```
 
 Links in the digest are built against `P2M_BASE_URL` (default
 `https://paid2match.work`); the CLI has no request to take the host

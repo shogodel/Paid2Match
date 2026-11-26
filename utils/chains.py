@@ -58,20 +58,32 @@ def validate_share_for_referral(share_id, bounty, referrer_id):
     return share
 
 
-def resolve_chain_sharer(match):
+# Sentinel: "no preloaded referral was passed" — distinct from a
+# preloaded None (this pitch really has no referral).
+_NO_REFERRAL = object()
+
+
+def resolve_chain_sharer(match, referral=_NO_REFERRAL):
     """The user id of the sharer in a match's chain, or None.
 
     Read from the pitch's via_share_id (set by the refer/pitch
     routes, copied through consent); falls back to the Referral's
     via_share_id when the pitch has none. Re-validated here — a share
     recorded before M4, or one whose post was deleted, earns nothing.
-    """
+
+    ``referral`` may be passed in when the caller already loaded the
+    match's Referral (the wins wall loads one per story) so the
+    fallback lookup is skipped; _NO_REFERRAL (the default) keeps the
+    old query behaviour."""
     share_id = None
     pitch = match.pitch
     if pitch is not None:
         share_id = pitch.via_share_id
     if not share_id and match.pitch_id:
-        referral = Referral.query.filter_by(pitch_id=match.pitch_id).first()
+        if referral is _NO_REFERRAL:
+            referral = Referral.query.filter_by(
+                pitch_id=match.pitch_id
+            ).first()
         if referral is not None:
             share_id = referral.via_share_id
     if not share_id:

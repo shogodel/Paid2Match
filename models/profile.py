@@ -40,7 +40,7 @@ class Profile(db.Model):
     # 12 months of KarmaEvents (see utils/karma.py); helped_count is the
     # public "Helped N people" counter; free_bumps banks 1 free bump per
     # completed referral (§1.3) for M3 to spend.
-    karma = db.Column(db.Integer, default=0)
+    karma = db.Column(db.Integer, default=0, index=True)
     helped_count = db.Column(db.Integer, default=0)
     free_bumps = db.Column(db.Integer, default=0)
     remote_ok = db.Column(db.Boolean, default=False)

@@ -31,16 +31,23 @@
             {% if people_results %}
             <h4 class="mt-4">{{ _('People') }}</h4>
             {% for user in people_results %}
-            {% set profile = user.profiles.first() %}
+            {# Audit 2026-11-25: bulk-loaded by the route (was
+               user.profiles.first() per row). #}
+            {% set profile = people_profiles.get(user.id) if people_profiles is defined else user.profiles.first() %}
             <div class="card mb-2">
                 <div class="card-body d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
+                    {# Audit 2026-11-25: min-w-0 lets this column shrink
+                       instead of pushing the Follow button off the
+                       screen for a long name/headline (same class of
+                       bug as the messaging .min-w-0 fix); the button
+                       keeps its size with flex-shrink-0. #}
+                    <div class="d-flex align-items-center gap-2 min-w-0">
                         {% if profile and profile.avatar_url %}
                         <img src="{{ profile.avatar_url }}" alt="" class="avatar avatar-40">
                         {% else %}
                         <span class="avatar-placeholder avatar-40 avatar-tone-{{ user.id|avatar_tone }}" aria-hidden="true">{{ (profile.display_name or user.full_name)[0] | upper }}</span>
                         {% endif %}
-                        <div>
+                        <div class="min-w-0 break-anywhere">
                             <a href="{{ url_for('profile.public_profile', user_id=user.handle or user.id) }}" class="fw-bold text-decoration-none">{{ profile.display_name or user.full_name }}</a>
                             {% set tier_info = verification_tiers.get(user.id) %}
                             {% include 'partials/verification_badge.html' %}
@@ -54,7 +61,7 @@
                         </div>
                     </div>
                     {% if current_user.is_authenticated and current_user.id != user.id %}
-                    <button type="button" class="btn btn-follow btn-primary btn-sm {{ 'is-following' if user.id in following_ids }}" data-follow-url="{{ url_for('social.follow', user_id=user.id) }}" data-unfollow-url="{{ url_for('social.unfollow', user_id=user.id) }}" data-following="{{ '1' if user.id in following_ids else '0' }}">
+                    <button type="button" class="btn btn-follow btn-primary btn-sm flex-shrink-0 {{ 'is-following' if user.id in following_ids }}" data-follow-url="{{ url_for('social.follow', user_id=user.id) }}" data-unfollow-url="{{ url_for('social.unfollow', user_id=user.id) }}" data-following="{{ '1' if user.id in following_ids else '0' }}">
                         <span class="label-follow">{{ _('Follow') }}</span><span class="label-following">{{ _('Following') }}</span><span class="label-unfollow">{{ _('Unfollow') }}</span>
                     </button>
                     {% endif %}

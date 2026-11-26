@@ -71,7 +71,7 @@ class Post(db.Model):
     bumped_until = db.Column(db.DateTime, nullable=True)
     boosted_until = db.Column(db.DateTime, nullable=True)
     view_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=utc_now)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     bounty = db.relationship('Bounty', backref='linked_posts')

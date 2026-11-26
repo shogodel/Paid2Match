@@ -50,6 +50,7 @@ from utils.payments import (
     handle_account_updated,
     handle_payout_event,
     handle_transfer_event,
+    idempotency_key_for,
     payment_intent_status,
     release_escrow,
     stripe_enabled,
@@ -383,6 +384,35 @@ def edit(id):
     form = BountyForm(obj=bounty)
     
     if request.method == 'POST' and form.validate_on_submit():
+        # A secured need's escrow already holds reward + 3% in CAD:
+        # changing the reward or the currency afterwards would leave
+        # the capture, the refund and the locked match fee disagreeing
+        # with the need (e.g. a $1,000 CAD escrow behind a need now
+        # showing €50). The amount and currency are locked while the
+        # payment is secured; everything else stays editable. To
+        # change the amount, cancel and refund first.
+        if bounty.payment_status == 'secured':
+            new_reward = (
+                Decimal(str(form.reward_amount.data))
+                if form.reward_amount.data is not None else None
+            )
+            old_reward = (
+                Decimal(str(bounty.reward_amount))
+                if bounty.reward_amount is not None else None
+            )
+            new_currency = (form.currency.data or 'CAD').upper()
+            old_currency = (bounty.currency or 'CAD').upper()
+            if new_reward != old_reward or new_currency != old_currency:
+                flash(
+                    'This need has a secured payment — the reward amount '
+                    'and currency cannot be changed while the payment is '
+                    'secured. Cancel and refund it first to change the '
+                    'amount.',
+                    'danger',
+                )
+                return render_template(
+                    'bounties/edit.html', form=form, bounty=bounty
+                )
         bounty_type = form.bounty_type.data
         category = (form.category.data or '').strip() or None
         if category and category not in Bounty.CATEGORIES.get(bounty_type, {}):
@@ -691,7 +721,8 @@ def confirm_match(pitch_id):
             )
         else:
             platform_fee = 0
-        transaction_fee = reward * 0.03
+        transaction_fee = reward * current_app.config.get(
+            'TRANSACTION_FEE_PERCENT', 3.0) / 100
         match = Match(
             bounty_id=bounty.id,
             pitch_id=pitch.id,
@@ -1037,7 +1068,8 @@ def secure_payment(id):
     cancel_url = f'{base_url}{url_for("bounties.detail", slug_code=bounty.url_slug)}'
 
     bounty_amount = float(bounty.reward_amount)
-    transaction_fee = bounty_amount * 0.03
+    transaction_fee = bounty_amount * current_app.config.get(
+        'TRANSACTION_FEE_PERCENT', 3.0) / 100
     total_charge = bounty_amount + transaction_fee
 
     # to_cents (Decimal, half-up) — int(total * 100) truncates float
@@ -1052,11 +1084,15 @@ def secure_payment(id):
 
     # M2: manual capture — the payment is authorized (escrow), not
     # taken. It is captured when the match is confirmed by both sides.
-    # The idempotency key is per bounty + payment state: a
-    # double-click returns the SAME session instead of authorizing
-    # twice (the second authorization would be orphaned — the
-    # webhook only records one payment intent). After a refund the
-    # payment_status changes, so a re-secure gets a fresh key.
+    # The idempotency key is per bounty + payment state + amount +
+    # payer: a double-click returns the SAME session instead of
+    # authorizing twice (the second authorization would be orphaned
+    # — the webhook only records one payment intent). After a refund
+    # the payment_status changes, so a re-secure gets a fresh key —
+    # and so does a re-secure after the reward was edited, because
+    # the amount is in the key: without it, editing an unsecured
+    # need's reward and securing again reused the key with a
+    # different amount, and Stripe rejected the checkout outright.
     checkout_url = create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
@@ -1068,7 +1104,10 @@ def secure_payment(id):
             'transaction_fee': str(transaction_fee)
         },
         capture_method='manual',
-        idempotency_key=f'escrow-{bounty.id}-{bounty.payment_status}',
+        idempotency_key=(
+            f'escrow-{bounty.id}-{bounty.payment_status}-'
+            f'{amount_cents}-{current_user.id}'
+        ),
     )
 
     if not checkout_url:
@@ -1126,7 +1165,8 @@ def secure_third_party(id):
         cancel_url = f'{base_url}{url_for("bounties.detail", slug_code=bounty.url_slug)}'
 
         bounty_amount = float(bounty.reward_amount)
-        transaction_fee = bounty_amount * 0.03
+        transaction_fee = bounty_amount * current_app.config.get(
+            'TRANSACTION_FEE_PERCENT', 3.0) / 100
         total_charge = bounty_amount + transaction_fee
 
         # to_cents (Decimal, half-up) — int(total * 100) truncates
@@ -1139,9 +1179,9 @@ def secure_third_party(id):
 
         # M2: manual capture — the payment is authorized (escrow), not
         # taken. It is captured when the match is confirmed by both sides.
-        # Idempotency key per bounty + payment state (see secure_payment):
-        # a double-click returns the same session instead of
-        # authorizing twice.
+        # Idempotency key per bounty + payment state + amount + payer
+        # (see secure_payment): a double-click returns the same
+        # session instead of authorizing twice.
         checkout_url = create_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
@@ -1154,7 +1194,10 @@ def secure_third_party(id):
                 'third_party_payer': current_user.id
             },
             capture_method='manual',
-            idempotency_key=f'escrow-{bounty.id}-{bounty.payment_status}',
+            idempotency_key=(
+                f'escrow-{bounty.id}-{bounty.payment_status}-'
+                f'{amount_cents}-{current_user.id}'
+            ),
         )
 
         if not checkout_url:
@@ -1485,6 +1528,24 @@ def stripe_webhook():
                 link_url=url_for('bounties.detail', slug_code=bounty.url_slug),
             )
             db.session.commit()
+            # The need just went public: its feed post's audience
+            # hears about it now — space members + @mentions in the
+            # description. They were deliberately NOT notified at
+            # creation: an unsecured paid need is not public until
+            # escrow, so notifying then would leak it to strangers
+            # (see _post_visible_to_strangers in social/routes.py).
+            need_post = Post.query.filter_by(bounty_id=bounty.id).first()
+            if need_post is not None:
+                from blueprints.social.routes import _notify_space_members
+                from utils.mentions import notify_mentions
+                _notify_space_members(need_post.space, need_post)
+                poster = bounty.poster
+                notify_mentions(
+                    need_post.body or '', bounty.poster_id,
+                    poster.full_name if poster else '',
+                    url_for('social.post_detail', post_id=need_post.id),
+                )
+                db.session.commit()
     
     elif event_type == 'payment_intent.succeeded':
         # Optional: handle direct payment intent events
@@ -1527,6 +1588,10 @@ def stripe_webhook():
 def api_list():
     """GET /api/bounties - JSON API for featured bounties."""
     limit = request.args.get('limit', 3, type=int)
+    # Clamp: an unbounded ?limit=100000 would dump the whole board
+    # in one response (and a negative limit means "no limit" in
+    # SQLAlchemy/SQLite).
+    limit = max(1, min(limit, 100))
     
     bounties = Bounty.query.filter(
         Bounty.status == 'open',
@@ -1728,8 +1793,8 @@ def upgrade(id):
         # to_cents (Decimal, half-up) — int(total * 100) truncates
         # float artifacts and undercharges by a cent.
         amount_cents = to_cents(total_price)
-        description = f'{info["name"]} Upgrade: {bounty.title} ({duration_days} days)'
-        
+        description = f'{info["name"]} Upgrade (CAD): {bounty.title} ({duration_days} days)'
+
         checkout_url = create_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
@@ -1741,7 +1806,13 @@ def upgrade(id):
                 'duration_days': str(duration_days),
                 'total_price': str(total_price),
                 'upgrade_session': 'true'
-            }
+            },
+            # A double-click must return the same session, not a
+            # second charge for a second upgrade row (the webhook
+            # creates one upgrade per session id).
+            idempotency_key=idempotency_key_for(
+                'upgrade', bounty.id, upgrade_type, duration_days,
+            ),
         )
 
         if not checkout_url:
@@ -1817,8 +1888,8 @@ def extend_upgrade(id):
     # to_cents (Decimal, half-up) — int(total * 100) truncates float
     # artifacts and undercharges by a cent.
     amount_cents = to_cents(total_price)
-    description = f'{info["name"]} Extension: {bounty.title} ({additional_days} days)'
-    
+    description = f'{info["name"]} Extension (CAD): {bounty.title} ({additional_days} days)'
+
     checkout_url = create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
@@ -1831,7 +1902,11 @@ def extend_upgrade(id):
             'total_price': str(total_price),
             'extend_upgrade_id': existing.id,
             'upgrade_session': 'true'
-        }
+        },
+        # See upgrade(): a double-click returns the same session.
+        idempotency_key=idempotency_key_for(
+            'upgrade-extend', existing.id, additional_days,
+        ),
     )
     
     if not checkout_url:
@@ -1859,19 +1934,46 @@ def close(id):
     
     if request.method == 'POST':
         close_action = request.form.get('close_action', 'close')
-        
+
         bounty.status = 'closed'
-        
+
         if bounty.payment_status == 'secured' and bounty.stripe_payment_intent:
             if close_action == 'refund':
-                return redirect(url_for('bounties.cancel_refund', id=id))
+                # cancel_refund is POST-only: redirecting to it
+                # issues a GET and 405s, so the refund never ran
+                # and the need stayed open. Call it directly — same
+                # request, same poster, same guards.
+                return cancel_refund(id)
             elif close_action == 'reuse':
-                flash('Need closed. Your payment is kept secure for your next need.', 'success')
+                # There is no mechanism that moves a secured
+                # authorization onto a new need, so "reuse" only
+                # ever meant: close without a refund. The old code
+                # never committed the close (the need stayed open
+                # while the page claimed it was closed) and promised
+                # the payment would carry over. Commit the close and
+                # say plainly what happens to the money: nothing was
+                # captured, so the authorization simply expires.
+                db.session.commit()
+                flash(
+                    'Need closed. No refund was requested — the payment '
+                    'was never captured, so nothing was charged and the '
+                    'card authorization will expire on its own.',
+                    'success',
+                )
                 return redirect(url_for('bounties.post'))
-        
+
         db.session.commit()
-        
+
         flash('Need closed successfully.', 'success')
         return redirect(url_for('profile.view', user_id=current_user.id))
-    
-    return render_template('bounties/close.html', bounty=bounty)
+
+    return render_template(
+        'bounties/close.html',
+        bounty=bounty,
+        # The refund breakdown must quote the same rates the refund
+        # route charges from — config, not template literals.
+        transaction_fee_percent=current_app.config.get(
+            'TRANSACTION_FEE_PERCENT', 3.0),
+        stripe_fee_percent=current_app.config.get('STRIPE_FEE_PERCENT', 2.9),
+        stripe_fee_fixed=current_app.config.get('STRIPE_FEE_FIXED', 0.30),
+    )

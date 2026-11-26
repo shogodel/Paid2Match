@@ -53,11 +53,8 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body{% if request.path.startswith('/admin') %} class="admin-page"{% endif %}>
-    {% if current_user.is_authenticated %}
-        {% set my_profile = current_user.profiles.first() %}
-    {% else %}
-        {% set my_profile = None %}
-    {% endif %}
+    {# my_profile comes from the inject_my_profile context processor
+       (one cached load per request, audit 2026-11-25). #}
 
     <!-- Navigation: light surface bar, sticky. 13 items collapsed to
          Feed, People, Opportunities, Post, bell, messages, avatar menu. -->

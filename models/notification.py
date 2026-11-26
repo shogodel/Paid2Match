@@ -52,7 +52,7 @@ class Notification(db.Model):
     body = db.Column(db.Text, nullable=True)
     link_url = db.Column(db.String(500), nullable=True)
     is_read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=utc_now)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
 
     actor = db.relationship('User', foreign_keys=[actor_id])
 

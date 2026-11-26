@@ -177,7 +177,7 @@ class TestIdempotencyKeys:
         assert resp.status_code == 302
         create.assert_called_once()
         assert create.call_args.kwargs['idempotency_key'] == (
-            f'escrow-{bounty.id}-unsecured'
+            f'escrow-{bounty.id}-unsecured-103000-{sample_user.id}'
         )
 
     def test_pro_checkout_uses_idempotency_key(self, app, sample_user):

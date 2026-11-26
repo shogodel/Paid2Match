@@ -10,15 +10,18 @@ completes the match -> referral 'completed', karma + helped awarded
 from flask import (
     Blueprint, flash, redirect, render_template, request, session, url_for,
 )
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError
 
 from blueprints.referrals.forms import ReferForm
 from extensions import db, get_or_404
+from models import utc_now
 from models.bounty import Bounty
 from models.follow import Follow
-from models.message import Message
+from models.message import MAX_MESSAGE_LENGTH, Message
+from models.moderation import Block
 from models.pitch import Pitch
 from models.referral import Referral
 from models.user import User
@@ -277,8 +280,13 @@ def detail(referral_id):
             if m.recipient_id == current_user.id and not m.is_read
         ]
         if unread:
+            now = utc_now()
             for m in unread:
                 m.is_read = True
+                # read_at is the "Seen" receipt: setting is_read
+                # without it left the sender waiting forever for a
+                # receipt on messages read from this page.
+                m.read_at = now
             db.session.commit()
     can_message = current_user.id in (
         referral.referrer_id, referral.bounty.poster_id,
@@ -308,11 +316,33 @@ def post_thread_message(referral_id):
             url_for('referrals.detail', referral_id=referral.id)
             + '#thread'
         )
+    if len(content) > MAX_MESSAGE_LENGTH:
+        flash(
+            f'Message is too long (maximum {MAX_MESSAGE_LENGTH} '
+            'characters).',
+            'warning',
+        )
+        return redirect(
+            url_for('referrals.detail', referral_id=referral.id)
+            + '#thread'
+        )
     recipient_id = (
         poster_id
         if current_user.id == referral.referrer_id
         else referral.referrer_id
     )
+    # A block means "they cannot follow or message you" — every other
+    # send path enforces it; the referral thread had no check, so a
+    # blocked user could DM the blocker from here.
+    if Block.query.filter_by(
+        blocker_id=recipient_id, blocked_id=current_user.id,
+        kind='block',
+    ).first():
+        flash('You cannot message this user.', 'danger')
+        return redirect(
+            url_for('referrals.detail', referral_id=referral.id)
+            + '#thread'
+        )
     msg = Message(
         sender_id=current_user.id,
         recipient_id=recipient_id,
@@ -324,7 +354,7 @@ def post_thread_message(referral_id):
     db.session.commit()
     notify(
         recipient_id, 'message_new',
-        f'{current_user.full_name} messaged you about a referral',
+        _('%(name)s messaged you about a referral', name=current_user.full_name),
         content[:200],
         actor_id=current_user.id,
         link_url=url_for(

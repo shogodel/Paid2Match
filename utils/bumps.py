@@ -329,36 +329,102 @@ def run_recurring_bumps():
     return results
 
 
+def bump_performance_for_posts(post_ids):
+    """{post_id: [performance rows]} for many posts — the bulk form
+    of bump_performance_for_post.
+
+    Audit 2026-11-25: Pro analytics called bump_performance_for_post
+    per post, and each call issued a post lookup + a bumps query + a
+    boosts query + 2 COUNT queries + 1 referrals COUNT per bump /
+    boost. This fetches all of it in 6 queries total, with identical
+    math (including the window rule: a window with an open end
+    matches nothing, as the SQL ``created_at < NULL`` comparison
+    does)."""
+    from models.post import Post
+    from models.referral import Referral
+    from utils.feed import engagement_counts
+
+    ids = list(post_ids)
+    result = {pid: [] for pid in ids}
+    if not ids:
+        return result
+    posts = {p.id: p for p in Post.query.filter(Post.id.in_(ids)).all()}
+    counts = engagement_counts(ids)
+    bounty_ids = {p.bounty_id for p in posts.values() if p.bounty_id}
+    ref_by_bounty = {}
+    if bounty_ids:
+        for bounty_id, created_at in Referral.query.filter(
+            Referral.bounty_id.in_(bounty_ids)
+        ).with_entities(
+            Referral.bounty_id, Referral.created_at
+        ).all():
+            ref_by_bounty.setdefault(bounty_id, []).append(
+                _as_aware(created_at)
+            )
+
+    def referrals_in_window(post, start, end):
+        if not post or not post.bounty_id:
+            return 0
+        start = _as_aware(start)
+        end = _as_aware(end)
+        if start is None or end is None:
+            return 0
+        return sum(
+            1 for c in ref_by_bounty.get(post.bounty_id, [])
+            if c is not None and start <= c < end
+        )
+
+    def perf(post, views_at, likes_at, comments_at):
+        likes, comments, _shares = counts.get(post.id, (0, 0, 0))
+        return {
+            'views': max((post.view_count or 0) - (views_at or 0), 0),
+            'likes': max(likes - (likes_at or 0), 0),
+            'comments': max(comments - (comments_at or 0), 0),
+        }
+
+    for bump in Bump.query.filter(
+        Bump.post_id.in_(ids)
+    ).order_by(Bump.created_at.desc()).all():
+        post = posts.get(bump.post_id)
+        if post is None:
+            continue
+        row = perf(post, bump.views_at_bump, bump.likes_at_bump,
+                   bump.comments_at_bump)
+        row['kind'] = 'bump'
+        row['source'] = bump.source
+        row['started_at'] = bump.created_at
+        row['ended_at'] = bump.expires_at
+        row['referrals'] = referrals_in_window(
+            post, bump.created_at, bump.expires_at
+        )
+        result[bump.post_id].append(row)
+    for boost in Boost.query.filter(
+        Boost.post_id.in_(ids)
+    ).order_by(Boost.created_at.desc()).all():
+        post = posts.get(boost.post_id)
+        if post is None:
+            continue
+        row = perf(post, boost.views_at_boost, boost.likes_at_boost,
+                   boost.comments_at_boost)
+        row['kind'] = 'boost'
+        row['source'] = 'boost'
+        row['started_at'] = boost.starts_at
+        row['ended_at'] = boost.ends_at
+        row['referrals'] = referrals_in_window(
+            post, boost.starts_at, boost.ends_at
+        )
+        result[boost.post_id].append(row)
+    for rows in result.values():
+        rows.sort(key=lambda r: r['started_at'] or utc_now(), reverse=True)
+    return result
+
+
 def bump_performance_for_post(post_id):
     """Bump/boost performance rows for one post (Pro analytics §1.4):
     each bump/boost with the views/likes/comments gained while it ran
     plus referrals attributed to it (referrals for the linked need
     created during the window)."""
-    from models.bounty import Bounty
-    from models.referral import Referral
-
-    post = db.session.get(Post, post_id)
-    if post is None:
-        return []
-    rows = []
-    for bump in Bump.query.filter_by(post_id=post_id).order_by(Bump.created_at.desc()).all():
-        perf = dict(bump.performance)
-        perf['kind'] = 'bump'
-        perf['source'] = bump.source
-        perf['started_at'] = bump.created_at
-        perf['ended_at'] = bump.expires_at
-        perf['referrals'] = _referrals_in_window(post, bump.created_at, bump.expires_at)
-        rows.append(perf)
-    for boost in Boost.query.filter_by(post_id=post_id).order_by(Boost.created_at.desc()).all():
-        perf = dict(boost.performance)
-        perf['kind'] = 'boost'
-        perf['source'] = 'boost'
-        perf['started_at'] = boost.starts_at
-        perf['ended_at'] = boost.ends_at
-        perf['referrals'] = _referrals_in_window(post, boost.starts_at, boost.ends_at)
-        rows.append(perf)
-    rows.sort(key=lambda r: r['started_at'] or utc_now(), reverse=True)
-    return rows
+    return bump_performance_for_posts([post_id]).get(post_id, [])
 
 
 def _referrals_in_window(post, start, end):

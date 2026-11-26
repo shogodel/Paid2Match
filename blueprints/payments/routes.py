@@ -28,6 +28,7 @@ from utils.payments import (
     create_checkout_session,
     create_connect_account,
     create_subscription_checkout_session,
+    idempotency_key_for,
     on_connect_ready,
     refresh_connect_account,
     release_escrow,
@@ -216,13 +217,19 @@ def buy_bump_pack():
         success_url=f'{base}{url_for("payments.bump_packs")}',
         cancel_url=f'{base}{url_for("payments.bump_packs")}',
         amount_cents=price_cents,
-        description=f'Bump pack — {pack_size} bumps',
+        description=f'Bump pack — {pack_size} bumps (CAD)',
         metadata={
             'm3_kind': 'bump_pack',
             'user_id': current_user.id,
             'pack_size': str(pack_size),
             'price_cents': str(price_cents),
         },
+        # A double-click must return the same session, not a second
+        # charge for a second pack (the webhook credits one pack per
+        # session id).
+        idempotency_key=idempotency_key_for(
+            'bump-pack', current_user.id, pack_size,
+        ),
     )
     if not checkout_url:
         flash('Stripe is not configured — please try again later.', 'danger')
@@ -251,12 +258,16 @@ def buy_single_bump(post_id):
         success_url=f'{base}{url_for("social.post_detail", post_id=post_id)}',
         cancel_url=f'{base}{url_for("social.bump_post", post_id=post_id)}',
         amount_cents=BUMP_SINGLE_PRICE_CENTS,
-        description='Single bump — 24h at the top of the feed',
+        description='Single bump — 24h at the top of the feed (CAD)',
         metadata={
             'm3_kind': 'bump_single',
             'user_id': current_user.id,
             'post_id': post.id,
         },
+        # See buy_bump_pack: a double-click returns the same session.
+        idempotency_key=idempotency_key_for(
+            'bump-single', post.id,
+        ),
     )
     if not checkout_url:
         flash('Stripe is not configured — please try again later.', 'danger')
@@ -287,13 +298,17 @@ def buy_boost(post_id):
         success_url=f'{base}{url_for("social.post_detail", post_id=post_id)}',
         cancel_url=f'{base}{url_for("social.bump_post", post_id=post_id)}',
         amount_cents=days * BOOST_PRICE_PER_DAY_CENTS,
-        description=f'Boost — {days} day(s) of extra Discover visibility',
+        description=f'Boost — {days} day(s) of extra Discover visibility (CAD)',
         metadata={
             'm3_kind': 'boost',
             'user_id': current_user.id,
             'post_id': post.id,
             'days': str(days),
         },
+        # See buy_bump_pack: a double-click returns the same session.
+        idempotency_key=idempotency_key_for(
+            'boost', post.id, days,
+        ),
     )
     if not checkout_url:
         flash('Stripe is not configured — please try again later.', 'danger')
@@ -327,7 +342,7 @@ def subscribe_recurring_bump(post_id):
         success_url=f'{base}{url_for("social.post_detail", post_id=post_id)}',
         cancel_url=f'{base}{url_for("social.bump_post", post_id=post_id)}',
         amount_cents=RECURRING_BUMP_PRICE_CENTS,
-        description='Recurring bump — auto-bump every 3 days ($5/month)',
+        description='Recurring bump — auto-bump every 3 days (CA$5/month)',
         metadata={
             'm3_kind': 'recurring_bump',
             'user_id': current_user.id,

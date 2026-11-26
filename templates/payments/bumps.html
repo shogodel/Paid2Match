@@ -13,8 +13,8 @@
             <div class="card mb-3">
                 <div class="card-body text-center">
                     <h5>{{ ngettext('%(num)s bump', '%(num)s bumps', size) }}</h5>
-                    <div class="fs-3">${{ "%.2f"|format(price / 100) }}</div>
-                    <p class="text-muted small">${{ "%.2f"|format(price / size / 100) }} {{ _('per bump — use anytime.') }}</p>
+                    <div class="fs-3">CA${{ "%.2f"|format(price / 100) }}</div>
+                    <p class="text-muted small">CA${{ "%.2f"|format(price / size / 100) }} {{ _('per bump — use anytime.') }}</p>
                     <form method="POST" action="{{ url_for('payments.buy_bump_pack') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="pack_size" value="{{ size }}">
@@ -28,7 +28,7 @@
             <div class="card mb-3">
                 <div class="card-body text-center">
                     <h5>{{ _('Single bump') }}</h5>
-                    <div class="fs-3">${{ "%.2f"|format(single_price_cents / 100) }}</div>
+                    <div class="fs-3">CA${{ "%.2f"|format(single_price_cents / 100) }}</div>
                     <p class="text-muted small">{{ _("Buy one bump for a specific post, from that post's bump page.") }}</p>
                     <a href="{{ url_for('social.feed') }}" class="btn btn-outline-primary">{{ _('Go to my feed') }}</a>
                 </div>
