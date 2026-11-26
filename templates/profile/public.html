@@ -82,6 +82,78 @@
     </div>
 </div>
 
+{# Single Trust card: every trust signal in one place, at the top of
+   the profile. The average response time is only ever shown next to
+   the response rate — a fast average alone would flatter a poster
+   who ignores most referrals. Signals with no data behind them are
+   not shown at all (never a faked zero); with no history at all the
+   card says so. Reuses the existing profile-card / profile-stats /
+   profile-trust-row classes — no new CSS, no fixed widths. #}
+<div class="container py-3" style="max-width: 960px;">
+    <div class="profile-card" id="trust-card">
+        <h5 class="profile-card-title">{{ _('Trust') }}</h5>
+        <p class="mb-2">{{ icon('badge-check', 16) }} {{ _('Trust:') }} {{ trust_level|level_label }} ({{ trust_score }}/100)</p>
+        {# Completed referrals uses the strict dual-confirmed count
+           from the trust breakdown, not matches_count (which includes
+           unconfirmed matches). #}
+        {% set completed_referrals = trust_breakdown.completed_referrals if trust_breakdown else 0 %}
+        {% if completed_referrals or ratings_count or response_rate is not none or endorsements %}
+        {% if completed_referrals or ratings_count or endorsements %}
+        <div class="profile-stats">
+            {% if completed_referrals %}
+            <div class="stat-item">
+                <span class="stat-number">{{ completed_referrals }}</span>
+                <span class="stat-label">{{ _('Referrals completed') }}</span>
+            </div>
+            {% endif %}
+            {% if ratings_count %}
+            <div class="stat-item">
+                <span class="stat-number">{{ ratings_avg }}/5</span>
+                <span class="stat-label">{{ ngettext('%(num)s review', '%(num)s reviews', ratings_count) }}</span>
+            </div>
+            {% endif %}
+            {% if endorsements %}
+            <div class="stat-item">
+                <span class="stat-number">{{ endorsements|length }}</span>
+                <span class="stat-label">{{ _('vouch') if endorsements|length == 1 else _('vouches') }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if response_rate is not none %}
+        <p class="mt-3 mb-0">{{ icon('clock', 14) }}
+            {% if avg_response_time_display is not none %}{{ _('Responds in %(time)s · answers %(rate)s%% of referrals', time=avg_response_time_display, rate=(response_rate * 100)|round|int) }}{% else %}{{ _('Answers %(rate)s%% of referrals', rate=(response_rate * 100)|round|int) }}{% endif %}
+        </p>
+        {% endif %}
+        {% else %}
+        <p class="text-muted small mb-0">{{ _('No history yet — no completed referrals, reviews, or responses to show.') }}</p>
+        {% endif %}
+        <div class="profile-trust-row mt-3">
+            {% if profile.verified %}
+            <span class="profile-trust-item">{{ icon('shield-check', 16) }} {{ _('Identity verified') }}</span>
+            {% endif %}
+            {% if verified_elsewhere %}
+            <span class="profile-trust-item" title="{{ _('Two or more linked accounts verified elsewhere') }}">{{ icon('link', 16) }} {{ _('Verified elsewhere') }}</span>
+            {% endif %}
+            {% if pledge %}<span class="post-trust-badge" title="{{ _('Pledged human-reviewed hiring — no AI screening, human response within 5 business days') }}">{{ icon('shield-check', 20) }}{{ _('Pledged') }}</span>{% endif %}
+            {% if user.has_approved_pledge %}<span class="post-trust-badge" title="{{ _('We pledge that no AI screens our applicants: a human reads every application.') }}">{{ icon('shield-check', 20) }}{{ _('Human-Reviewed') }}</span>{% endif %}
+        </div>
+        {% if trust_breakdown %}
+        <div class="small text-muted mt-3">
+            <div class="mb-1"><strong>{{ _('Why this score:') }}</strong></div>
+            <ul class="list-unstyled mb-0">
+                <li>{{ _('Identity:') }} {{ trust_breakdown.identity }}/20</li>
+                <li>{{ _('Transactions:') }} {{ trust_breakdown.transactions }}/40</li>
+                <li>{{ _('Reliability:') }} {{ trust_breakdown.reliability }}/20</li>
+                <li>{{ _('Community:') }} {{ trust_breakdown.community }}/10</li>
+                <li>{{ _('Tenure:') }} {{ trust_breakdown.tenure }}/10</li>
+                {% if trust_breakdown.penalties %}<li>{{ _('Penalties:') }} −{{ trust_breakdown.penalties }}</li>{% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 {% set strip_user_id = user.id %}
 {% include 'partials/hiring_strip.html' %}
 

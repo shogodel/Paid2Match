@@ -271,6 +271,153 @@ class TestProfileLinkedInFields:
             assert profile.remote_ok is True
 
 
+class TestPublicProfileTrustCard:
+    """The single Trust card at the top of the public profile
+    (templates/profile/public.html, id="trust-card")."""
+
+    def _trust_card(self, data):
+        """The Trust card's HTML, sliced out of the page."""
+        start = data.find(b'id="trust-card"')
+        assert start != -1, 'Trust card missing from public profile'
+        end = data.find(b'profile-tabs', start)
+        return data[start:end if end != -1 else len(data)]
+
+    def _add_match(self, app, sample_user, sample_hunter,
+                   sample_bounty, sample_pitch):
+        """A dual-confirmed match with the profile owner as hunter."""
+        from datetime import datetime, timezone
+        from extensions import db
+        from models.match import Match
+        with app.app_context():
+            match = Match(
+                bounty_id=sample_bounty.id,
+                pitch_id=sample_pitch.id,
+                hunter_id=sample_user.id,
+                employer_id=sample_hunter.id,
+                hunter_confirmed=True,
+                employer_confirmed=True,
+                confirmed_at=datetime.now(timezone.utc),
+            )
+            db.session.add(match)
+            db.session.commit()
+
+    def _add_endorsement(self, app, sample_user, sample_hunter):
+        """A real vouch for the profile owner (inserted directly —
+        the 250-karma gate in give_endorsement is not under test)."""
+        from extensions import db
+        from models.endorsement import Endorsement
+        with app.app_context():
+            db.session.add(Endorsement(
+                endorser_id=sample_hunter.id,
+                endorsee_id=sample_user.id,
+                skill='Python',
+            ))
+            db.session.commit()
+
+    def _patch_trust_signals(self, monkeypatch, rate=0.8,
+                             avg=(6.0, 3)):
+        """average_response_time / format_response_time live in
+        utils.trust — monkeypatch them in per their contract:
+        (median_hours, count) and a median-hours formatter, so the
+        card rendering is tested in isolation from the query."""
+        monkeypatch.setattr(
+            'utils.trust.response_rate', lambda user_id: rate)
+        monkeypatch.setattr(
+            'utils.trust.average_response_time',
+            lambda user_id: avg, raising=False)
+        monkeypatch.setattr(
+            'utils.trust.format_response_time',
+            lambda hours: '~%d hours' % hours, raising=False)
+
+    def test_trust_card_renders_all_signals(
+            self, client, app, sample_user, sample_hunter,
+            sample_bounty, sample_pitch, monkeypatch):
+        self._add_match(app, sample_user, sample_hunter,
+                        sample_bounty, sample_pitch)
+        self._add_endorsement(app, sample_user, sample_hunter)
+        monkeypatch.setattr(
+            'blueprints.profile.routes.ratings_summary',
+            lambda user_id, reviews=None: (4.5, 3, 1.0))
+        self._patch_trust_signals(monkeypatch)
+        r = client.get(f'/profile/{sample_user.handle}')
+        assert r.status_code == 200
+        card = self._trust_card(r.data)
+        # Score + level.
+        assert b'Trust:' in card
+        assert b'/100' in card
+        # Completed referrals (matches_count) + vouches.
+        assert b'Referrals completed' in card
+        assert card.count(b'<span class="stat-number">1</span>') == 2
+        assert b'vouch' in card
+        # Rating average + count.
+        assert b'4.5/5' in card
+        assert b'3 reviews' in card
+        # Response time directly next to the response rate, one line.
+        assert (b'Responds in ~6 hours \xc2\xb7 answers 80% '
+                b'of referrals') in card
+        # Breakdown list under the score.
+        assert b'Why this score:' in card
+        assert b'Identity:' in card
+        assert b'Transactions:' in card
+        assert b'Reliability:' in card
+        assert b'Community:' in card
+        assert b'Tenure:' in card
+
+    def test_trust_card_empty_state(self, client, sample_user):
+        # Fresh user: no matches, no ratings, no pitches received.
+        r = client.get(f'/profile/{sample_user.handle}')
+        assert r.status_code == 200
+        card = self._trust_card(r.data)
+        assert b'No history yet' in card
+        assert b'Responds in' not in card
+        assert b'answers' not in card
+        # Never fake zeros.
+        assert b'~0 hours' not in r.data
+        assert b'0%' not in r.data
+
+    def test_response_time_never_without_response_rate(
+            self, client, app, sample_user, sample_hunter,
+            sample_bounty, sample_pitch, monkeypatch):
+        # The user HAS history (a completed referral) and a fast
+        # average — but no response rate. The time must not appear.
+        self._add_match(app, sample_user, sample_hunter,
+                        sample_bounty, sample_pitch)
+        self._patch_trust_signals(monkeypatch, rate=None)
+        r = client.get(f'/profile/{sample_user.handle}')
+        assert r.status_code == 200
+        card = self._trust_card(r.data)
+        assert b'Referrals completed' in card
+        assert b'~6 hours' not in card
+        assert b'Responds in' not in card
+
+    def test_response_rate_without_response_time(
+            self, client, sample_user, monkeypatch):
+        # Rate with no answered pitches: the rate shows on its own.
+        self._patch_trust_signals(monkeypatch, avg=None)
+        r = client.get(f'/profile/{sample_user.handle}')
+        assert r.status_code == 200
+        card = self._trust_card(r.data)
+        assert b'Answers 80% of referrals' in card
+        assert b'Responds in' not in card
+
+    def test_breakdown_list_under_score(self, client, sample_user):
+        r = client.get(f'/profile/{sample_user.handle}')
+        assert r.status_code == 200
+        card = self._trust_card(r.data)
+        assert card.find(b'Trust:') < card.find(b'Why this score:')
+        assert card.find(b'Why this score:') < card.find(b'Identity:')
+        assert b'Identity:' in card
+        assert b'/20' in card
+        assert b'Transactions:' in card
+        assert b'/40' in card
+        assert b'Reliability:' in card
+        assert b'Community:' in card
+        assert b'Tenure:' in card
+        assert b'/10' in card
+        # No penalties for a fresh user — the line stays hidden.
+        assert b'Penalties:' not in card
+
+
 class TestProfileCompletion:
     """M0: completion_percentage must be able to reach 100 (it capped at 70)."""
 

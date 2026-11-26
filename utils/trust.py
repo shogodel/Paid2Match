@@ -44,7 +44,7 @@ in it).
 from datetime import timedelta, timezone
 
 from flask import g, has_request_context
-from flask_babel import lazy_gettext as _l
+from flask_babel import gettext as _, lazy_gettext as _l
 
 from extensions import db
 from models import utc_now
@@ -135,6 +135,74 @@ def response_rate(user_id):
     if received == 0:
         return None
     return responded / received
+
+
+def average_response_time(user_id):
+    """Median time (in hours) for the poster to answer pitches on
+    their own bounties, plus how many answered pitches it came from:
+    ``(median_hours, count)``, or ``None`` when no pitch was ever
+    answered (never a fake zero).
+
+    One query over the poster's bounties, mirroring response_rate():
+    only pitches with status in ('interested', 'rejected',
+    'accepted') count — pending/viewed pitches are still waiting
+    and must not drag the number. The answer time is
+    ``responded_at``, falling back to ``updated_at`` for pitches
+    answered before M2 (same fallback as the SLA code). The median
+    — not the mean — so one very slow pitch cannot wreck the
+    number. There is no portable SQL median (Postgres has
+    percentile_cont, SQLite has none), so the single query returns
+    the answer/created timestamps and the median is taken in
+    Python with statistics.median.
+
+    This is a display metric only: it does not feed
+    compute_trust_score / trust_level."""
+    from sqlalchemy import func
+    from statistics import median
+    rows = db.session.query(
+        func.coalesce(Pitch.responded_at, Pitch.updated_at),
+        Pitch.created_at,
+    ).join(
+        Bounty, Pitch.bounty_id == Bounty.id
+    ).filter(
+        Bounty.poster_id == user_id,
+        Pitch.status.in_(['interested', 'rejected', 'accepted']),
+    ).all()
+    hours = []
+    for answered_at, created_at in rows:
+        answered_at = _as_aware(answered_at)
+        created_at = _as_aware(created_at)
+        if answered_at is None or created_at is None:
+            continue
+        hours.append((answered_at - created_at).total_seconds() / 3600.0)
+    if not hours:
+        return None
+    return float(median(hours)), len(hours)
+
+
+def format_response_time(median_hours):
+    """A median response time in hours as a short display string:
+    under an hour -> "under an hour", hours -> "~N hours", a day
+    or more -> "~N days". None in -> None out (no data, no claim).
+
+    Single formatter for the response time everywhere it is shown
+    (the Trust card and the reputation-metrics strip) — one string,
+    both places. Previously utils/reputation.py had a second
+    formatter ("≈ 6h" / "≈ 2d"); it was deleted in the
+    consolidation and this one is the canonical formatter."""
+    if median_hours is None:
+        return None
+    if median_hours < 1:
+        return _('under an hour')
+    if median_hours < 24:
+        hours = round(median_hours)
+        if hours == 1:
+            return _('~1 hour')
+        return _('~%(hours)d hours', hours=hours)
+    days = round(median_hours / 24.0)
+    if days == 1:
+        return _('~1 day')
+    return _('~%(days)d days', days=days)
 
 
 def upheld_reports_count(user_id):

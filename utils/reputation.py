@@ -13,23 +13,24 @@ no new math, no new storage.
   median_response_time(id)    — median pitch-created -> first-response
                                 time for answered pitches on the user's
                                 needs, formatted for display
-                                ("under an hour", "≈ Xh", "≈ Xd").
-                                None when no pitch was answered.
+                                ("under an hour", "~X hours", "~X days").
+                                Thin wrapper over utils.trust (the
+                                single source of truth). None when no
+                                pitch was answered.
   completed_referrals_count   — re-exported from utils/trust.py
                                 (dual-confirmed matches as hunter).
   response_rate               — re-exported from utils/trust.py
                                 (share of received pitches answered).
 """
-from datetime import timedelta
-from statistics import median
-
-from flask_babel import gettext as _
-
 from extensions import db
 from models.bounty import Bounty
 from models.match import Match
-from models.pitch import Pitch
-from utils.trust import completed_referrals_count, response_rate
+from utils.trust import (
+    average_response_time,
+    completed_referrals_count,
+    format_response_time,
+    response_rate,
+)
 
 __all__ = [
     'completed_referrals_count',
@@ -68,40 +69,18 @@ def fill_rate(user_id):
     return filled / len(terminal)
 
 
-def format_response_time(delta):
-    """A timedelta as a human display string. Never shows seconds —
-    the SLA is measured in business days, so hours are precise
-    enough."""
-    if delta is None:
-        return None
-    hours = delta.total_seconds() / 3600.0
-    if hours < 1:
-        return _('under an hour')
-    if hours < 24:
-        return _('≈ %(hours)dh', hours=round(hours))
-    days = hours / 24.0
-    return _('≈ %(days)dd', days=round(days))
-
-
 def median_response_time(user_id):
     """Median first-response time on the user's needs, formatted.
-    Only answered pitches count (responded_at set, falling back to
-    updated_at for pitches answered before M2, as the SLA does).
-    None when no pitch on the user's needs was ever answered."""
-    pitches = Pitch.query.join(
-        Bounty, Pitch.bounty_id == Bounty.id
-    ).filter(
-        Bounty.poster_id == user_id,
-        Pitch.status.in_(['interested', 'rejected', 'accepted']),
-    ).all()
-    deltas = []
-    for pitch in pitches:
-        answered_at = pitch.responded_at or pitch.updated_at
-        if answered_at and pitch.created_at:
-            deltas.append(answered_at - pitch.created_at)
-    if not deltas:
+    Thin wrapper over utils.trust.average_response_time /
+    format_response_time — trust.py is the single source of truth
+    for the computation and the display string, so the
+    reputation-metrics strip shows exactly the string the Trust
+    card shows. None when no pitch on the user's needs was ever
+    answered."""
+    avg = average_response_time(user_id)
+    if avg is None:
         return None
-    return format_response_time(median(deltas))
+    return format_response_time(avg[0])
 
 
 def reputation_metrics(user_id):

@@ -48,6 +48,13 @@ from utils.linked_accounts import (
 from utils.sla import sla_breaches
 from utils.slugs import handle_from_name
 from utils.trust import ratings_summary, trust_level
+# The trust module itself (not just its names): response_rate and
+# average_response_time / format_response_time are called as trust.*
+# so tests can monkeypatch utils.trust.*. trust.py is the single
+# source of truth for the response-time computation and formatter
+# (utils/reputation.py's median_response_time is a thin wrapper
+# over the same functions).
+from utils import trust
 from .forms import EndorseForm, LinkedAccountForm, ProfileForm, SetupForm
 
 profile_bp = Blueprint('profile', __name__)
@@ -378,12 +385,25 @@ def public_profile(user_id):
     ).first() is not None
     followers_count = Follow.query.filter_by(followed_id=user_id).count()
     following_count = Follow.query.filter_by(follower_id=user_id).count()
-    level, trust_score, _breakdown = trust_level(user)
+    level, trust_score, trust_breakdown = trust_level(user)
     # M2: revealed reviews + rating summary for the public card.
     reviews = revealed_reviews_for_user(user_id)
     ratings_avg, ratings_count, _positive = ratings_summary(
         user_id, reviews=reviews
     )
+    # Trust card: response rate + average response time. The average
+    # is only meaningful beside the rate (a fast average from one
+    # answered pitch would flatter a poster who ignores the other
+    # nine), so the template renders the time only when the rate is
+    # present. Both pass through as None when there is no data —
+    # never a faked zero. average_response_time returns
+    # (median_hours, count) or None.
+    response_rate = trust.response_rate(user.id)
+    avg_response_time = trust.average_response_time(user.id)
+    avg_response_time_display = None
+    if avg_response_time is not None:
+        avg_response_time_display = trust.format_response_time(
+            avg_response_time[0])
     # M3: endorsements, visible linked accounts, "Verified elsewhere"
     # marker (2+ verified links), and the user's pledge if any.
     endorsements = endorsements_for(user_id)
@@ -451,6 +471,10 @@ def public_profile(user_id):
                         following_count=following_count,
                         trust_level=level,
                         trust_score=trust_score,
+                        trust_breakdown=trust_breakdown,
+                        response_rate=response_rate,
+                        avg_response_time=avg_response_time,
+                        avg_response_time_display=avg_response_time_display,
                         reviews=reviews,
                         ratings_avg=ratings_avg,
                         ratings_count=ratings_count,

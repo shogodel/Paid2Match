@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  Paid2Match\n"
 "Report-Msgid-Bugs-To: support@paid2match.com\n"
-"POT-Creation-Date: 2026-11-26 06:08+0000\n"
+"POT-Creation-Date: 2026-11-26 17:55+0000\n"
 "PO-Revision-Date: 2024-04-24 12:00+0000\n"
 "Last-Translator: \n"
 "Language: fr_CA\n"
@@ -108,7 +108,7 @@ msgstr "Nom de l'organisation"
 #: blueprints/pledge.py:29 templates/bounties/detail.html:197
 #: templates/pledge/new.html:7 templates/pledge/register.html:10
 #: templates/pledge/register.html:21 templates/profile/public.html:32
-#: templates/profile/view.html:27
+#: templates/profile/public.html:139 templates/profile/view.html:27
 msgid ""
 "We pledge that no AI screens our applicants: a human reads every "
 "application."
@@ -271,53 +271,53 @@ msgstr "Écrivez d’abord un message."
 msgid "Message is too long (maximum %(max)s characters)."
 msgstr "Message trop long (maximum %(max)s caractères)."
 
-#: blueprints/messages/routes.py:367 blueprints/messages/routes.py:369
+#: blueprints/messages/routes.py:368 blueprints/messages/routes.py:370
 msgid "You cannot message about this referral."
 msgstr "Vous ne pouvez pas envoyer de message au sujet de cette recommandation."
 
-#: blueprints/messages/routes.py:388 blueprints/messages/routes.py:390
-#: blueprints/messages/routes.py:575
+#: blueprints/messages/routes.py:389 blueprints/messages/routes.py:391
+#: blueprints/messages/routes.py:577
 msgid "You cannot message yourself."
 msgstr "Vous ne pouvez pas vous envoyer de message."
 
-#: blueprints/messages/routes.py:399 blueprints/messages/routes.py:401
-#: blueprints/messages/routes.py:413 blueprints/messages/routes.py:415
-#: blueprints/messages/routes.py:585 blueprints/messages/routes.py:650
-#: blueprints/messages/routes.py:657
+#: blueprints/messages/routes.py:400 blueprints/messages/routes.py:402
+#: blueprints/messages/routes.py:414 blueprints/messages/routes.py:416
+#: blueprints/messages/routes.py:587 blueprints/messages/routes.py:652
+#: blueprints/messages/routes.py:659
 msgid "You cannot message this user."
 msgstr "Vous ne pouvez pas envoyer de message à cette personne."
 
-#: blueprints/messages/routes.py:432 blueprints/messages/routes.py:677
+#: blueprints/messages/routes.py:433 blueprints/messages/routes.py:679
 #, python-format
 msgid "%(name)s replied to your message"
 msgstr "%(name)s a répondu à votre message"
 
-#: blueprints/messages/routes.py:443 blueprints/messages/routes.py:684
+#: blueprints/messages/routes.py:444 blueprints/messages/routes.py:686
 msgid "Reply sent!"
 msgstr "Réponse envoyée !"
 
-#: blueprints/messages/routes.py:517 blueprints/messages/routes.py:519
+#: blueprints/messages/routes.py:519 blueprints/messages/routes.py:521
 msgid "You cannot delete this message."
 msgstr "Vous ne pouvez pas supprimer ce message."
 
-#: blueprints/messages/routes.py:529
+#: blueprints/messages/routes.py:531
 msgid "Message deleted."
 msgstr "Message supprimé."
 
-#: blueprints/messages/routes.py:564
+#: blueprints/messages/routes.py:566
 msgid "User not found"
 msgstr "Utilisateur introuvable"
 
-#: blueprints/messages/routes.py:599
+#: blueprints/messages/routes.py:601
 #, python-format
 msgid "New message from %(name)s"
 msgstr "Nouveau message de %(name)s"
 
-#: blueprints/messages/routes.py:606
+#: blueprints/messages/routes.py:608
 msgid "Message sent!"
 msgstr "Message envoyé !"
 
-#: blueprints/messages/routes.py:620 blueprints/messages/routes.py:638
+#: blueprints/messages/routes.py:622 blueprints/messages/routes.py:640
 msgid "Access denied"
 msgstr "Accès refusé"
 
@@ -332,22 +332,22 @@ msgid "Profile Type"
 msgstr "Type de profil"
 
 #: blueprints/profile/forms.py:22 blueprints/profile/forms.py:62
-#: templates/profile/public.html:249
+#: templates/profile/public.html:321
 msgid "Business"
 msgstr "Entreprise"
 
 #: blueprints/profile/forms.py:23 blueprints/profile/forms.py:63
-#: templates/profile/public.html:251
+#: templates/profile/public.html:323
 msgid "HR Professional"
 msgstr "Professionnel RH"
 
 #: blueprints/profile/forms.py:24 blueprints/profile/forms.py:64
-#: templates/profile/public.html:253
+#: templates/profile/public.html:325
 msgid "Worker"
 msgstr "Travailleur"
 
 #: blueprints/profile/forms.py:25 blueprints/profile/forms.py:65
-#: templates/profile/public.html:255
+#: templates/profile/public.html:327
 msgid "Independent"
 msgstr "Indépendant"
 
@@ -412,12 +412,12 @@ msgid "Profile Picture"
 msgstr "Photo de profil"
 
 #: blueprints/profile/forms.py:44 blueprints/profile/forms.py:93
-#: templates/profile/public.html:262
+#: templates/profile/public.html:334
 msgid "Open to Remote Work"
 msgstr "Ouvert au télétravail"
 
 #: blueprints/profile/forms.py:45 blueprints/profile/forms.py:94
-#: templates/profile/public.html:269
+#: templates/profile/public.html:341
 msgid "Needs Relocation Assistance"
 msgstr "Besoin d’aide à la relocalisation"
 
@@ -1686,8 +1686,8 @@ msgid "Filter"
 msgstr "Filtrer"
 
 #: templates/bounties/board.html:112 templates/bounties/detail.html:194
-#: templates/profile/public.html:31 templates/profile/view.html:26
-#: templates/social/_post_card.html:107
+#: templates/profile/public.html:31 templates/profile/public.html:138
+#: templates/profile/view.html:26 templates/social/_post_card.html:107
 msgid ""
 "Pledged human-reviewed hiring — no AI screening, human response within 5 "
 "business days"
@@ -1696,8 +1696,9 @@ msgstr ""
 "IA, réponse humaine sous 5 jours ouvrables"
 
 #: templates/bounties/board.html:112 templates/bounties/detail.html:194
-#: templates/profile/public.html:31 templates/profile/view.html:26
-#: templates/social/_post_card.html:107 templates/social/pledges.html:28
+#: templates/profile/public.html:31 templates/profile/public.html:138
+#: templates/profile/view.html:26 templates/social/_post_card.html:107
+#: templates/social/pledges.html:28
 msgid "Pledged"
 msgstr "Engagé"
 
@@ -1918,7 +1919,7 @@ msgid "Dispute open — under admin review"
 msgstr "Litige ouvert — en cours d’examen par un administrateur"
 
 #: templates/bounties/confirmed_match.html:100
-#: templates/profile/public.html:142
+#: templates/profile/public.html:214
 msgid "Reviews"
 msgstr "Avis"
 
@@ -1944,7 +1945,7 @@ msgstr "Parcourir d’autres besoins"
 msgid "Due:"
 msgstr "Échéance :"
 
-#: templates/bounties/detail.html:61 templates/profile/public.html:277
+#: templates/bounties/detail.html:61 templates/profile/public.html:349
 #: templates/profile/view.html:342
 msgid "Skills"
 msgstr "Compétences"
@@ -2032,7 +2033,8 @@ msgid "Posted by"
 msgstr "Publié par"
 
 #: templates/bounties/detail.html:197 templates/pledge/register.html:21
-#: templates/profile/public.html:32 templates/profile/view.html:27
+#: templates/profile/public.html:32 templates/profile/public.html:139
+#: templates/profile/view.html:27
 msgid "Human-Reviewed"
 msgstr "Examiné par un humain"
 
@@ -2117,7 +2119,7 @@ msgstr "Intéressé"
 msgid "Pass"
 msgstr "Passer"
 
-#: templates/bounties/detail.html:384 templates/profile/public.html:214
+#: templates/bounties/detail.html:384 templates/profile/public.html:286
 msgid "Staked vouches"
 msgstr "Recommandations misées"
 
@@ -2129,7 +2131,7 @@ msgstr ""
 "Engagements enregistrés derrière les personnes sur ce besoin — aucun "
 "argent n’a bougé. Réglez chaque mise une fois l’issue connue."
 
-#: templates/bounties/detail.html:406 templates/profile/public.html:175
+#: templates/bounties/detail.html:406 templates/profile/public.html:247
 msgid "Video pitches"
 msgstr "Pitchs vidéo"
 
@@ -3725,7 +3727,7 @@ msgid "CAD pending"
 msgstr "CAD en attente"
 
 #: templates/payments/payouts.html:57 templates/payments/payouts.html:163
-#: templates/profile/public.html:94 templates/profile/public.html:127
+#: templates/profile/public.html:166 templates/profile/public.html:199
 #: templates/profile/view.html:107 templates/social/analytics.html:59
 #: templates/social/analytics.html:221 templates/social/bump.html:100
 #: templates/social/notifications.html:28
@@ -3794,7 +3796,7 @@ msgstr ""
 msgid "Per-need stats"
 msgstr "Statistiques par besoin"
 
-#: templates/payments/payouts.html:164 templates/profile/public.html:131
+#: templates/payments/payouts.html:164 templates/profile/public.html:203
 #: templates/profile/view.html:149
 msgid "Matches"
 msgstr "Matches"
@@ -4072,7 +4074,7 @@ msgstr ""
 " votre profil. La vérification expire après 90 jours ; revenez pour re-"
 "vérifier. Le nombre d’abonnés n’est jamais utilisé."
 
-#: templates/profile/linked.html:15 templates/profile/public.html:293
+#: templates/profile/linked.html:15 templates/profile/public.html:365
 #: utils/verification_tiers.py:29
 msgid "Verified"
 msgstr "Vérifié"
@@ -4233,19 +4235,21 @@ msgstr "Signaler"
 msgid "Karma"
 msgstr "Karma"
 
-#: templates/profile/public.html:69 templates/profile/view.html:68
+#: templates/profile/public.html:69 templates/profile/public.html:95
+#: templates/profile/view.html:68
 msgid "Trust:"
 msgstr "Confiance :"
 
-#: templates/profile/public.html:71 templates/profile/view.html:70
+#: templates/profile/public.html:71 templates/profile/public.html:133
+#: templates/profile/view.html:70
 msgid "Identity verified"
 msgstr "Identité vérifiée"
 
-#: templates/profile/public.html:74
+#: templates/profile/public.html:74 templates/profile/public.html:136
 msgid "Two or more linked accounts verified elsewhere"
 msgstr "Deux comptes liés ou plus vérifiés ailleurs"
 
-#: templates/profile/public.html:74
+#: templates/profile/public.html:74 templates/profile/public.html:136
 msgid "Verified elsewhere"
 msgstr "Vérifié ailleurs"
 
@@ -4253,129 +4257,183 @@ msgstr "Vérifié ailleurs"
 msgid "People who vouch for this member"
 msgstr "Personnes qui se portent garantes de ce membre"
 
-#: templates/profile/public.html:77 templates/profile/view.html:79
+#: templates/profile/public.html:77 templates/profile/public.html:118
+#: templates/profile/view.html:79
 msgid "vouch"
 msgstr "témoignage"
 
-#: templates/profile/public.html:77 templates/profile/view.html:79
+#: templates/profile/public.html:77 templates/profile/public.html:118
+#: templates/profile/view.html:79
 msgid "vouches"
 msgstr "témoignages"
 
-#: templates/profile/public.html:91 templates/profile/view.html:104
-#: templates/social/search.html:74
-msgid "Posts"
-msgstr "Publications"
+#: templates/profile/public.html:94
+msgid "Trust"
+msgstr "Confiance"
 
-#: templates/profile/public.html:97 templates/profile/public.html:240
-#: templates/profile/view.html:110 templates/profile/view.html:276
-msgid "About"
-msgstr "À propos"
+#: templates/profile/public.html:106 templates/profile/view.html:145
+msgid "Referrals completed"
+msgstr "Recommandations complétées"
 
-#: templates/profile/public.html:114 templates/profile/view.html:127
-msgid "No posts yet"
-msgstr "Aucune publication pour l’instant"
-
-#: templates/profile/public.html:115
-msgid "This user"
-msgstr "Cet utilisateur"
-
-#: templates/profile/public.html:115
-msgid "hasn't posted anything yet."
-msgstr "n’a encore rien publié."
-
-#: templates/profile/public.html:123 templates/profile/view.html:137
-msgid "Referral activity"
-msgstr "Activité de recommandation"
-
-#: templates/profile/public.html:135 templates/profile/view.html:157
-#: templates/profile/view.html:186
-msgid "Reputation"
-msgstr "Réputation"
-
-#: templates/profile/public.html:146
-msgid "from"
-msgstr "de"
-
-#: templates/profile/public.html:146
+#: templates/profile/public.html:112 templates/profile/public.html:218
 #, python-format
 msgid "%(num)s review"
 msgid_plural "%(num)s reviews"
 msgstr[0] "%(num)s avis"
 msgstr[1] "%(num)s avis"
 
-#: templates/profile/public.html:165
+#: templates/profile/public.html:125
+#, python-format
+msgid "Responds in %(time)s · answers %(rate)s%% of referrals"
+msgstr "Répond en %(time)s · répond à %(rate)s %% des recommandations"
+
+#: templates/profile/public.html:125
+#, python-format
+msgid "Answers %(rate)s%% of referrals"
+msgstr "Répond à %(rate)s %% des recommandations"
+
+#: templates/profile/public.html:129
+msgid "No history yet — no completed referrals, reviews, or responses to show."
+msgstr ""
+"Aucun historique pour l’instant — aucune recommandation complétée, aucun "
+"avis ni aucune réponse à afficher."
+
+#: templates/profile/public.html:143
+msgid "Why this score:"
+msgstr "Pourquoi ce score :"
+
+#: templates/profile/public.html:145 templates/social/analytics.html:17
+msgid "Identity:"
+msgstr "Identité :"
+
+#: templates/profile/public.html:146 templates/social/analytics.html:18
+msgid "Transactions:"
+msgstr "Transactions :"
+
+#: templates/profile/public.html:147 templates/social/analytics.html:19
+msgid "Reliability:"
+msgstr "Fiabilité :"
+
+#: templates/profile/public.html:148 templates/social/analytics.html:20
+msgid "Community:"
+msgstr "Communauté :"
+
+#: templates/profile/public.html:149 templates/social/analytics.html:21
+msgid "Tenure:"
+msgstr "Ancienneté :"
+
+#: templates/profile/public.html:150 templates/social/analytics.html:22
+msgid "Penalties:"
+msgstr "Pénalités :"
+
+#: templates/profile/public.html:163 templates/profile/view.html:104
+#: templates/social/search.html:74
+msgid "Posts"
+msgstr "Publications"
+
+#: templates/profile/public.html:169 templates/profile/public.html:312
+#: templates/profile/view.html:110 templates/profile/view.html:276
+msgid "About"
+msgstr "À propos"
+
+#: templates/profile/public.html:186 templates/profile/view.html:127
+msgid "No posts yet"
+msgstr "Aucune publication pour l’instant"
+
+#: templates/profile/public.html:187
+msgid "This user"
+msgstr "Cet utilisateur"
+
+#: templates/profile/public.html:187
+msgid "hasn't posted anything yet."
+msgstr "n’a encore rien publié."
+
+#: templates/profile/public.html:195 templates/profile/view.html:137
+msgid "Referral activity"
+msgstr "Activité de recommandation"
+
+#: templates/profile/public.html:207 templates/profile/view.html:157
+#: templates/profile/view.html:186
+msgid "Reputation"
+msgstr "Réputation"
+
+#: templates/profile/public.html:218
+msgid "from"
+msgstr "de"
+
+#: templates/profile/public.html:237
 msgid "No reviews yet."
 msgstr "Aucun avis pour l’instant."
 
-#: templates/profile/public.html:182 templates/profile/view.html:210
+#: templates/profile/public.html:254 templates/profile/view.html:210
 msgid "No video pitches yet."
 msgstr "Aucun pitch vidéo pour l’instant."
 
-#: templates/profile/public.html:189 templates/profile/view.html:225
+#: templates/profile/public.html:261 templates/profile/view.html:225
 msgid "Video vouches"
 msgstr "Témoignages vidéo"
 
-#: templates/profile/public.html:193 templates/profile/view.html:230
+#: templates/profile/public.html:265 templates/profile/view.html:230
 msgid "Vouched by"
 msgstr "Garanti par"
 
-#: templates/profile/public.html:197 templates/profile/view.html:234
+#: templates/profile/public.html:269 templates/profile/view.html:234
 msgid "No video vouches yet."
 msgstr "Aucun témoignage vidéo pour l’instant."
 
-#: templates/profile/public.html:200
+#: templates/profile/public.html:272
 msgid "Vouch for this person on camera — 30 seconds, no CV needed."
 msgstr ""
 "Portez-vous garant de cette personne en vidéo — 30 secondes, aucun CV "
 "requis."
 
-#: templates/profile/public.html:215
+#: templates/profile/public.html:287
 msgid "People who put their own money on the line behind this member."
 msgstr "Personnes qui ont mis leur propre argent en jeu derrière ce membre."
 
-#: templates/profile/public.html:225
+#: templates/profile/public.html:297
 msgid "No staked vouches yet."
 msgstr "Aucune recommandation misée pour l’instant."
 
-#: templates/profile/public.html:228
+#: templates/profile/public.html:300
 msgid "Stake on this person — put your money where your vouch is."
 msgstr ""
 "Misez sur cette personne — mettez votre argent là où est votre "
 "recommandation."
 
-#: templates/profile/public.html:244 templates/profile/view.html:280
+#: templates/profile/public.html:316 templates/profile/view.html:280
 msgid "No bio added yet."
 msgstr "Aucune bio ajoutée pour l’instant."
 
-#: templates/profile/public.html:287
+#: templates/profile/public.html:359
 msgid "Links"
 msgstr "Liens"
 
-#: templates/profile/public.html:306 templates/profile/view.html:300
+#: templates/profile/public.html:378 templates/profile/view.html:300
 msgid "LinkedIn Profile"
 msgstr "Profil LinkedIn"
 
-#: templates/profile/public.html:312 templates/profile/view.html:307
+#: templates/profile/public.html:384 templates/profile/view.html:307
 msgid "GitHub Profile"
 msgstr "Profil GitHub"
 
-#: templates/profile/public.html:318 templates/profile/view.html:314
+#: templates/profile/public.html:390 templates/profile/view.html:314
 msgid "Instagram"
 msgstr "Instagram"
 
-#: templates/profile/public.html:324 templates/profile/view.html:321
+#: templates/profile/public.html:396 templates/profile/view.html:321
 msgid "Facebook"
 msgstr "Facebook"
 
-#: templates/profile/public.html:330 templates/profile/view.html:328
+#: templates/profile/public.html:402 templates/profile/view.html:328
 msgid "TikTok"
 msgstr "TikTok"
 
-#: templates/profile/public.html:336 templates/profile/view.html:335
+#: templates/profile/public.html:408 templates/profile/view.html:335
 msgid "YouTube"
 msgstr "YouTube"
 
-#: templates/profile/public.html:340
+#: templates/profile/public.html:412
 msgid "No links added."
 msgstr "Aucun lien ajouté."
 
@@ -4458,10 +4516,6 @@ msgstr "Écrivez votre première publication"
 #: templates/profile/view.html:141
 msgid "Referrals sent"
 msgstr "Recommandations envoyées"
-
-#: templates/profile/view.html:145
-msgid "Referrals completed"
-msgstr "Recommandations complétées"
 
 #: templates/profile/view.html:153
 msgid "Disputes"
@@ -5001,30 +5055,6 @@ msgstr "Score %(score)s/100"
 #: templates/social/analytics.html:15
 msgid "Top Helper"
 msgstr "Meilleur aidant"
-
-#: templates/social/analytics.html:17
-msgid "Identity:"
-msgstr "Identité :"
-
-#: templates/social/analytics.html:18
-msgid "Transactions:"
-msgstr "Transactions :"
-
-#: templates/social/analytics.html:19
-msgid "Reliability:"
-msgstr "Fiabilité :"
-
-#: templates/social/analytics.html:20
-msgid "Community:"
-msgstr "Communauté :"
-
-#: templates/social/analytics.html:21
-msgid "Tenure:"
-msgstr "Ancienneté :"
-
-#: templates/social/analytics.html:22
-msgid "Penalties:"
-msgstr "Pénalités :"
 
 #: templates/social/analytics.html:32
 msgid "people"
@@ -6201,20 +6231,6 @@ msgstr ""
 "Suivez les personnes que vous connaissez — leurs publications rempliront "
 "votre fil."
 
-#: utils/reputation.py:79
-msgid "under an hour"
-msgstr "moins d’une heure"
-
-#: utils/reputation.py:81
-#, python-format
-msgid "≈ %(hours)dh"
-msgstr "≈ %(hours)d h"
-
-#: utils/reputation.py:83
-#, python-format
-msgid "≈ %(days)dd"
-msgstr "≈ %(days)d j"
-
 #: utils/staged_rewards.py:24
 msgid "Referral submitted"
 msgstr "Recommandation envoyée"
@@ -6250,6 +6266,28 @@ msgstr "Explorateur"
 #: utils/trust.py:75
 msgid "Contributor"
 msgstr "Contributeur"
+
+#: utils/trust.py:196
+msgid "under an hour"
+msgstr "moins d’une heure"
+
+#: utils/trust.py:200
+msgid "~1 hour"
+msgstr "~1 heure"
+
+#: utils/trust.py:201
+#, python-format
+msgid "~%(hours)d hours"
+msgstr "~%(hours)d heures"
+
+#: utils/trust.py:204
+msgid "~1 day"
+msgstr "~1 jour"
+
+#: utils/trust.py:205
+#, python-format
+msgid "~%(days)d days"
+msgstr "~%(days)d jours"
 
 #: utils/verification_tiers.py:27
 msgid "Not verified"
@@ -7159,4 +7197,7 @@ msgstr ""
 #~ "restera en sécurité et sera appliqué "
 #~ "à votre prochain besoin. Aucun frais "
 #~ "supplémentaire ne sera facturé."
+
+#~ msgid "≈ %(hours)dh"
+#~ msgstr "≈ %(hours)d h"
 
