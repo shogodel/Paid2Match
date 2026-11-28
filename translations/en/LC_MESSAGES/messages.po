@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  Paid2Match\n"
 "Report-Msgid-Bugs-To: support@paid2match.com\n"
-"POT-Creation-Date: 2026-11-28 03:15+0000\n"
+"POT-Creation-Date: 2026-11-28 15:24+0000\n"
 "PO-Revision-Date: 2024-04-24 12:00+0000\n"
 "Last-Translator: \n"
 "Language: en\n"
@@ -660,60 +660,73 @@ msgstr ""
 msgid "Publish my pledge"
 msgstr ""
 
-#: blueprints/social/routes.py:470 blueprints/tips/routes.py:125
+#: blueprints/social/routes.py:499
+msgid "This paid space has no price set yet — please try again later."
+msgstr ""
+
+#: blueprints/social/routes.py:502 blueprints/tips/routes.py:142
 #: templates/payments/pro.html:48
 msgid "Payments are currently unavailable."
 msgstr ""
 
-#: blueprints/social/routes.py:479 blueprints/tips/routes.py:139
+#: blueprints/social/routes.py:511 blueprints/tips/routes.py:162
 msgid "Stripe is not configured — please try again later."
 msgstr ""
 
-#: blueprints/social/routes.py:497 blueprints/social/routes.py:540
+#: blueprints/social/routes.py:526
+#, python-format
+msgid "Thanks for joining %(name)s — your membership will be active in a moment."
+msgstr ""
+
+#: blueprints/social/routes.py:543 blueprints/social/routes.py:590
 #, python-format
 msgid "You are already a member of %(name)s."
 msgstr ""
 
-#: blueprints/social/routes.py:514
+#: blueprints/social/routes.py:564
 msgid "You do not have an active subscription to this space."
 msgstr ""
 
-#: blueprints/social/routes.py:517
+#: blueprints/social/routes.py:567
 msgid "Your subscription is already set to cancel at the end of the period."
 msgstr ""
 
-#: blueprints/social/routes.py:522
+#: blueprints/social/routes.py:572
 msgid ""
 "Your subscription will cancel at the end of the current period — you keep"
 " access until then."
 msgstr ""
 
-#: blueprints/social/routes.py:524
+#: blueprints/social/routes.py:574
 #, python-format
 msgid "Could not cancel your subscription: %(error)s"
 msgstr ""
 
-#: blueprints/social/routes.py:550
+#: blueprints/social/routes.py:600
 #, python-format
 msgid "You joined %(name)s."
 msgstr ""
 
-#: blueprints/social/routes.py:567
+#: blueprints/social/routes.py:623
 msgid ""
 "This is a paid space — cancel your subscription to leave. You keep access"
 " until the end of the paid period."
 msgstr ""
 
-#: blueprints/social/routes.py:571
+#: blueprints/social/routes.py:627
 #, python-format
 msgid "You left %(name)s."
 msgstr ""
 
-#: blueprints/social/routes.py:638 blueprints/social/routes.py:640
+#: blueprints/social/routes.py:646
+msgid "This is a paid space — join it to change notification settings."
+msgstr ""
+
+#: blueprints/social/routes.py:700 blueprints/social/routes.py:702
 msgid "This is a paid space — join it to post here."
 msgstr ""
 
-#: blueprints/social/routes.py:793
+#: blueprints/social/routes.py:855
 msgid "This post is in a paid space — join the space to read it."
 msgstr ""
 
@@ -778,24 +791,28 @@ msgstr ""
 msgid "Stake returned — the need was cancelled."
 msgstr ""
 
-#: blueprints/tips/routes.py:56 utils/tips.py:114
+#: blueprints/tips/routes.py:45
+msgid "Thanks — your tip is on its way!"
+msgstr ""
+
+#: blueprints/tips/routes.py:73 utils/tips.py:119
 msgid "Enter an amount."
 msgstr ""
 
-#: blueprints/tips/routes.py:60 utils/tips.py:118
+#: blueprints/tips/routes.py:77 utils/tips.py:123 utils/tips.py:127
 msgid "Enter a valid amount."
 msgstr ""
 
-#: blueprints/tips/routes.py:70
+#: blueprints/tips/routes.py:87
 msgid "Currency must be CAD, EUR or USD."
 msgstr ""
 
-#: blueprints/tips/routes.py:75
+#: blueprints/tips/routes.py:92
 #, python-format
 msgid "Your message must be %(max)s characters or fewer."
 msgstr ""
 
-#: blueprints/tips/routes.py:90 blueprints/tips/routes.py:116
+#: blueprints/tips/routes.py:107 blueprints/tips/routes.py:133
 msgid "You cannot tip yourself."
 msgstr ""
 
@@ -991,15 +1008,15 @@ msgstr ""
 msgid "Payment reliability"
 msgstr ""
 
-#: models/space.py:104 templates/social/space_detail.html:41
+#: models/space.py:120 templates/social/space_detail.html:43
 msgid "All posts"
 msgstr ""
 
-#: models/space.py:105 templates/social/space_detail.html:42
+#: models/space.py:121 templates/social/space_detail.html:44
 msgid "Mentions only"
 msgstr ""
 
-#: models/space.py:106 templates/social/space_detail.html:43
+#: models/space.py:122 templates/social/space_detail.html:45
 msgid "Muted"
 msgstr ""
 
@@ -1740,7 +1757,7 @@ msgstr ""
 #: templates/bounties/recruitment_board.html:99
 #: templates/bounties/services_board.html:99 templates/social/feed.html:111
 #: templates/social/notifications.html:68 templates/social/saved.html:31
-#: templates/social/space_detail.html:81
+#: templates/social/space_detail.html:83
 msgid "Previous"
 msgstr ""
 
@@ -1748,7 +1765,7 @@ msgstr ""
 #: templates/bounties/recruitment_board.html:107
 #: templates/bounties/services_board.html:107 templates/social/feed.html:115
 #: templates/social/notifications.html:72 templates/social/saved.html:35
-#: templates/social/space_detail.html:85
+#: templates/social/space_detail.html:87
 msgid "Next"
 msgstr ""
 
@@ -4161,7 +4178,7 @@ msgid "Karma"
 msgstr ""
 
 #: templates/profile/public.html:71 templates/profile/view.html:66
-#, fuzzy, python-format
+#, python-format
 msgid "%(num)s tip"
 msgid_plural "%(num)s tips"
 msgstr[0] ""
@@ -4721,7 +4738,7 @@ msgid ""
 "confirms."
 msgstr ""
 
-#: templates/social/_composer.html:12 templates/social/space_detail.html:72
+#: templates/social/_composer.html:12 templates/social/space_detail.html:74
 msgid "Write a post"
 msgstr ""
 
@@ -4902,7 +4919,7 @@ msgid "Like"
 msgstr ""
 
 #: templates/social/_post_card.html:152 templates/social/_post_card.html:153
-#: templates/social/space_detail.html:45 tests/test_phase2.py:171
+#: templates/social/space_detail.html:47 tests/test_phase2.py:171
 #: tests/test_phase2.py:175
 msgid "Save"
 msgstr ""
@@ -5362,12 +5379,12 @@ msgid "Nothing to discover yet — check back once people start posting."
 msgstr ""
 
 #: templates/social/feed.html:113 templates/social/saved.html:33
-#: templates/social/space_detail.html:83
+#: templates/social/space_detail.html:85
 msgid "Page"
 msgstr ""
 
 #: templates/social/feed.html:113 templates/social/saved.html:33
-#: templates/social/space_detail.html:83
+#: templates/social/space_detail.html:85
 msgid "of"
 msgstr ""
 
@@ -5620,49 +5637,49 @@ msgstr ""
 msgid "Browse opportunities"
 msgstr ""
 
-#: templates/social/space_detail.html:12
+#: templates/social/space_detail.html:12 templates/social/space_detail.html:14
 msgid "Paid space"
 msgstr ""
 
-#: templates/social/space_detail.html:17 templates/social/space_pitch.html:14
+#: templates/social/space_detail.html:19 templates/social/space_pitch.html:14
 #: templates/social/spaces.html:26
 msgid "members"
 msgstr ""
 
-#: templates/social/space_detail.html:17 templates/social/space_pitch.html:14
+#: templates/social/space_detail.html:19 templates/social/space_pitch.html:14
 #: templates/social/spaces.html:26
 msgid "posts"
 msgstr ""
 
-#: templates/social/space_detail.html:26
+#: templates/social/space_detail.html:28
 msgid "Cancels at period end"
 msgstr ""
 
-#: templates/social/space_detail.html:28
+#: templates/social/space_detail.html:30
 msgid "Cancel subscription"
 msgstr ""
 
-#: templates/social/space_detail.html:35
+#: templates/social/space_detail.html:37
 msgid "Leave space"
 msgstr ""
 
-#: templates/social/space_detail.html:39
+#: templates/social/space_detail.html:41
 msgid "Notifications for this space"
 msgstr ""
 
-#: templates/social/space_detail.html:50
+#: templates/social/space_detail.html:52
 msgid "Join space"
 msgstr ""
 
-#: templates/social/space_detail.html:57 templates/social/space_pitch.html:19
+#: templates/social/space_detail.html:59 templates/social/space_pitch.html:19
 msgid "All spaces"
 msgstr ""
 
-#: templates/social/space_detail.html:70
+#: templates/social/space_detail.html:72
 msgid "Nothing in this space yet"
 msgstr ""
 
-#: templates/social/space_detail.html:71
+#: templates/social/space_detail.html:73
 msgid "Be the first to post here — pick this space when you write your post."
 msgstr ""
 
@@ -5678,13 +5695,17 @@ msgstr ""
 msgid "Cancel anytime — you keep access until the end of the paid period."
 msgstr ""
 
-#: templates/social/space_pitch.html:35
+#: templates/social/space_pitch.html:36
 #, python-format
 msgid "Join for $%(price)s/month"
 msgstr ""
 
-#: templates/social/space_pitch.html:38
+#: templates/social/space_pitch.html:39
 msgid "Log in to join"
+msgstr ""
+
+#: templates/social/space_pitch.html:42
+msgid "Membership pricing isn't set yet — check back soon."
 msgstr ""
 
 #: templates/social/spaces.html:7
@@ -6015,74 +6036,92 @@ msgstr ""
 msgid "Paid2Match — %(name)s membership (%(price)s/month)"
 msgstr ""
 
-#: utils/paid_spaces.py:208
+#: utils/paid_spaces.py:146
+#, python-format
+msgid "A new member joined %(name)s"
+msgstr ""
+
+#: utils/paid_spaces.py:147
+msgid "Your paid space has a new member."
+msgstr ""
+
+#: utils/paid_spaces.py:173
+#, python-format
+msgid "A member left %(name)s"
+msgstr ""
+
+#: utils/paid_spaces.py:174
+msgid "A membership ended — they no longer have access to your paid space."
+msgstr ""
+
+#: utils/paid_spaces.py:241
 msgid ""
 "Awaiting space owner payout setup (Stripe Connect onboarding not "
 "complete)."
 msgstr ""
 
-#: utils/paid_spaces.py:213
+#: utils/paid_spaces.py:246
 msgid "Payments are currently disabled."
 msgstr ""
 
-#: utils/paid_spaces.py:216
+#: utils/paid_spaces.py:249
 msgid "Stripe is not configured."
 msgstr ""
 
-#: utils/paid_spaces.py:237
+#: utils/paid_spaces.py:278
 #, python-format
 msgid "Transfer failed: %(error)s"
 msgstr ""
 
-#: utils/paid_spaces.py:352
+#: utils/paid_spaces.py:404
 msgid ""
 "No charge on the invoice to transfer from — the share is recorded and "
 "will be retried."
 msgstr ""
 
-#: utils/paid_spaces.py:357
+#: utils/paid_spaces.py:409
 msgid "Your space payout is waiting"
 msgstr ""
 
-#: utils/paid_spaces.py:359
+#: utils/paid_spaces.py:411
 #, python-format
 msgid ""
 "A member paid for %(name)s, but the payment could not be transferred yet."
 " Your share of %(amount)s is recorded."
 msgstr ""
 
-#: utils/paid_spaces.py:371
+#: utils/paid_spaces.py:423
 msgid "Your space payout is waiting on payout setup"
 msgstr ""
 
-#: utils/paid_spaces.py:373
+#: utils/paid_spaces.py:425
 #, python-format
 msgid ""
 "A member paid for %(name)s, but your share of %(amount)s is on hold until"
 " you finish setting up Stripe payouts."
 msgstr ""
 
-#: utils/paid_spaces.py:402
+#: utils/paid_spaces.py:454
 msgid "Your space payout was sent"
 msgstr ""
 
-#: utils/paid_spaces.py:404
+#: utils/paid_spaces.py:456
 #, python-format
 msgid ""
 "Your share of %(amount)s for %(name)s is on its way to your Stripe "
 "account."
 msgstr ""
 
-#: utils/paid_spaces.py:415
+#: utils/paid_spaces.py:467
 #, python-format
 msgid "Stripe transfer %(action)s."
 msgstr ""
 
-#: utils/paid_spaces.py:420
+#: utils/paid_spaces.py:472
 msgid "Your space payout failed"
 msgstr ""
 
-#: utils/paid_spaces.py:422
+#: utils/paid_spaces.py:474
 #, python-format
 msgid ""
 "Stripe could not send your share of %(amount)s for %(name)s. Please check"
@@ -6101,34 +6140,34 @@ msgstr ""
 msgid "Hire"
 msgstr ""
 
-#: utils/tips.py:120
+#: utils/tips.py:125
 msgid "The minimum tip is $2."
 msgstr ""
 
-#: utils/tips.py:275
+#: utils/tips.py:282
 msgid "You received a tip!"
 msgstr ""
 
-#: utils/tips.py:276
+#: utils/tips.py:283
 #, python-format
 msgid "You received a tip of %(amount)s."
 msgstr ""
 
-#: utils/tips.py:314
+#: utils/tips.py:321
 msgid "A tip is waiting for you"
 msgstr ""
 
-#: utils/tips.py:315
+#: utils/tips.py:322
 msgid ""
 "Someone tipped you, but the money is on hold until you finish setting up "
 "Stripe payouts."
 msgstr ""
 
-#: utils/tips.py:380
+#: utils/tips.py:394
 msgid "Your tip payout failed"
 msgstr ""
 
-#: utils/tips.py:381
+#: utils/tips.py:395
 msgid ""
 "Stripe could not send a tip payout to you. Please check your payout "
 "details."
@@ -7119,5 +7158,20 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "≈ %(days)dd"
+#~ msgstr ""
+
+#~ msgid "This is a paid space"
+#~ msgstr ""
+
+#~ msgid "Join to read the posts and take part in the conversation."
+#~ msgstr ""
+
+#~ msgid "Cancel anytime — you keep access until the end of the paid period."
+#~ msgstr ""
+
+#~ msgid "Join for $%(price)s/month"
+#~ msgstr ""
+
+#~ msgid "Log in to join"
 #~ msgstr ""
 

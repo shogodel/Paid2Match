@@ -1,6 +1,7 @@
 """Admin routes for Paid2Match."""
 import os
 import hmac
+import math
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, abort
 from flask_login import login_required, current_user
@@ -890,7 +891,7 @@ def edit_space(id):
     from sqlalchemy import func as _func
 
     from models.space import Space
-    from utils.payments import to_cents
+    from utils.payments import STRIPE_MAX_CENTS, to_cents
 
     space = get_or_404(Space, id)
     owner_email = (request.form.get('owner_email') or '').strip().lower()
@@ -915,10 +916,23 @@ def edit_space(id):
             price_value = float(price_raw)
         except ValueError:
             price_value = None
-        if price_value is None or price_value <= 0:
+        # 'nan'/'inf' parse as floats but to_cents() raises on them
+        # (Decimal InvalidOperation/ValueError) — reject non-finite
+        # values here instead of 500ing the form.
+        if (
+            price_value is None
+            or not math.isfinite(price_value)
+            or price_value <= 0
+        ):
             flash('Enter a monthly price greater than 0 for a paid space.', 'danger')
             return redirect(url_for('admin.spaces'))
         price_cents = to_cents(price_value)
+        # Stripe cannot charge above its per-charge maximum — refuse
+        # it at the form instead of storing a price no member can
+        # ever pay.
+        if price_cents > STRIPE_MAX_CENTS:
+            flash('That monthly price is too large — Stripe cannot charge it.', 'danger')
+            return redirect(url_for('admin.spaces'))
     was_paid = bool(space.is_paid)
     if was_paid and not make_paid:
         # Refuse to turn a paid space free while subscriptions are
@@ -928,11 +942,17 @@ def edit_space(id):
         # unrecorded. The admin cancels the subscriptions first
         # (members keep access to period end), then frees the space.
         from models.space import SpaceMembership as _Membership
-        live = _Membership.query.filter_by(
-            space_id=space.id, status='active',
-        ).filter(
-            _Membership.stripe_subscription_id.isnot(None)
-        ).count()
+        # Any live subscription blocks freeing the space — not just
+        # 'active' ones: a past-due subscription still charges, and
+        # freeing the space would leave its invoices unrecorded (the
+        # handler returns early for a non-paid space).
+        live = sum(
+            1
+            for _m in _Membership.query.filter_by(
+                space_id=space.id
+            ).all()
+            if _m.has_live_subscription
+        )
         if live:
             flash(
                 f'This space still has {live} active paid membership(s) — '

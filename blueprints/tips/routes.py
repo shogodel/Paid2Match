@@ -31,6 +31,23 @@ from utils.tips import (
 )
 
 
+@tips_bp.route('/success/<user_id>', methods=['GET'])
+@login_required
+def tip_success(user_id):
+    """GET /tips/success/<user_id> — return page after a tip
+    Checkout (mirrors /payments/pro/success). Audit 2026-11-28:
+    the success and cancel URLs were the same profile/post URL
+    with no flash, so after paying the tipper saw the same page
+    as after cancelling and could not tell the tip went through.
+    The webhook fulfills the tip; this only confirms the payment
+    completed."""
+    recipient = get_or_404(User, user_id)
+    flash(_('Thanks — your tip is on its way!'), 'success')
+    return redirect(
+        url_for('profile.public_profile', user_id=recipient.id)
+    )
+
+
 def _return_target(recipient, post_id):
     """(success_url, cancel_url) for a tip: back to the post when
     the tip started on one (and the post really is the recipient's),
@@ -125,6 +142,12 @@ def create_tip(user_id):
         flash(_('Payments are currently unavailable.'), 'warning')
         return back
     success_url, cancel_url = _return_target(recipient, post_id)
+    # Success goes through the confirmation route (flash); cancel
+    # goes back to where the tip started (audit 2026-11-28).
+    success_url = (
+        f'{request.host_url.rstrip("/")}'
+        f'{url_for("tips.tip_success", user_id=recipient.id)}'
+    )
     try:
         _tip, checkout_url = create_tip_checkout(
             current_user, recipient, amount_cents, currency, message,

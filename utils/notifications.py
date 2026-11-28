@@ -116,6 +116,12 @@ NOTIFICATION_ICONS = {
     'pledge_revoked': 'shield-check',
     'employer_pledge_approved': 'shield-check',
     'employer_pledge_revoked': 'shield-check',
+    # Tips + paid-space membership (audit 2026-11-28).
+    'tip_received': 'wallet',
+    'tip_pending': 'wallet',
+    'tip_failed': 'wallet',
+    'space_member_joined': 'users',
+    'space_member_left': 'users',
 }
 
 

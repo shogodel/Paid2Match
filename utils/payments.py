@@ -59,6 +59,11 @@ logger = logging.getLogger(__name__)
 # Paid2Match is a Canadian product — all money moves in CAD.
 CURRENCY = 'cad'
 
+# Stripe's per-charge maximum, in minor units ($999,999.99). Amounts
+# above it can never complete a Checkout session — validate them at
+# the form instead of failing server-side with a misleading error.
+STRIPE_MAX_CENTS = 99_999_999
+
 # Platform fee: admin-configurable, default 20%. Founding referrers
 # (admin-set flag) pay 15% for their first 12 months — the window is
 # enforced by founding_benefit_active() below, from

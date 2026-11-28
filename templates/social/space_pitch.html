@@ -29,6 +29,7 @@
                     <p class="h4 mb-1">${{ space.price_display }}<span class="text-muted fs-6"> / {{ _('month') }}</span></p>
                     <p class="text-muted small mb-3">{{ _('Cancel anytime — you keep access until the end of the paid period.') }}</p>
                     {% endif %}
+                    {% if space.price_display %}
                     {% if current_user.is_authenticated %}
                     <form method="POST" action="{{ url_for('social.subscribe_space', slug=space.slug) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -36,6 +37,9 @@
                     </form>
                     {% else %}
                     <a href="{{ url_for('auth.login', next=url_for('social.space_detail', slug=space.slug)) }}" class="btn btn-primary btn-lg">{{ _('Log in to join') }}</a>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-muted small mb-0">{{ _("Membership pricing isn't set yet — check back soon.") }}</p>
                     {% endif %}
                 </div>
             </div>

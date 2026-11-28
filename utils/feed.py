@@ -150,7 +150,75 @@ def engagement_counts(post_ids):
     return result
 
 
-def _visible_posts_query(viewer_id, hidden=None):
+def _hidden_paid_space_ids(viewer_id, memberships=None):
+    """Ids of paid spaces whose posts the viewer may NOT see.
+
+    The paywall has to live here, not just in space_detail /
+    post_detail: every feed tab and search build on
+    _visible_posts_query, so without this filter a paid-space post
+    leaks its body into the Latest / Following / Discover /
+    Trending feeds and into search results for non-members.
+    ``memberships`` is the caller's already-loaded {space_id:
+    SpaceMembership} for the viewer (or {} when the caller knows
+    there is none) — pass it when the caller already has it so the
+    filter does not pay for the same lookup twice. Callers that
+    pass a partial dict must only use the result for posts in the
+    spaces the dict covers (space_detail scopes its query to one
+    space, so a one-entry dict is enough there)."""
+    from models.space import Space, SpaceMembership
+    from models.user import User
+    paid_spaces = Space.query.filter_by(is_paid=True).all()
+    if not paid_spaces:
+        return set()
+    if viewer_id is None:
+        return {s.id for s in paid_spaces}
+    viewer = db.session.get(User, viewer_id)
+    if viewer is not None and getattr(viewer, 'role', None) == 'admin':
+        return set()
+    memberships = (
+        memberships
+        if memberships is not None
+        else {
+            m.space_id: m
+            for m in SpaceMembership.query.filter_by(user_id=viewer_id).all()
+        }
+    )
+    hidden = set()
+    for space in paid_spaces:
+        if space.owner_id and space.owner_id == viewer_id:
+            continue
+        membership = memberships.get(space.id)
+        if (
+            membership is not None
+            and membership.is_paid
+            and membership.is_active
+        ):
+            continue
+        hidden.add(space.id)
+    return hidden
+
+
+def _apply_paid_space_filter(query, viewer_id, memberships=None):
+    """Exclude posts in paid spaces the viewer cannot see from a
+    Post query. The viewer still sees their own posts (post_detail
+    lets the author read their own post). ``memberships`` is passed
+    through to _hidden_paid_space_ids (see there)."""
+    hidden = _hidden_paid_space_ids(viewer_id, memberships=memberships)
+    if not hidden:
+        return query
+    if viewer_id:
+        return query.filter(or_(
+            Post.space_id.is_(None),
+            ~Post.space_id.in_(hidden),
+            Post.author_id == viewer_id,
+        ))
+    return query.filter(or_(
+        Post.space_id.is_(None),
+        ~Post.space_id.in_(hidden),
+    ))
+
+
+def _visible_posts_query(viewer_id, hidden=None, memberships=None):
     from sqlalchemy.orm import selectinload
     # Audit 2026-11-25: the post card reads post.author and
     # post.bounty per card — eager-load both (2 extra queries total
@@ -171,7 +239,7 @@ def _visible_posts_query(viewer_id, hidden=None):
         hidden = hidden_author_ids(viewer_id)
     if hidden:
         query = query.filter(~Post.author_id.in_(hidden))
-    return query
+    return _apply_paid_space_filter(query, viewer_id, memberships=memberships)
 
 
 def _flair_types(flair):
@@ -237,6 +305,9 @@ def get_following_feed(viewer_id, page=1, per_page=20, flair=None):
             # hides them from your feeds, not just their own posts.
             ~Share.user_id.in_(hidden),
         )
+    # Paid spaces: a share must not smuggle a paywalled post into
+    # a feed the viewer cannot see (same filter as the posts query).
+    shares = _apply_paid_space_filter(shares, viewer_id)
     for share in shares.all():
         items.append({
             'kind': 'share', 'post': share.post, 'share': share,
@@ -279,6 +350,9 @@ def get_latest_feed(viewer_id, page=1, per_page=20, flair=None):
             # or muted user's shares must not appear either.
             ~Share.user_id.in_(hidden),
         )
+    # Paid spaces: a share must not smuggle a paywalled post into
+    # a feed the viewer cannot see (same filter as the posts query).
+    shares = _apply_paid_space_filter(shares, viewer_id)
     for share in shares.all():
         items.append({
             'kind': 'share', 'post': share.post, 'share': share,

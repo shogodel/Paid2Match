@@ -124,6 +124,15 @@ def fulfill_paid_space_checkout(session_obj):
         membership = SpaceMembership.query.filter_by(
             user_id=user_id, space_id=space_id
         ).first()
+    # Audit 2026-11-28: the owner was never told a member had
+    # joined — they only learned via the invoice.paid payout, or
+    # not at all on a $0/trial invoice. Notify once, when this
+    # subscription id is first attached; a redelivered webhook
+    # carries the same id and must not re-notify.
+    is_new_subscription = (
+        membership is None
+        or membership.stripe_subscription_id != subscription_id
+    )
     if membership is None:
         membership = SpaceMembership(user_id=user_id, space_id=space_id)
         db.session.add(membership)
@@ -131,6 +140,14 @@ def fulfill_paid_space_checkout(session_obj):
     membership.status = 'active'
     membership.cancel_at_period_end = False
     db.session.flush()
+    if is_new_subscription and space.owner_id:
+        notify(
+            space.owner_id, 'space_member_joined',
+            _('A new member joined %(name)s', name=space.name),
+            _('Your paid space has a new member.'),
+            actor_id=user_id,
+            link_url=f'/social/spaces/{space.slug}',
+        )
     return membership
 
 
@@ -140,9 +157,25 @@ def _sync_space_membership(membership, subscription_obj, event_type):
     end. A cancel-at-period-end subscription stays 'active' until
     the period ends — the deleted event is what lapses it."""
     if event_type == 'customer.subscription.deleted':
+        # Audit 2026-11-28: the owner was never told a member had
+        # left — the membership just silently flipped to canceled.
+        # Notify once: a redelivered deleted event finds the status
+        # already 'canceled' and must not re-notify.
+        was_active = membership.status != 'canceled'
         membership.status = 'canceled'
         membership.cancel_at_period_end = False
         db.session.flush()
+        if was_active:
+            space = db.session.get(Space, membership.space_id)
+            if space is not None and space.owner_id:
+                notify(
+                    space.owner_id, 'space_member_left',
+                    _('A member left %(name)s', name=space.name),
+                    _('A membership ended — they no longer have '
+                      'access to your paid space.'),
+                    actor_id=membership.user_id,
+                    link_url=f'/social/spaces/{space.slug}',
+                )
         return membership
     status = _stripe_get(subscription_obj, 'status')
     if status in ('active', 'trialing'):
@@ -230,8 +263,16 @@ def _transfer_owner_share(payout):
             },
             # One payout row can only ever create one transfer: a
             # crash between the Stripe call and the DB commit retries
-            # under the same key instead of paying twice.
-            idempotency_key=f'space-payout-{payout.id}',
+            # under the same key instead of paying twice — with one
+            # exception (mirroring release_escrow / tips): a payout
+            # whose recorded transfer FAILED gets a fresh key scoped
+            # to the dead transfer id, so the retry does not return
+            # Stripe's cached response for the dead transfer.
+            idempotency_key=(
+                f'space-payout-{payout.id}-{payout.stripe_transfer_id}'
+                if payout.stripe_transfer_id
+                else f'space-payout-{payout.id}'
+            ),
         )
     except stripe.error.StripeError as exc:
         payout.failure_reason = _('Transfer failed: %(error)s', error=str(exc))
@@ -245,16 +286,23 @@ def _transfer_owner_share(payout):
 
 
 def retry_pending_space_payouts(owner_id):
-    """Re-attempt the transfer for an owner's pending space payouts
+    """Re-attempt the transfer for an owner's unpaid space payouts
     (called when a new invoice lands for that owner — i.e. after
     they may have finished Connect onboarding — and from the
-    Connect-ready path). Returns a list of (payout_id, ok, message).
-    Does not commit."""
+    Connect-ready path). 'failed' rows are included too: a transfer
+    that failed after capture has no other recovery path (the
+    webhook already returned 200, so Stripe never redelivers the
+    invoice) — without this, the owner's share would sit recorded
+    but unpaid forever. The per-payout idempotency key in
+    _transfer_owner_share (fresh when a dead transfer id is
+    recorded) keeps the retry from double-paying. Returns a list of
+    (payout_id, ok, message). Does not commit."""
     account = ConnectAccount.query.filter_by(user_id=owner_id).first()
     if not account or not account.is_ready:
         return []
-    payouts = SpacePayout.query.filter_by(
-        owner_id=owner_id, status='pending_stripe'
+    payouts = SpacePayout.query.filter(
+        SpacePayout.owner_id == owner_id,
+        SpacePayout.status.in_(['pending_stripe', 'failed']),
     ).all()
     results = []
     for payout in payouts:
@@ -334,7 +382,11 @@ def handle_space_invoice_paid(invoice_obj):
         membership.current_period_end = datetime.fromtimestamp(
             period_end, tz=timezone.utc
         ).replace(tzinfo=None)
-    if membership.status != 'active':
+    # A paid invoice does not resurrect a canceled membership: the
+    # subscription is dead (cancel-at-period-end ran out, or it was
+    # cancelled outright) and a trailing invoice must not re-grant
+    # access. A past-due / incomplete membership does reactivate.
+    if membership.status not in ('active', 'canceled'):
         membership.status = 'active'
     db.session.flush()
 

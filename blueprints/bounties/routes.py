@@ -680,6 +680,7 @@ def respond_to_pitch(pitch_id):
             blocker_id=hunter.id, blocked_id=employer.id,
             kind='block',
         ).first()
+        dm_sent = False
         if (not hunter_blocked and not hunter.is_deleted
                 and hunter.is_active):
             auto_message = Message(
@@ -690,6 +691,7 @@ def respond_to_pitch(pitch_id):
                 content=f'Your referral for "{bounty.title}" has been accepted! I am interested in connecting. Let\'s discuss further.'
             )
             db.session.add(auto_message)
+            dm_sent = True
         # M1: notify the referrer (in-app + email). No separate message_new
         # for the auto-message — referral_accepted covers it.
         notify(
@@ -701,7 +703,14 @@ def respond_to_pitch(pitch_id):
         )
         db.session.commit()
 
-        flash('Referral accepted! A message has been sent to the referrer. Details are now revealed.', 'success')
+        # Audit 2026-11-28: the old flash claimed a message had
+        # been sent even when the DM was skipped (blocked/deleted
+        # hunter) — the notification still fires either way, but
+        # the flash must not claim a message that never went out.
+        if dm_sent:
+            flash('Referral accepted! A message has been sent to the referrer. Details are now revealed.', 'success')
+        else:
+            flash('Referral accepted! Details are now revealed. The referrer was notified but no message was sent.', 'success')
         return redirect(url_for('messages.inbox'))
 
     # M1: notify the referrer the referral was passed on (in-app + email).

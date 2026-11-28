@@ -142,10 +142,11 @@ class TestTipRoutes:
         assert tip.amount_cents == 500
         assert tip.message == 'Great post!'
         assert tip.status == 'pending'
-        # Minute-bucketed idempotency key on the Checkout creation.
+        # Per-tip idempotency key on the Checkout creation (audit28:
+        # minute-bucketed keys mint a second session on a double-click
+        # straddling a minute boundary — one tip row, one key).
         key = sc.call_args.kwargs['idempotency_key']
-        assert key.startswith('tip-')
-        assert sample_user.id in key
+        assert key == f'tip-checkout-{tip.id}'
 
     def test_double_click_reuses_pending_tip(
             self, app, client, sample_user, sample_hunter, login_as):

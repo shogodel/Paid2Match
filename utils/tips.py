@@ -23,11 +23,13 @@ Stripe API):
   retries pending payouts.
 
 Idempotency (audit 2026-11-27 lessons):
-* Checkout creation uses a minute-bucketed key
-  (``idempotency_key_for``) — a double-click returns the same
-  Stripe session, and a deliberate repeat a minute later gets a
-  fresh key. A permanent key would make a re-tip within Stripe's
-  24h window return the stale completed session.
+* Checkout creation uses a per-tip key (``tip-checkout-<tip id>``)
+  — a double-click returns the same Stripe session, and so does a
+  double-click straddling a minute boundary (a minute-bucketed key
+  would mint a second session there, letting the tipper pay twice
+  for one tip row while fulfillment only ever transfers once).
+  A deliberate re-tip creates a NEW tip row (and a new key) — the
+  recent-pending reuse window below is only 60 seconds.
 * A double-clicked tip form also reuses the pending Tip row created
   moments ago (``find_recent_pending_tip``), so one session never
   leaves two pending rows behind.
@@ -58,10 +60,10 @@ from utils.currency import format_money
 from utils.notifications import notify
 from utils.payments import (
     CURRENCY,
+    STRIPE_MAX_CENTS,
     _set_api_key,
     _stripe_get,
     create_checkout_session,
-    idempotency_key_for,
     stripe_enabled,
 )
 
@@ -109,7 +111,10 @@ def compute_tip_split(amount_cents, fee_percent):
 
 
 def validate_tip_amount(amount_cents):
-    """(ok, error) — the amount must be an integer of at least $2."""
+    """(ok, error) — the amount must be an integer of at least $2 and
+    no more than Stripe's per-charge maximum (above it the Checkout
+    creation fails server-side and the tipper would get a misleading
+    'Stripe is not configured' flash for an amount problem)."""
     if amount_cents is None:
         return False, _('Enter an amount.')
     try:
@@ -118,6 +123,8 @@ def validate_tip_amount(amount_cents):
         return False, _('Enter a valid amount.')
     if amount_cents < TIP_MIN_CENTS:
         return False, _('The minimum tip is $2.')
+    if amount_cents > STRIPE_MAX_CENTS:
+        return False, _('Enter a valid amount.')
     return True, None
 
 
@@ -210,11 +217,11 @@ def create_tip_checkout(tipper, recipient, amount_cents, currency,
         },
         # A double-click returns the same session, not a second
         # charge (the webhook fulfills one tip per session id).
-        # Minute-bucketed: a deliberate re-tip a minute later
-        # gets a fresh key.
-        idempotency_key=idempotency_key_for(
-            'tip', tipper.id, recipient.id, int(amount_cents),
-        ),
+        # Per-tip key, not minute-bucketed: a double-click straddling
+        # a minute boundary must still return the same session — a
+        # second session would let the tipper pay twice for one tip
+        # row while fulfillment only ever transfers once.
+        idempotency_key=f'tip-checkout-{tip.id}',
     )
     return tip, checkout_url
 
@@ -327,18 +334,25 @@ def fulfill_tip_checkout(session_obj):
 
 
 def retry_pending_tips(user_id):
-    """Re-attempt the transfer for all pending tips owed to one
+    """Re-attempt the transfer for all unpaid tips owed to one
     recipient (called when their Connect onboarding completes).
     Only tips that were actually PAID (a payment intent is
     recorded) can move — a pending tip with no payment intent is a
-    Checkout that never completed, not money waiting. Returns a
-    list of (tip_id, ok, message). Does not commit."""
+    Checkout that never completed, not money waiting. 'failed' tips
+    are included too: a transfer that failed after capture has no
+    other recovery path (the webhook already returned 200, so
+    Stripe never redelivers it) — without this, captured money
+    would sit unpaid forever. The per-tip idempotency key in
+    _transfer_tip (fresh when a dead transfer id is recorded) keeps
+    the retry from double-paying. Returns a list of
+    (tip_id, ok, message). Does not commit."""
     account = ConnectAccount.query.filter_by(user_id=user_id).first()
     if not account or not account.is_ready:
         return []
     tips = (
         Tip.query
-        .filter_by(recipient_id=user_id, status='pending')
+        .filter_by(recipient_id=user_id)
+        .filter(Tip.status.in_(['pending', 'failed']))
         .filter(Tip.stripe_payment_intent_id.isnot(None))
         .order_by(Tip.created_at)
         .all()

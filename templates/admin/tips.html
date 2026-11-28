@@ -6,8 +6,9 @@
 <div class="container py-5">
     <h1>Tips</h1>
     <p class="text-muted">
-        Tips are final — there is no refund path. A 'pending' tip was
-        paid but the recipient has not finished Stripe Connect
+        Tips are final — there is no refund path. A 'pending' tip is
+        either still awaiting payment (the Checkout never completed)
+        or was paid but the recipient has not finished Stripe Connect
         onboarding yet (it pays out automatically when they do); a
         'failed' tip means the transfer failed after capture and the
         platform holds the money until it is resolved.

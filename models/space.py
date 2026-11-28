@@ -13,6 +13,11 @@ from flask_babel import lazy_gettext as _l
 from extensions import db
 from models import generate_uuid, utc_now
 
+# Sentinel for Space.can_view's membership argument: "not supplied,
+# look it up" — distinct from None, which means "supplied, and
+# there is no membership".
+_UNSET_MEMBERSHIP = object()
+
 
 class Space(db.Model):
     """A topic space."""
@@ -70,11 +75,19 @@ class Space(db.Model):
             return None
         return f'{self.price_cents / 100:.2f}'
 
-    def can_view(self, user):
+    def can_view(self, user, membership=_UNSET_MEMBERSHIP):
         """Whether a user may see this space's posts: free spaces are
         open to everyone; a paid space is visible to its active
         members, its owner, and admins only. ``user`` may be None
-        (anonymous) or a User."""
+        (anonymous) or a User. A membership only counts when it is a
+        PAID one (a Stripe subscription): a free membership left over
+        from before the space went paid — or minted by any route that
+        creates a bare membership row — is not a ticket in.
+        ``membership`` is the caller's already-loaded SpaceMembership
+        for (user, this space) — or None when the caller already knows
+        there is none — so the space-detail route does not pay for the
+        same lookup twice (once in the route, once here). Omit it and
+        the lookup runs here, as before."""
         if not self.is_paid:
             return True
         if user is None:
@@ -83,10 +96,13 @@ class Space(db.Model):
             return True
         if self.owner_id and user.id == self.owner_id:
             return True
-        membership = SpaceMembership.query.filter_by(
-            user_id=user.id, space_id=self.id,
-        ).first()
-        return bool(membership and membership.is_active)
+        if membership is _UNSET_MEMBERSHIP:
+            membership = SpaceMembership.query.filter_by(
+                user_id=user.id, space_id=self.id,
+            ).first()
+        return bool(
+            membership and membership.is_paid and membership.is_active
+        )
 
 
 class SpaceMembership(db.Model):
@@ -146,6 +162,17 @@ class SpaceMembership(db.Model):
     def is_paid(self):
         """Whether this membership is a paid (subscription) one."""
         return self.stripe_subscription_id is not None
+
+    @property
+    def has_live_subscription(self):
+        """Whether a Stripe subscription still exists that could
+        charge: any subscription id whose status is not terminal.
+        A missing status counts as live (conservative — the
+        subscription was created but never synced). 'canceled' and
+        'incomplete_expired' are the only dead ends."""
+        if self.stripe_subscription_id is None:
+            return False
+        return self.status not in ('canceled', 'incomplete_expired')
 
     def __repr__(self):
         return f'<SpaceMembership {self.user_id} in {self.space_id} ({self.notification_level})>'

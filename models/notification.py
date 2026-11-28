@@ -38,6 +38,12 @@ class Notification(db.Model):
         # Paid spaces: the owner is told when a space becomes paid
         # with them as owner.
         'space_paid',
+        # Tips (audit 2026-11-28): the recipient is told when a tip
+        # lands, waits on payout setup, or its payout fails.
+        'tip_received', 'tip_pending', 'tip_failed',
+        # Paid spaces (audit 2026-11-28): the owner is told when a
+        # member joins or when a membership lapses.
+        'space_member_joined', 'space_member_left',
     ]
     # Types that also send an email to the recipient.
     EMAIL_TYPES = {
@@ -45,6 +51,10 @@ class Notification(db.Model):
         'match_confirmed', 'payment_secured', 'payment_released',
         'message_new',
         'payout_pending', 'payout_failed',
+        # Tips are money events, like payouts: a tip waiting on
+        # payout setup or a failed tip payout deserves an email, not
+        # just a bell the recipient may never open (audit 2026-11-28).
+        'tip_received', 'tip_pending', 'tip_failed',
     }
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)

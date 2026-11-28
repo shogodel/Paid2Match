@@ -184,6 +184,28 @@ def _post_visible_to_strangers(post):
     return bounty is None or bounty.is_publicly_visible
 
 
+def _paid_space_blocked(post):
+    """True when the post sits in a paid space the current user may
+    not read — a non-member (or anonymous visitor) must not interact
+    with it either: liking, commenting, sharing or voting would both
+    leak its content and republish it into public feeds. The post's
+    author may always interact with their own post. Audit 2026-11-28
+    (paid-space access control): post_detail gated the read, but the
+    interaction routes and the comments JSON endpoint never checked."""
+    if not post.space_id:
+        return False
+    space = db.session.get(Space, post.space_id)
+    if space is None or not space.is_paid:
+        return False
+    if (
+        current_user.is_authenticated
+        and current_user.id == post.author_id
+    ):
+        return False
+    viewer = current_user if current_user.is_authenticated else None
+    return not space.can_view(viewer)
+
+
 def _author_levels(posts):
     """Trust level per author id, for the badges on post cards (M3)."""
     levels = {}
@@ -427,7 +449,7 @@ def space_detail(slug):
         membership = SpaceMembership.query.filter_by(
             user_id=current_user.id, space_id=space.id,
         ).first()
-    if not space.can_view(viewer):
+    if not space.can_view(viewer, membership=membership):
         return render_template(
             'social/space_pitch.html',
             space=space,
@@ -436,7 +458,14 @@ def space_detail(slug):
     page = request.args.get('page', 1, type=int)
     viewer_id = current_user.id if current_user.is_authenticated else None
     from utils.feed import _visible_posts_query
-    pagination = _visible_posts_query(viewer_id).filter(
+    pagination = _visible_posts_query(
+        viewer_id,
+        # The membership is already loaded above (and can_view just
+        # passed on it) — hand it to the feed filter so it does not
+        # run the same lookup again. The query is scoped to this one
+        # space, so a one-entry dict is enough.
+        memberships={space.id: membership} if membership else {},
+    ).filter(
         Post.space_id == space.id,
     ).order_by(desc(Post.created_at)).paginate(
         page=page, per_page=20, error_out=False,
@@ -466,19 +495,36 @@ def _start_paid_space_checkout(space):
     and subscribe routes). Returns a redirect response."""
     from utils.paid_spaces import create_paid_space_checkout
     from utils.payments import stripe_enabled
+    if not space.price_cents or space.price_cents <= 0:
+        flash(_('This paid space has no price set yet — please try again later.'), 'warning')
+        return redirect(url_for('social.space_detail', slug=space.slug))
     if not stripe_enabled():
         flash(_('Payments are currently unavailable.'), 'warning')
         return redirect(url_for('social.space_detail', slug=space.slug))
     base = request.host_url.rstrip('/')
     checkout_url = create_paid_space_checkout(
         current_user, space,
-        success_url=f'{base}{url_for("social.space_detail", slug=space.slug)}',
+        success_url=f'{base}{url_for("social.subscribe_space_success", slug=space.slug)}',
         cancel_url=f'{base}{url_for("social.space_detail", slug=space.slug)}',
     )
     if not checkout_url:
         flash(_('Stripe is not configured — please try again later.'), 'danger')
         return redirect(url_for('social.space_detail', slug=space.slug))
     return redirect(checkout_url)
+
+
+@social_bp.route('/spaces/<slug>/subscribe/success', methods=['GET'])
+@login_required
+def subscribe_space_success(slug):
+    """GET /social/spaces/<slug>/subscribe/success — return page
+    after a paid-space Checkout (mirrors /payments/pro/success).
+    Audit 2026-11-28: success and cancel shared the space URL
+    with no flash, so after paying the member landed on the pitch
+    page (the webhook had not created the membership yet) with no
+    confirmation at all."""
+    space = Space.query.filter_by(slug=slug).first_or_404()
+    flash(_('Thanks for joining %(name)s — your membership will be active in a moment.', name=space.name), 'success')
+    return redirect(url_for('social.space_detail', slug=space.slug))
 
 
 @social_bp.route('/spaces/<slug>/subscribe', methods=['POST'])
@@ -493,7 +539,7 @@ def subscribe_space(slug):
     membership = SpaceMembership.query.filter_by(
         user_id=current_user.id, space_id=space.id,
     ).first()
-    if membership is not None and membership.is_active:
+    if membership is not None and membership.is_paid and membership.is_active:
         flash(_('You are already a member of %(name)s.', name=space.name), 'info')
         return redirect(url_for('social.space_detail', slug=slug))
     return _start_paid_space_checkout(space)
@@ -510,7 +556,11 @@ def cancel_space_subscription(slug):
     membership = SpaceMembership.query.filter_by(
         user_id=current_user.id, space_id=space.id,
     ).first()
-    if membership is None or not membership.is_paid or not membership.is_active:
+    # Any live subscription can be cancelled — not just an 'active'
+    # one: a past-due member must be able to stop the charges, and
+    # leaving is blocked while the subscription lives (see
+    # leave_space), so refusing here would strand them.
+    if membership is None or not membership.has_live_subscription:
         flash(_('You do not have an active subscription to this space.'), 'info')
         return redirect(url_for('social.space_detail', slug=slug))
     if membership.cancel_at_period_end:
@@ -536,7 +586,7 @@ def join_space(slug):
         membership = SpaceMembership.query.filter_by(
             user_id=current_user.id, space_id=space.id,
         ).first()
-        if membership is not None and membership.is_active:
+        if membership is not None and membership.is_paid and membership.is_active:
             flash(_('You are already a member of %(name)s.', name=space.name), 'info')
             return redirect(url_for('social.space_detail', slug=slug))
         return _start_paid_space_checkout(space)
@@ -563,7 +613,13 @@ def leave_space(slug):
         user_id=current_user.id, space_id=space.id,
     ).first()
     if membership:
-        if membership.is_paid and membership.is_active:
+        # Any live subscription blocks leaving — not just an active
+        # one: a past-due (or trialing / incomplete) subscription
+        # still charges, and deleting the row would orphan it (the
+        # webhooks would find no membership and the money would go
+        # unrecorded). Cancel first; the membership lapses at period
+        # end and can be left then.
+        if membership.has_live_subscription:
             flash(_('This is a paid space — cancel your subscription to leave. You keep access until the end of the paid period.'), 'info')
             return redirect(url_for('social.space_detail', slug=slug))
         db.session.delete(membership)
@@ -582,6 +638,12 @@ def space_notifications(slug):
     level = request.form.get('level', 'all')
     if level not in SpaceMembership.NOTIFICATION_LEVELS:
         flash('Unknown notification setting.', 'warning')
+        return redirect(url_for('social.space_detail', slug=slug))
+    # A paid space must not be joinable through this route: creating
+    # a bare membership row here used to grant full access (can_view
+    # only asked is_active, and a free membership is always active).
+    if space.is_paid and not space.can_view(current_user):
+        flash(_('This is a paid space — join it to change notification settings.'), 'warning')
         return redirect(url_for('social.space_detail', slug=slug))
     membership = SpaceMembership.query.filter_by(
         user_id=current_user.id, space_id=space.id,
@@ -835,6 +897,10 @@ def post_comments(post_id):
     post = get_or_404(Post, post_id)
     if not _post_is_public(post):
         return jsonify({'error': 'This post is not available.'}), 404
+    # Audit 2026-11-28: the comments JSON served a paid-space post's
+    # comments to anyone — same gate as post_detail.
+    if _paid_space_blocked(post):
+        return jsonify({'error': 'This post is not available.'}), 404
     comments = Comment.query.filter_by(
         post_id=post.id, parent_id=None, is_hidden=False
     ).order_by(desc(Comment.created_at)).limit(5).all()
@@ -918,6 +984,8 @@ def like_post(post_id):
     post = get_or_404(Post, post_id)
     if not _post_is_public(post):
         abort(404)
+    if _paid_space_blocked(post):
+        abort(404)
     existing = Like.query.filter_by(user_id=current_user.id, post_id=post_id).first()
     if existing:
         db.session.delete(existing)
@@ -953,6 +1021,8 @@ def comment_post(post_id):
     comment as JSON instead of a redirect."""
     post = get_or_404(Post, post_id)
     if not _post_is_public(post):
+        abort(404)
+    if _paid_space_blocked(post):
         abort(404)
     form = CommentForm()
     if form.validate_on_submit():
@@ -1023,6 +1093,8 @@ def share_post(post_id):
     AJAX callers get {shared, share_count} instead of a redirect."""
     post = get_or_404(Post, post_id)
     if not _post_is_public(post):
+        abort(404)
+    if _paid_space_blocked(post):
         abort(404)
     form = ShareForm()
     if Share.query.filter_by(user_id=current_user.id, post_id=post_id).first():
@@ -1117,6 +1189,8 @@ def vote_poll(poll_id):
     poll = get_or_404(Poll, poll_id)
     if poll.post is not None and not _post_is_public(poll.post):
         abort(404)
+    if poll.post is not None and _paid_space_blocked(poll.post):
+        abort(404)
     option_id = request.form.get('option_id')
     existing = PollVote.query.filter_by(
         poll_id=poll.id, user_id=current_user.id,
@@ -1171,7 +1245,13 @@ def saved():
         page=page, per_page=20, error_out=False,
     )
     bookmarks = pagination.items
-    posts = [b.post for b in bookmarks if b.post and not b.post.is_hidden]
+    # Audit 2026-11-28: a bookmark saved while a member must not keep
+    # showing a paid-space post after the membership lapses.
+    posts = [
+        b.post for b in bookmarks
+        if b.post and not b.post.is_hidden
+        and not _paid_space_blocked(b.post)
+    ]
     post_ids = [p.id for p in posts]
     liked_ids, shared_ids = _liked_and_shared_ids(post_ids)
     return render_template(
@@ -1197,6 +1277,8 @@ def save_post(post_id):
     redirect; same optimistic-update pattern as like/follow."""
     post = get_or_404(Post, post_id)
     if not _post_is_public(post):
+        abort(404)
+    if _paid_space_blocked(post):
         abort(404)
     existing = Bookmark.query.filter_by(
         user_id=current_user.id, post_id=post_id,
