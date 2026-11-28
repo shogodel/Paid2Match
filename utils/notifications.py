@@ -37,7 +37,12 @@ def notify(recipient_id, type, title, body=None, actor_id=None,
     if not recipient_id or recipient_id == actor_id:
         return None
     recipient = db.session.get(User, recipient_id)
-    if recipient is not None and recipient.is_deleted:
+    if recipient is None:
+        # Audit 2026-11-27: no such user — creating the row leaves
+        # an orphan notification nobody can ever read (same spirit
+        # as the deleted-user guard below).
+        return None
+    if recipient.is_deleted:
         # A soft-deleted account can never log in again, and its
         # email is a placeholder (deleted_<id>@example.com) — a
         # notification here would send real mail to a fake address

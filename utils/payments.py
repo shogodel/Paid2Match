@@ -716,17 +716,36 @@ def release_escrow(match):
             continue
         try:
             # Idempotency key: one payout row can only ever create
-            # one transfer. Without it, a crash between the Stripe
-            # call and the DB commit would make the retry transfer
-            # the same payout a second time (the row still says
-            # 'pending' — the transfer id was never persisted).
+            # one transfer — with one exception (see below). Without
+            # it, a crash between the Stripe call and the DB commit
+            # would make the retry transfer the same payout a second
+            # time (the row still says 'pending' — the transfer id
+            # was never persisted).
+            #
+            # The exception: a payout whose recorded transfer
+            # FAILED or was REVERSED (stripe_transfer_id is set and
+            # the status is 'failed'). Retrying that payout under
+            # the same key returns Stripe's cached response for the
+            # dead transfer inside its 24h idempotency window — the
+            # code would record the old transfer id again and mark
+            # the payout 'processing' while no money moves. A new
+            # attempt needs a fresh key, scoped to the dead transfer
+            # id so each failed attempt gets exactly one new key.
+            # (A Transfer.create that raised before creating anything
+            # records no transfer id, so its retry correctly reuses
+            # the base key — see the mirror case above.)
+            transfer_key = f'payout-{payout.id}'
+            if payout.stripe_transfer_id:
+                transfer_key = (
+                    f'payout-{payout.id}-{payout.stripe_transfer_id}'
+                )
             transfer = stripe.Transfer.create(
                 amount=to_cents(payout.amount),
                 currency=CURRENCY,
                 destination=account.stripe_account_id,
                 source_transaction=bounty.stripe_payment_intent,
                 metadata={'match_id': match.id, 'payout_id': payout.id},
-                idempotency_key=f'payout-{payout.id}',
+                idempotency_key=transfer_key,
             )
         except stripe.error.StripeError as exc:
             # The money was captured but the transfer failed — the

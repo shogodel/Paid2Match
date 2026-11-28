@@ -101,9 +101,36 @@ def verification_tiers_for(user_ids):
     return out
 
 
-def verification_tier(user):
-    """(tier, label, signals) for one user. Accepts a User or a user id."""
+def tier_signals_from_breakdown(user, breakdown):
+    """The four verification signals, taken from a trust breakdown
+    (utils.trust.trust_level) instead of re-querying them: the
+    breakdown already holds linked_verified_count, profile_verified
+    and kyc, loaded by compute_trust_score. See verification_tier's
+    ``signals`` parameter for the exact meanings."""
+    return {
+        'email_verified': bool(user.email_verified),
+        'linked_verified': (breakdown.get('linked_verified_count') or 0) >= 1,
+        'admin_verified': bool(breakdown.get('profile_verified')),
+        'kyc': bool(breakdown.get('kyc')),
+    }
+
+
+def verification_tier(user, signals=None):
+    """(tier, label, signals) for one user. Accepts a User or a user id.
+
+    ``signals`` may be passed in when the caller already knows the
+    four signals (the public profile route does — they are all in the
+    trust breakdown compute_trust_score already loaded, so the four
+    bulk queries below are skipped). The signal meanings must match
+    verification_tiers_for exactly: linked_verified is >= 1 verified
+    linked account (not the >= 2 of the "Verified elsewhere" marker),
+    admin_verified is an admin-verified profile, kyc is
+    details_submitted AND payouts_enabled (ConnectAccount.kyc_passed).
+    """
     user_id = user.id if isinstance(user, User) else user
+    if signals is not None:
+        tier = _tier_from_signals(signals)
+        return tier, TIER_LABELS[tier], signals
     return verification_tiers_for([user_id]).get(
         user_id, (0, TIER_LABELS[0], {
             'email_verified': False,

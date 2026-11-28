@@ -40,6 +40,9 @@
                                 <strong>{{ msg.sender.full_name }}</strong> &middot; {{ msg.created_at.strftime('%b %d, %Y %I:%M %p') }}
                             </div>
                             <p class="mb-0">{{ msg.content }}</p>
+                            {% if msg.sender_id == current_user.id and msg.read_at %}
+                            <div class="small text-muted">{{ _('Seen') }} {{ msg.read_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>

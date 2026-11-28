@@ -2933,6 +2933,12 @@ msgstr "Vous pouvez améliorer à tout moment depuis la page de détail du besoi
 
 #: templates/errors/404.html:3 templates/errors/404.html:10
 #: tests/test_phase2.py:248 tests/test_phase2.py:255
+msgid "Forbidden"
+msgstr "Interdit"
+
+msgid "You don't have permission to do that."
+msgstr "Vous n'avez pas la permission de faire cela."
+
 msgid "Page Not Found"
 msgstr "Page introuvable"
 

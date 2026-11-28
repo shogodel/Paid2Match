@@ -405,11 +405,11 @@
         </a>
         <a class="tab-item {{ 'active' if request.endpoint == 'social.notifications' }}" href="{{ url_for('social.notifications') }}">
             {{ icon('bell', 22) }}<span>{{ _('Alerts') }}</span>
-            {% if unread_notifications %}<span class="tab-badge">{{ unread_notifications if unread_notifications <= 99 else '99+' }}</span>{% endif %}
+            {% if unread_notifications %}<span class="tab-badge" id="tab-notifications-badge">{{ unread_notifications if unread_notifications <= 99 else '99+' }}</span>{% endif %}
         </a>
         <a class="tab-item {{ 'active' if request.endpoint in ('messages.inbox', 'messages.thread', 'messages.sent', 'messages.compose') }}" href="{{ url_for('messages.inbox') }}">
             {{ icon('message-circle', 22) }}<span>{{ _('Messages') }}</span>
-            {% if unread_messages %}<span class="tab-badge">{{ unread_messages if unread_messages <= 99 else '99+' }}</span>{% endif %}
+            {% if unread_messages %}<span class="tab-badge" id="tab-messages-badge">{{ unread_messages if unread_messages <= 99 else '99+' }}</span>{% endif %}
         </a>
         <a class="tab-item {{ 'active' if request.endpoint in ('profile.view', 'profile.public_profile') }}" href="{{ url_for('profile.view') }}">
             {{ icon('user', 22) }}<span>{{ _('Profile') }}</span>

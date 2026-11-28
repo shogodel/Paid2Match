@@ -88,9 +88,26 @@ class User(db.Model, UserMixin):
         pledge (models/employer_pledge.py) — drives the
         "Human-Reviewed" badge on profiles and bounty detail. This is
         the human-reviewed pledge, not the M3 self-published Pledge
-        (utils.pledges.has_active_pledge covers that one)."""
+        (utils.pledges.has_active_pledge covers that one).
+
+        Audit 2026-11-27: memoized per request on flask.g — the
+        public profile template reads this property twice per render
+        (header + Trust card), and every access used to re-query.
+        Outside a request context every access queries fresh."""
+        from flask import g, has_request_context
         from models.employer_pledge import EmployerPledge
-        return EmployerPledge.approved_for_user(self.id) is not None
+        if has_request_context():
+            cache = g.get('_approved_pledge_cache')
+            if cache is None:
+                cache = g._approved_pledge_cache = {}
+            if self.id in cache:
+                return cache[self.id]
+        else:
+            cache = None
+        result = EmployerPledge.approved_for_user(self.id) is not None
+        if cache is not None:
+            cache[self.id] = result
+        return result
 
     def soft_delete(self):
         self.is_deleted = True

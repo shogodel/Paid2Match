@@ -182,8 +182,14 @@ function showToast(message, type, linkUrl, linkLabel) {
 // ---------------------------------------------------------------- notifications (Phase 3)
 
 function updateUnreadBadges(count) {
-    // The desktop nav badge and the mobile tab-bar badge stay in sync.
-    document.querySelectorAll('#nav-notifications-badge, .tab-badge').forEach(function (badge) {
+    // The desktop nav badge and the mobile tab-bar ALERTS badge stay
+    // in sync. Scoped by id on purpose: the bare `.tab-badge` class
+    // also matches the Messages badge, and the 60s notifications
+    // poll used to rewrite it with the notifications count (and hide
+    // it when that count was 0, even with unread messages). The
+    // Messages badge is server-rendered only — it never live-updates
+    // (known open item), but it must never be clobbered either.
+    document.querySelectorAll('#nav-notifications-badge, #tab-notifications-badge').forEach(function (badge) {
         if (count > 0) {
             badge.textContent = count <= 99 ? count : '99+';
             badge.style.display = '';

@@ -41,7 +41,11 @@ def _connection_choices(user_id):
         if user:
             users.append(user)
     choices = [('', '— type a name + email instead —')]
-    choices += [(u.id, f'{u.full_name} ({u.email})') for u in users]
+    # Names only: the label used to include each followed user's
+    # email address, rendering it into the page for no reason (the
+    # picker endpoint had the same leak and was fixed in the
+    # 2026-11-25 audit).
+    choices += [(u.id, u.full_name) for u in users]
     return choices
 
 
@@ -331,6 +335,16 @@ def post_thread_message(referral_id):
         if current_user.id == referral.referrer_id
         else referral.referrer_id
     )
+    # Audit 2026-11-27: the thread POST and compose refuse messages
+    # to deleted/deactivated accounts, but this path had no such
+    # check — a message could pile up to an account that is gone.
+    recipient = db.session.get(User, recipient_id)
+    if recipient is None or recipient.is_deleted or not recipient.is_active:
+        flash('You cannot message this user.', 'danger')
+        return redirect(
+            url_for('referrals.detail', referral_id=referral.id)
+            + '#thread'
+        )
     # A block means "they cannot follow or message you" — every other
     # send path enforces it; the referral thread had no check, so a
     # blocked user could DM the blocker from here.

@@ -96,7 +96,12 @@ class TestAverageResponseTime:
         assert format_response_time(6) == '~6 hours'
         assert format_response_time(5.6) == '~6 hours'
         assert format_response_time(12) == '~12 hours'
-        assert format_response_time(23.9) == '~24 hours'
+        # Audit 2026-11-27: 23.5h+ rounds to 24 — that is a day,
+        # not "~24 hours".
+        assert format_response_time(23.9) == '~1 day'
+        assert format_response_time(23.4) == '~23 hours'
+        # A negative median is bad data, never a fast response.
+        assert format_response_time(-5) is None
         # A day or more renders as days, not a big hour count.
         assert format_response_time(24) == '~1 day'
         assert format_response_time(49) == '~2 days'

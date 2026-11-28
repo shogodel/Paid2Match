@@ -188,8 +188,11 @@ class TestIdempotencyKeys:
                 sample_user, 'https://x.test/ok', 'https://x.test/cancel')
         assert url == 'https://checkout.test/x'
         create.assert_called_once()
-        assert create.call_args.kwargs['idempotency_key'] == (
-            f'pro-{sample_user.id}'
+        # Bucketed by the minute (idempotency_key_for): a double-click
+        # in the same minute shares the key, a re-subscribe later
+        # gets a fresh one instead of Stripe's stale session.
+        assert create.call_args.kwargs['idempotency_key'].startswith(
+            f'pro-{sample_user.id}-'
         )
 
     def test_recurring_bump_subscribe_uses_idempotency_key(
@@ -204,8 +207,11 @@ class TestIdempotencyKeys:
                 f'/payments/bumps/recurring/{post.id}/subscribe')
         assert resp.status_code == 302
         create.assert_called_once()
-        assert create.call_args.kwargs['idempotency_key'] == (
-            f'recurring-bump-{post.id}'
+        # Bucketed by the minute (idempotency_key_for) — see the Pro
+        # test above; a permanent key returns a stale session on
+        # re-subscribe inside Stripe's 24h idempotency window.
+        assert create.call_args.kwargs['idempotency_key'].startswith(
+            f'recurring-bump-{post.id}-'
         )
 
 

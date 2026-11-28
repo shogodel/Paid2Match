@@ -39,6 +39,11 @@ from models.linked_account import (
 logger = logging.getLogger(__name__)
 
 FETCH_TIMEOUT = 10
+# Largest verification page we will read: a bio/code page is a few
+# KB. Without a cap, a URL pointing at a multi-hundred-MB file is
+# read whole into memory (resp.text) on the worker — a trivial
+# denial of service from any logged-in user.
+MAX_FETCH_BYTES = 2 * 1024 * 1024
 FETCH_HEADERS = {
     'User-Agent': 'Paid2Match verification (https://paid2match.work)',
 }
@@ -258,6 +263,26 @@ def fetch_linkedin_userinfo(access_token):
     return data, None
 
 
+def _ip_literal(host):
+    """The host as an IP address when it is an IP literal in ANY
+    notation the system resolver accepts — or None when it is a real
+    hostname. ``ipaddress`` only parses dotted-decimal and IPv6, so
+    the resolver's other notations (hex ``0x7f.0.0.1``, octal
+    ``0177.0.0.1``, short forms ``127.1``, a single integer
+    ``2130706433``) slip past it as "hostnames" while getaddrinfo
+    still resolves them to loopback/private addresses — an SSRF
+    bypass of the check below. ``socket.inet_aton`` implements the
+    same inet_aton() parsing the resolver uses, so it catches
+    exactly those forms (and raises on real hostnames)."""
+    import ipaddress
+    import socket
+    try:
+        packed = socket.inet_aton(host)
+    except (OSError, ValueError):
+        return None
+    return ipaddress.ip_address(socket.inet_ntoa(packed))
+
+
 def _is_safe_fetch_url(url):
     """True when url is safe for the server to fetch: an http(s) URL
     whose host is not a literal private/loopback/link-local IP and
@@ -270,8 +295,10 @@ def _is_safe_fetch_url(url):
     this deployment DNS answers through the egress proxy, so a
     resolved-IP check would reject ordinary public hosts; the
     literal-IP, localhost-name and redirect checks below close
-    the direct vectors, and a DNS-rebinding host remains a
-    residual risk (see _fetch_page)."""
+    the direct vectors (including IP literals in hex/octal/short/
+    integer notation, which the resolver accepts but ipaddress
+    does not parse — see _ip_literal), and a DNS-rebinding host
+    remains a residual risk (see _fetch_page)."""
     import ipaddress
     from urllib.parse import urlparse
     try:
@@ -290,10 +317,47 @@ def _is_safe_fetch_url(url):
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
-        ip = None
+        # Not dotted-decimal/IPv6 — it may still be an IP literal in
+        # a notation ipaddress does not parse (hex, octal, short
+        # form, single integer); the resolver would still treat it
+        # as an address, so check that too.
+        ip = _ip_literal(host)
     if ip is not None and not ip.is_global:
         return False
     return True
+
+
+def _read_body_capped(resp):
+    """The response body as text, or (None, error) when it is over
+    MAX_FETCH_BYTES. A declared Content-Length over the cap is
+    refused before any body is read; otherwise the body is streamed
+    in chunks and cut off at the cap (a lying Content-Length cannot
+    smuggle a huge body past it). Mocked responses in tests carry
+    only .text, so they take the fallback path."""
+    length = (getattr(resp, 'headers', None) or {}).get('Content-Length')
+    if length is not None:
+        try:
+            if int(length) > MAX_FETCH_BYTES:
+                return None, 'That page is too large to fetch.'
+        except (TypeError, ValueError):
+            pass
+    iter_content = getattr(resp, 'iter_content', None)
+    if not callable(iter_content):
+        text = resp.text
+        if len(text.encode('utf-8', 'replace')) > MAX_FETCH_BYTES:
+            return None, 'That page is too large to fetch.'
+        return text, None
+    chunks = []
+    total = 0
+    for chunk in iter_content(chunk_size=65536):
+        if not chunk:
+            continue
+        total += len(chunk)
+        if total > MAX_FETCH_BYTES:
+            return None, 'That page is too large to fetch.'
+        chunks.append(chunk)
+    encoding = getattr(resp, 'encoding', None) or 'utf-8'
+    return b''.join(chunks).decode(encoding, errors='replace'), None
 
 
 def _fetch_page(url):
@@ -309,6 +373,7 @@ def _fetch_page(url):
             resp = requests.get(
                 current_url, headers=FETCH_HEADERS,
                 timeout=FETCH_TIMEOUT, allow_redirects=False,
+                stream=True,
             )
         except requests.RequestException as exc:
             return None, f'Could not fetch the page ({exc.__class__.__name__}).'
@@ -323,7 +388,7 @@ def _fetch_page(url):
             continue
         if resp.status_code != 200:
             return None, f'The page returned HTTP {resp.status_code}.'
-        return resp.text, None
+        return _read_body_capped(resp)
     return None, 'Too many redirects.'
 
 
@@ -390,11 +455,30 @@ def refresh_linked_account_expiry():
 
 def verified_linked_count(user_id):
     """Currently-verified linked accounts for a user (expired ones
-    don't count)."""
+    don't count).
+
+    Audit 2026-11-27: memoized per request on flask.g — the trust
+    computation, the profile route's "Verified elsewhere" marker and
+    verification_tier each re-ran this for the same user on one
+    profile render. Pure read of committed rows; the cache dies
+    with the request, and outside a request context every call
+    queries fresh."""
+    from flask import g, has_request_context
+    if has_request_context():
+        cache = g.get('_verified_linked_cache')
+        if cache is None:
+            cache = g._verified_linked_cache = {}
+        if user_id in cache:
+            return cache[user_id]
+    else:
+        cache = None
     accounts = LinkedAccount.query.filter_by(
         user_id=user_id, status='verified'
     ).all()
-    return sum(1 for a in accounts if a.is_currently_verified)
+    count = sum(1 for a in accounts if a.is_currently_verified)
+    if cache is not None:
+        cache[user_id] = count
+    return count
 
 
 def get_or_create_link(user_id, platform, method, url=None, handle=None):
@@ -428,20 +512,24 @@ def get_or_create_link(user_id, platform, method, url=None, handle=None):
     return account
 
 
-def visible_linked_accounts(user_id, viewer_id):
+def visible_linked_accounts(user_id, viewer_id, follows=None):
     """The user's linked accounts the viewer may see (§2.4 visibility
     rules). Only verified-or-pending accounts are listed — rejected
-    ones are the owner's business."""
+    ones are the owner's business. ``follows`` may be passed in when
+    the caller already knows whether the viewer follows this user
+    (the public profile route does) so the follow check is not
+    re-queried."""
     accounts = LinkedAccount.query.filter_by(user_id=user_id).filter(
         LinkedAccount.status.in_(['pending', 'verified', 'expired'])
     ).all()
     if viewer_id == user_id:
         return accounts
-    follows = False
-    if viewer_id:
-        follows = Follow.query.filter_by(
-            follower_id=viewer_id, followed_id=user_id
-        ).first() is not None
+    if follows is None:
+        follows = False
+        if viewer_id:
+            follows = Follow.query.filter_by(
+                follower_id=viewer_id, followed_id=user_id
+            ).first() is not None
     return [a for a in accounts if a.visible_to(viewer_id, follows)]
 
 

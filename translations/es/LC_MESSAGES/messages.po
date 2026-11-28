@@ -2928,6 +2928,12 @@ msgstr ""
 
 #: templates/errors/404.html:3 templates/errors/404.html:10
 #: tests/test_phase2.py:248 tests/test_phase2.py:255
+msgid "Forbidden"
+msgstr "Prohibido"
+
+msgid "You don't have permission to do that."
+msgstr "No tienes permiso para hacer eso."
+
 msgid "Page Not Found"
 msgstr "Página no encontrada"
 

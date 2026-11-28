@@ -391,9 +391,11 @@ def thread(other_user_id):
             flash(_('You cannot message yourself.'), 'warning')
             return redirect(_thread_url(other.id, bounty_id, pitch_id))
 
-        if other.is_deleted:
+        if other.is_deleted or not other.is_active:
             # History with a deleted account stays readable (GET),
-            # but no NEW messages go to an account that is gone.
+            # but no NEW messages go to an account that is gone —
+            # and none to an admin-deactivated one either (the
+            # picker already hides both).
             if _wants_json():
                 return jsonify(
                     {'ok': False,
@@ -562,7 +564,7 @@ def compose():
         recipient = User.query.filter(
             func.lower(User.email) == recipient_email.lower()
         ).first() if recipient_email else None
-        if not recipient or recipient.is_deleted:
+        if not recipient or recipient.is_deleted or not recipient.is_active:
             flash(_('User not found'), 'danger')
             return redirect(url_for('messages.compose'))
 
@@ -647,8 +649,10 @@ def reply(message_id):
         return redirect(url_for('messages.inbox'))
 
     sender = db.session.get(User, original.sender_id)
-    if sender is None or sender.is_deleted or sender.id == current_user.id:
-        # No reply goes to a deleted account — or to yourself.
+    if (sender is None or sender.is_deleted or not sender.is_active
+            or sender.id == current_user.id):
+        # No reply goes to a deleted or deactivated account — or to
+        # yourself.
         flash(_('You cannot message this user.'), 'danger')
         return redirect(url_for('messages.inbox'))
 
@@ -742,7 +746,13 @@ def api_users():
 @messages_bp.route('/api/conversations')
 @login_required
 def api_conversations():
-    """GET /messages/api/conversations - JSON API for conversations."""
+    """GET /messages/api/conversations - JSON API for conversations.
+
+    The response carries NO email address: the picker endpoint had
+    the same leak and was fixed in the 2026-11-25 audit, but this
+    one still returned every conversation partner's email — any
+    logged-in user could DM someone once and harvest their address
+    from here. Name + handle are all a conversation list needs."""
     sent = db.session.query(Message.recipient_id).filter(
         Message.sender_id == current_user.id
     ).distinct().all()
@@ -758,5 +768,5 @@ def api_conversations():
     return jsonify([{
         'id': u.id,
         'name': u.full_name,
-        'email': u.email
+        'handle': u.handle,
     } for u in users])

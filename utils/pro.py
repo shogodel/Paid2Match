@@ -27,6 +27,7 @@ from utils.payments import (
     _stripe_get,
     create_subscription_checkout_session,
     founding_benefit_active,
+    idempotency_key_for,
     stripe_enabled,
 )
 
@@ -60,8 +61,11 @@ def create_pro_checkout(user, success_url, cancel_url):
         metadata={'m3_kind': 'pro', 'user_id': user.id},
         # One Pro subscription per user: a double-click returns the
         # same session instead of creating a second subscription
-        # that would keep charging with no local row.
-        idempotency_key=f'pro-{user.id}',
+        # that would keep charging with no local row. The key is
+        # bucketed by the minute (see idempotency_key_for): a
+        # permanent key would make a re-subscribe within Stripe's
+        # 24h idempotency window return the stale completed session.
+        idempotency_key=idempotency_key_for('pro', user.id),
     )
 
 

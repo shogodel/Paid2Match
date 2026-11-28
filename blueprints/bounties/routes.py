@@ -15,6 +15,7 @@ from models.bounty import Bounty
 from models.dispute import Dispute
 from models.pitch import Pitch
 from models.message import Message
+from models.moderation import Block
 from models.match import Match
 from models.payout import Payout
 from models.post import Post
@@ -69,6 +70,10 @@ bounties_bp = Blueprint('bounties', __name__)
 def board():
     """GET /bounties - Bounty board page with filtering and pagination."""
     page = request.args.get('page', 1, type=int)
+    # Audit 2026-11-27: a negative page turns the (page-1)*per_page
+    # slice into a negative slice, serving a middle chunk of the
+    # board labelled with a nonsense page number. Clamp to 1.
+    page = max(1, page)
     per_page = 12
     show_urgent = request.args.get('urgent') == '1'
     
@@ -167,6 +172,11 @@ def board():
         'pages': (len(sorted_bounties) + per_page - 1) // per_page,
         'has_prev': page > 1,
         'has_next': page < (len(sorted_bounties) + per_page - 1) // per_page,
+        # Audit 2026-11-27: the template's Previous/Next links use
+        # prev_num/next_num — the fake object lacked them, so the
+        # links rendered href="?page=" and Next reloaded page 1.
+        'prev_num': page - 1,
+        'next_num': page + 1,
         'iter_pages': lambda: range(1, (len(sorted_bounties) + per_page - 1) // per_page + 1)
     })()
     
@@ -658,14 +668,28 @@ def respond_to_pitch(pitch_id):
         employer = bounty.poster
         hunter = pitch.hunter
 
-        auto_message = Message(
-            sender_id=employer.id,
-            recipient_id=hunter.id,
-            bounty_id=bounty.id,
-            pitch_id=pitch.id,
-            content=f'Your referral for "{bounty.title}" has been accepted! I am interested in connecting. Let\'s discuss further.'
-        )
-        db.session.add(auto_message)
+        # Audit 2026-11-27: a block means "they cannot follow or
+        # message you" — every other send path enforces it, but the
+        # pitch-accept auto-message had no check, so accepting a
+        # pitch DM'd a hunter who had blocked the poster. A deleted
+        # or deactivated hunter cannot receive mail either. The
+        # pitch is still accepted and the referral_accepted
+        # notification still fires (the hunter needs to know the
+        # outcome of their own pitch); only the DM is skipped.
+        hunter_blocked = Block.query.filter_by(
+            blocker_id=hunter.id, blocked_id=employer.id,
+            kind='block',
+        ).first()
+        if (not hunter_blocked and not hunter.is_deleted
+                and hunter.is_active):
+            auto_message = Message(
+                sender_id=employer.id,
+                recipient_id=hunter.id,
+                bounty_id=bounty.id,
+                pitch_id=pitch.id,
+                content=f'Your referral for "{bounty.title}" has been accepted! I am interested in connecting. Let\'s discuss further.'
+            )
+            db.session.add(auto_message)
         # M1: notify the referrer (in-app + email). No separate message_new
         # for the auto-message — referral_accepted covers it.
         notify(
@@ -1935,8 +1959,6 @@ def close(id):
     if request.method == 'POST':
         close_action = request.form.get('close_action', 'close')
 
-        bounty.status = 'closed'
-
         if bounty.payment_status == 'secured' and bounty.stripe_payment_intent:
             if close_action == 'refund':
                 # cancel_refund is POST-only: redirecting to it
@@ -1945,14 +1967,32 @@ def close(id):
                 # request, same poster, same guards.
                 return cancel_refund(id)
             elif close_action == 'reuse':
+                # "Reuse" is only honest when the payment was never
+                # captured: the authorization simply expires. When
+                # the PaymentIntent was already captured (a pre-M2
+                # immediate-capture payment with no match, or a
+                # manual-payout capture), the money is gone from the
+                # poster's card — closing with "nothing was charged"
+                # would keep it. Refuse and point at the refund.
+                # (payment_intent_status returns None when Stripe
+                # cannot be reached; then there is no evidence of a
+                # capture, so the close proceeds as before.)
+                if payment_intent_status(
+                        bounty.stripe_payment_intent) == 'succeeded':
+                    flash(
+                        'This payment was already captured, so it cannot '
+                        'just expire — choose Request Refund to get your '
+                        'money back (minus fees).',
+                        'warning',
+                    )
+                    return redirect(url_for('bounties.close', id=id))
                 # There is no mechanism that moves a secured
                 # authorization onto a new need, so "reuse" only
-                # ever meant: close without a refund. The old code
-                # never committed the close (the need stayed open
-                # while the page claimed it was closed) and promised
-                # the payment would carry over. Commit the close and
-                # say plainly what happens to the money: nothing was
-                # captured, so the authorization simply expires.
+                # ever meant: close without a refund. Commit the
+                # close and say plainly what happens to the money:
+                # nothing was captured, so the authorization simply
+                # expires.
+                bounty.status = 'closed'
                 db.session.commit()
                 flash(
                     'Need closed. No refund was requested — the payment '
@@ -1962,6 +2002,7 @@ def close(id):
                 )
                 return redirect(url_for('bounties.post'))
 
+        bounty.status = 'closed'
         db.session.commit()
 
         flash('Need closed successfully.', 'success')

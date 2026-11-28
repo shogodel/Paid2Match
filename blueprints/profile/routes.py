@@ -225,7 +225,9 @@ def view():
     # avatars), the verification tier badge, and portable reputation
     # metrics — all surfaced from existing data.
     from utils.reputation import reputation_metrics
-    from utils.verification_tiers import verification_tier
+    from utils.verification_tiers import (
+        tier_signals_from_breakdown, verification_tier,
+    )
     endorsements = endorsements_for(current_user.id)
     endorser_ids = {e.endorser_id for e in endorsements}
     endorser_profiles = {
@@ -288,7 +290,9 @@ def view():
                         pledge=pledge,
                         endorsements=endorsements,
                         endorser_profiles=endorser_profiles,
-                        verification_tier=verification_tier(current_user),
+                        verification_tier=verification_tier(
+                            current_user, signals=tier_signals_from_breakdown(
+                                current_user, _breakdown)),
                         reputation_metrics=reputation_metrics(
                             current_user.id),
                         open_needs=open_needs,
@@ -406,14 +410,20 @@ def public_profile(user_id):
             avg_response_time[0])
     # M3: endorsements, visible linked accounts, "Verified elsewhere"
     # marker (2+ verified links), and the user's pledge if any.
+    # Audit 2026-11-27: visible_linked_accounts reuses the follow
+    # state computed above instead of re-querying it.
     endorsements = endorsements_for(user_id)
-    linked_accounts = visible_linked_accounts(user_id, viewer_id)
+    linked_accounts = visible_linked_accounts(
+        user_id, viewer_id, follows=is_following,
+    )
     verified_elsewhere = verified_linked_count(user_id) >= 2
     pledge = Pledge.query.filter_by(user_id=user_id, status='active').first()
     # Phase 3 trust visibility: endorser avatars for the vouch graph,
     # the verification tier badge, and portable reputation metrics.
     from utils.reputation import reputation_metrics
-    from utils.verification_tiers import verification_tier
+    from utils.verification_tiers import (
+        tier_signals_from_breakdown, verification_tier,
+    )
     endorser_ids = {e.endorser_id for e in endorsements}
     endorser_profiles = {
         p.user_id: p
@@ -480,7 +490,9 @@ def public_profile(user_id):
                         ratings_count=ratings_count,
                         endorsements=endorsements,
                         endorser_profiles=endorser_profiles,
-                        verification_tier=verification_tier(user),
+                        verification_tier=verification_tier(
+                            user, signals=tier_signals_from_breakdown(
+                                user, trust_breakdown)),
                         reputation_metrics=reputation_metrics(user_id),
                         open_needs=open_needs,
                         linked_accounts=linked_accounts,

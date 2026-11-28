@@ -135,13 +135,14 @@ class Config:
     ADMIN_API_KEY = os.getenv('ADMIN_API_KEY')
     ADMIN_TOKEN_EXPIRY = 3600  # 1 hour
 
-    # Refund fees
-    REFUND_TRANSACTION_FEE_PERCENT = 3.0
     # The transaction fee added to every paid need at secure time
     # (reward + 3% is what Stripe actually charges). One constant —
     # the old code hardcoded 0.03 in three places and the close page
     # hardcoded 3.0 in the template, so a rate change silently
     # diverged the charge, the match record and the refund quote.
+    # (A second constant, REFUND_TRANSACTION_FEE_PERCENT, used to
+    # live here too — it was never read anywhere, so it was removed
+    # rather than risk a future edit changing the wrong one.)
     TRANSACTION_FEE_PERCENT = 3.0
     STRIPE_FEE_PERCENT = 2.9
     STRIPE_FEE_FIXED = 0.30

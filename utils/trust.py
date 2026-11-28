@@ -88,11 +88,39 @@ def _as_aware(dt):
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
+def _request_memo(key, user_id, compute):
+    """Per-request memo for a scalar trust input.
+
+    Audit 2026-11-27: the public profile computed the same inputs
+    three times per render — compute_trust_score, the route's Trust
+    card values, and reputation_metrics() each re-ran response_rate,
+    average_response_time and completed_referrals_count (and
+    verified_linked_count). The values are pure reads of committed
+    rows, and the cache lives on flask.g so it dies with the
+    request; outside a request context (tests, CLI) every call
+    computes fresh, like _trust_cache above. A mid-request write
+    (e.g. answering a pitch) that re-reads the value in the same
+    request would see the pre-write number — no such flow exists:
+    all callers are GET renders.
+    """
+    if not has_request_context():
+        return compute()
+    cache = g.get('_trust_scalar_cache')
+    if cache is None:
+        cache = g._trust_scalar_cache = {}
+    cache_key = (key, user_id)
+    if cache_key not in cache:
+        cache[cache_key] = compute()
+    return cache[cache_key]
+
+
 def completed_referrals_count(user_id):
     """Completed referrals (paid + free): matches confirmed by both sides."""
-    return Match.query.filter_by(
-        hunter_id=user_id, hunter_confirmed=True, employer_confirmed=True
-    ).count()
+    def _count():
+        return Match.query.filter_by(
+            hunter_id=user_id, hunter_confirmed=True, employer_confirmed=True
+        ).count()
+    return _request_memo('completed_referrals', user_id, _count)
 
 
 def completed_referrals_counts(user_ids):
@@ -121,20 +149,24 @@ def response_rate(user_id):
 
     Audit 2026-11-25: two COUNT queries (received, responded) in
     every trust computation — one conditional-aggregation query
-    returns both numbers."""
+    returns both numbers. Audit 2026-11-27: the result is memoized
+    per request (see _request_memo) — the profile route and
+    reputation_metrics() used to re-run this after trust did."""
     from sqlalchemy import case, func
-    received, responded = db.session.query(
-        func.count(Pitch.id),
-        func.coalesce(func.sum(case(
-            (Pitch.status.in_(['interested', 'rejected', 'accepted']), 1),
-            else_=0,
-        )), 0),
-    ).join(
-        Bounty, Pitch.bounty_id == Bounty.id
-    ).filter(Bounty.poster_id == user_id).first()
-    if received == 0:
-        return None
-    return responded / received
+    def _rate():
+        received, responded = db.session.query(
+            func.count(Pitch.id),
+            func.coalesce(func.sum(case(
+                (Pitch.status.in_(['interested', 'rejected', 'accepted']), 1),
+                else_=0,
+            )), 0),
+        ).join(
+            Bounty, Pitch.bounty_id == Bounty.id
+        ).filter(Bounty.poster_id == user_id).first()
+        if received == 0:
+            return None
+        return responded / received
+    return _request_memo('response_rate', user_id, _rate)
 
 
 def average_response_time(user_id):
@@ -156,28 +188,41 @@ def average_response_time(user_id):
     Python with statistics.median.
 
     This is a display metric only: it does not feed
-    compute_trust_score / trust_level."""
+    compute_trust_score / trust_level.
+
+    Audit 2026-11-27: memoized per request (see _request_memo) —
+    the profile route and reputation_metrics() used to re-run this
+    query after each other."""
     from sqlalchemy import func
     from statistics import median
-    rows = db.session.query(
-        func.coalesce(Pitch.responded_at, Pitch.updated_at),
-        Pitch.created_at,
-    ).join(
-        Bounty, Pitch.bounty_id == Bounty.id
-    ).filter(
-        Bounty.poster_id == user_id,
-        Pitch.status.in_(['interested', 'rejected', 'accepted']),
-    ).all()
-    hours = []
-    for answered_at, created_at in rows:
-        answered_at = _as_aware(answered_at)
-        created_at = _as_aware(created_at)
-        if answered_at is None or created_at is None:
-            continue
-        hours.append((answered_at - created_at).total_seconds() / 3600.0)
-    if not hours:
-        return None
-    return float(median(hours)), len(hours)
+    def _median():
+        rows = db.session.query(
+            func.coalesce(Pitch.responded_at, Pitch.updated_at),
+            Pitch.created_at,
+        ).join(
+            Bounty, Pitch.bounty_id == Bounty.id
+        ).filter(
+            Bounty.poster_id == user_id,
+            Pitch.status.in_(['interested', 'rejected', 'accepted']),
+        ).all()
+        hours = []
+        for answered_at, created_at in rows:
+            answered_at = _as_aware(answered_at)
+            created_at = _as_aware(created_at)
+            if answered_at is None or created_at is None:
+                continue
+            delta_hours = (answered_at - created_at).total_seconds() / 3600.0
+            # Audit 2026-11-27: an answer timestamped before the pitch
+            # was created can only be bad data (clock skew / bad import)
+            # — it must not drag the median down or, via the formatter,
+            # be presented as a fast response. Skip it.
+            if delta_hours < 0:
+                continue
+            hours.append(delta_hours)
+        if not hours:
+            return None
+        return float(median(hours)), len(hours)
+    return _request_memo('average_response_time', user_id, _median)
 
 
 def format_response_time(median_hours):
@@ -192,10 +237,18 @@ def format_response_time(median_hours):
     consolidation and this one is the canonical formatter."""
     if median_hours is None:
         return None
+    # Audit 2026-11-27: a negative median is bad data, not a fast
+    # response — never claim "under an hour" for it.
+    if median_hours < 0:
+        return None
     if median_hours < 1:
         return _('under an hour')
     if median_hours < 24:
         hours = round(median_hours)
+        # Audit 2026-11-27: 23.5h+ rounds to 24 — "~24 hours" is
+        # wrong, that is a day. Fall through to the days branch.
+        if hours >= 24:
+            return _('~1 day')
         if hours == 1:
             return _('~1 hour')
         return _('~%(hours)d hours', hours=hours)

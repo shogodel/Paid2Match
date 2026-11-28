@@ -350,8 +350,13 @@ def subscribe_recurring_bump(post_id):
         },
         # One recurring bump per post: a double-click returns the
         # same session instead of a second subscription that would
-        # keep charging with no local row.
-        idempotency_key=f'recurring-bump-{post.id}',
+        # keep charging with no local row. The key is bucketed by
+        # the minute (see idempotency_key_for): a permanent key
+        # would make a re-subscribe within Stripe's 24h idempotency
+        # window return the stale completed session.
+        idempotency_key=idempotency_key_for(
+            'recurring-bump', post.id,
+        ),
     )
     if not checkout_url:
         flash('Stripe is not configured — please try again later.', 'danger')

@@ -1287,7 +1287,14 @@ def search():
     post_results = []
     bounty_results = []
     if q:
-        pattern = f'%{q}%'
+        # Escape LIKE wildcards, as the message picker does: an
+        # unescaped '%' matched every user/post/need in the directory
+        # and '_' matched any character.
+        escaped_q = (
+            q.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        )
+        pattern = f'%{escaped_q}%'
+        like_kw = {'escape': '\\'}
         people_results = User.query.join(
             Profile, Profile.user_id == User.id
         ).filter(
@@ -1295,9 +1302,9 @@ def search():
             User.is_deleted == False,  # noqa: E712
             Profile.privacy_level != 2,
             or_(
-                User.full_name.ilike(pattern),
-                Profile.display_name.ilike(pattern),
-                Profile.headline.ilike(pattern),
+                User.full_name.ilike(pattern, **like_kw),
+                Profile.display_name.ilike(pattern, **like_kw),
+                Profile.headline.ilike(pattern, **like_kw),
             ),
         ).order_by(desc(Profile.helped_count), desc(Profile.karma)).limit(10).all()
         viewer_id = (
@@ -1305,7 +1312,7 @@ def search():
         )
         from utils.feed import _visible_posts_query
         post_results = _visible_posts_query(viewer_id).filter(
-            Post.body.ilike(pattern)
+            Post.body.ilike(pattern, **like_kw)
         ).order_by(desc(Post.created_at)).limit(10).all()
         now = datetime.now(timezone.utc)
         bounty_results = Bounty.query.filter(
@@ -1317,8 +1324,8 @@ def search():
             # Paid bounties stay hidden until payment is secured.
             Bounty.publicly_visible_filter(),
             or_(
-                Bounty.title.ilike(pattern),
-                Bounty.description.ilike(pattern),
+                Bounty.title.ilike(pattern, **like_kw),
+                Bounty.description.ilike(pattern, **like_kw),
             ),
         ).order_by(desc(Bounty.created_at)).limit(10).all()
         for found in people_results:

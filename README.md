@@ -23,7 +23,8 @@ A recruitment-only talent marketplace connecting employers with recruiters and c
 - **Database:** PostgreSQL
 - **Auth:** Flask-Login
 - **Payments:** Stripe Connect
-- **Server:** uWSGI + Nginx
+- **Server:** Gunicorn in Docker (SWAG reverse proxy) — see DEPLOYMENT.md.
+  uWSGI was removed: it cannot build on Python 3.12.
 - **Hosting:** DigitalOcean
 
 ## Setup
@@ -32,8 +33,7 @@ A recruitment-only talent marketplace connecting employers with recruiters and c
 
 - Python 3.12+
 - PostgreSQL 14+
-- Nginx
-- uWSGI
+- Docker (the live deploy; see DEPLOYMENT.md)
 
 ### Installation
 
@@ -65,16 +65,14 @@ A recruitment-only talent marketplace connecting employers with recruiters and c
    flask db upgrade
    ```
 
-6. Create admin user:
+6. Create the first admin user via the bootstrap route (auth is
+   OAuth-only — there is no password login, so setting a
+   `password_hash` in a shell does nothing):
    ```bash
-   flask shell
-   >>> from models.user import User
-   >>> from werkzeug.security import generate_password_hash
-   >>> admin = User(email='admin@paid2match.work', 
-                    password_hash=generate_password_hash('your-password'),
-                    full_name='Admin', role='admin')
-   >>> db.session.add(admin)
-   >>> db.session.commit()
+   # With ADMIN_SETUP_TOKEN set, visit:
+   #   /admin/create-admin?token=<ADMIN_SETUP_TOKEN>
+   # and submit the admin email. Once an admin exists the route
+   # refuses to create another one.
    ```
 
 7. Run development server:
