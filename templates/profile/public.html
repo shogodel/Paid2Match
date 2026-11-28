@@ -49,6 +49,10 @@
                 <a href="{{ url_for('messages.compose') }}" class="btn btn-outline-primary">
                     {{ icon('mail', 16) }} {{ _('Message') }}
                 </a>
+                {% set tip_user = user %}
+                {% set tip_modal_id = 'tip-modal-profile' %}
+                {% set tip_button_class = 'btn btn-outline-primary' %}
+                {% include 'partials/tip_button.html' %}
                 <form method="POST" action="{{ url_for('social.block_user', user_id=user.id) }}" class="js-block-user d-inline" data-user-id="{{ user.id }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-warning btn-sm">{{ _('Block') }}</button>
@@ -63,6 +67,9 @@
             <a class="profile-stat" href="{{ url_for('social.followers', user_id=user.id) }}"><strong data-followers-count>{{ followers_count }}</strong> {{ _('Followers') }}</a>
             <a class="profile-stat" href="#tab-referrals" data-bs-toggle="tab" data-bs-target="#tab-referrals"><strong>{{ profile.helped_count or 0 }}</strong> {{ _('Helped') }}</a>
             <span class="profile-stat"><strong>{{ profile.karma or 0 }}</strong> {{ _('Karma') }}</span>
+            {% if tips_received_count %}
+            <span class="profile-stat"><strong>{{ (tips_received_total / 100)|money('CAD') }}</strong> {{ ngettext('%(num)s tip', '%(num)s tips', tips_received_count) }}</span>
+            {% endif %}
         </div>
 
         <div class="profile-trust-row">

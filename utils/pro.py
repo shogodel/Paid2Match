@@ -162,6 +162,11 @@ def handle_subscription_event(subscription_obj, event_type):
             elif status in ('canceled', 'unpaid', 'incomplete_expired'):
                 recurring.status = 'canceled'
         db.session.flush()
+    # Paid spaces: a subscription that belongs to a space membership
+    # syncs the same way (deleted lapses access at period end).
+    # Additive — Pro and recurring-bump rows above are untouched.
+    from utils.paid_spaces import handle_space_subscription_event
+    handle_space_subscription_event(subscription_obj, event_type)
     return sub
 
 

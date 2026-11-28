@@ -1309,6 +1309,14 @@ def _handle_m3_checkout(session, session_id, m3_kind, metadata, logger):
         logger.info(f'Pro checkout fulfilled for {user_id}: {sub}')
         return
 
+    if m3_kind == 'paid_space':
+        from utils.paid_spaces import fulfill_paid_space_checkout
+        membership = fulfill_paid_space_checkout(session)
+        logger.info(
+            f'Paid-space checkout fulfilled for {user_id}: {membership}'
+        )
+        return
+
     post_id = metadata.get('post_id')
     post = db.session.get(Post, post_id) if post_id else None
     if post is None:
@@ -1443,6 +1451,14 @@ def stripe_webhook():
         # session id) — before the bounty flow, which needs a bounty_id.
         metadata = session.get('metadata') or {}
         m3_kind = metadata.get('m3_kind')
+        if m3_kind == 'tip':
+            # Tips: a tip Checkout session — fulfilled by utils.tips
+            # (additive branch; the M3 dispatcher below never sees
+            # it — it would look for a post_id that tips do not have).
+            from utils.tips import fulfill_tip_checkout
+            fulfill_tip_checkout(session)
+            db.session.commit()
+            return '', 200
         if m3_kind:
             _handle_m3_checkout(session, session_id, m3_kind, metadata, logger)
             db.session.commit()
@@ -1587,7 +1603,25 @@ def stripe_webhook():
         db.session.commit()
 
     elif event_type.startswith('transfer.'):
-        handle_transfer_event(event_type, event['data']['object'])
+        handled = handle_transfer_event(event_type, event['data']['object'])
+        if handled is None:
+            # Paid spaces: the transfer may be a space-owner share
+            # (SpacePayout), not a match payout.
+            from utils.paid_spaces import handle_space_transfer_event
+            handle_space_transfer_event(event_type, event['data']['object'])
+        # Tips: a tip transfer is not a Payout, so the handler above
+        # ignores it — the tip handler confirms it (or marks the tip
+        # failed when Stripe reports the transfer failed).
+        from utils.tips import handle_tip_transfer_event
+        handle_tip_transfer_event(event_type, event['data']['object'])
+        db.session.commit()
+
+    # Paid spaces: a paid invoice splits the platform fee from the
+    # space owner's share (utils/paid_spaces.py). Additive — the
+    # checkout/subscription branches above are untouched.
+    elif event_type == 'invoice.paid':
+        from utils.paid_spaces import handle_space_invoice_paid
+        handle_space_invoice_paid(event['data']['object'])
         db.session.commit()
 
     elif event_type.startswith('payout.'):

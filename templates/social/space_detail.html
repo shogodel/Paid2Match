@@ -8,6 +8,9 @@
             <span class="space-icon space-icon-lg space-{{ space.slug }}">{{ icon(space.icon or 'layers', 28) }}</span>
             <div>
                 <h2 class="mb-1">{{ space.name }}</h2>
+                {% if space.is_paid %}
+                <p class="mb-1"><span class="badge bg-warning text-dark">{{ _('Paid space') }} — ${{ space.price_display }} / {{ _('month') }}</span></p>
+                {% endif %}
                 {% if space.description %}
                 <p class="text-muted mb-1">{{ space.description }}</p>
                 {% endif %}
@@ -16,6 +19,16 @@
         </div>
         {% if current_user.is_authenticated %}
         <div class="d-flex flex-column gap-2 align-items-stretch">
+            {% if membership and membership.is_paid and membership.is_active %}
+            <form method="POST" action="{{ url_for('social.cancel_space_subscription', slug=space.slug) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if membership.cancel_at_period_end %}
+                <button type="submit" class="btn btn-outline-secondary w-100" disabled>{{ _('Cancels at period end') }}</button>
+                {% else %}
+                <button type="submit" class="btn btn-outline-danger w-100">{{ _('Cancel subscription') }}</button>
+                {% endif %}
+            </form>
+            {% endif %}
             {% if membership %}
             <form method="POST" action="{{ url_for('social.leave_space', slug=space.slug) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

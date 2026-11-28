@@ -264,6 +264,12 @@ def view():
         s.id for s in my_active_stakes
         if _stake_can_resolve(current_user, s)
     }
+    # Tips received (completed only — same stat as the public
+    # profile, so the recipient sees their own total here too).
+    from utils.tips import tips_received_summary
+    tips_received_total, tips_received_count = tips_received_summary(
+        current_user.id
+    )
 
     return render_template('profile/view.html',
                         profile=profile,
@@ -302,7 +308,9 @@ def view():
                         video_vouches_received=video_vouches_received,
                         pitchable_bounties=pitchable_bounties,
                         my_active_stakes=my_active_stakes,
-                        staked_resolvable_ids=staked_resolvable_ids)
+                        staked_resolvable_ids=staked_resolvable_ids,
+                        tips_received_total=tips_received_total,
+                        tips_received_count=tips_received_count)
 
 
 @profile_bp.route('/verify-request', methods=['POST'])
@@ -469,6 +477,12 @@ def public_profile(user_id):
         if s.status == 'active'
         and _stake_can_resolve(current_user, s)
     }
+    # Tips received (completed only — the gross total tipped and
+    # the count; the template hides the stat when there are none).
+    from utils.tips import tips_received_summary
+    tips_received_total, tips_received_count = tips_received_summary(
+        user_id
+    )
 
     return render_template('profile/public.html',
                         user=user, profile=profile,
@@ -511,7 +525,9 @@ def public_profile(user_id):
                         video_pitches=video_pitches,
                         video_vouches_received=video_vouches_received,
                         staked_vouches_received=staked_vouches_received,
-                        staked_resolvable_ids=staked_resolvable_ids)
+                        staked_resolvable_ids=staked_resolvable_ids,
+                        tips_received_total=tips_received_total,
+                        tips_received_count=tips_received_count)
 
 
 # ---------------------------------------------------------------------------

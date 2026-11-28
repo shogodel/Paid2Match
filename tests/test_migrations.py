@@ -30,12 +30,12 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
         # Every table the models declare exists after the upgrade.
         expected = set(db.metadata.tables.keys())
         assert expected <= tables, f'missing tables: {expected - tables}'
-        # The head revision is the perf_audit25_indexes
+        # The head revision is the tips_paid_communities
         # migration.
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()
-        assert version == 'perf_audit25_indexes'
+        assert version == 'tips_paid_communities'
         # Prove the migration really ran on THIS file (not the
         # shared test DB): read the version straight out of the
         # tmp file with a fresh sqlite3 connection, bypassing the
@@ -45,7 +45,7 @@ def test_full_chain_upgrades_and_downgrades(tmp_path):
             file_version = conn.execute(
                 'SELECT version_num FROM alembic_version'
             ).fetchone()[0]
-        assert file_version == 'perf_audit25_indexes'
+        assert file_version == 'tips_paid_communities'
         # Audit 2026-11-25 indexes exist after the upgrade.
         expected_indexes = {
             'posts': {'ix_posts_created_at'},
@@ -229,7 +229,7 @@ def test_baseline_is_the_chain_root(tmp_path):
     )
     script = ScriptDirectory.from_config(cfg)
     heads = script.get_heads()
-    assert heads == ['perf_audit25_indexes'], (
+    assert heads == ['tips_paid_communities'], (
         f'multiple heads: {heads}'
     )
     roots = [r for r in script.walk_revisions() if r.down_revision is None]
@@ -308,7 +308,7 @@ def test_upgrade_tolerates_live_db_without_recruitment_check(tmp_path):
         version = db.session.execute(
             text('SELECT version_num FROM alembic_version')
         ).scalar()
-        assert version == 'perf_audit25_indexes'
+        assert version == 'tips_paid_communities'
         # And a services bounty still inserts on the upgraded DB.
         from models.user import User
         from models.bounty import Bounty

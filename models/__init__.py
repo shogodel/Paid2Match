@@ -25,6 +25,7 @@ from .bounty_payment_agreement import BountyPaymentAgreement
 from .audit_log import AuditLog
 from .post import Post, Like, Comment, Share, Bookmark
 from .space import Space, SpaceMembership, SEEDED_SPACES, seed_spaces
+from .space_payout import SpacePayout
 from .poll import (
     Poll, PollOption, PollVote, POLL_MAX_OPTIONS, POLL_MIN_OPTIONS,
     POLL_OPTION_MAX_LENGTH, create_poll, parse_poll_options,
@@ -50,6 +51,7 @@ from .video_vouch import VideoVouch
 from .intro_bounty import IntroBounty, IntroClaim, IntroRewardEvent
 from .staked_vouch import StakedVouch, RESOLUTIONS
 from .win_story import WinStory
+from .tip import Tip
 
 __all__ = [
     'User',
@@ -69,6 +71,7 @@ __all__ = [
     'Bookmark',
     'Space',
     'SpaceMembership',
+    'SpacePayout',
     'SEEDED_SPACES',
     'seed_spaces',
     'Poll',
@@ -112,6 +115,7 @@ __all__ = [
     'StakedVouch',
     'RESOLUTIONS',
     'WinStory',
+    'Tip',
     'generate_uuid',
     'utc_now',
 ]

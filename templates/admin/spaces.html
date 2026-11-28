@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Spaces - Admin{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Spaces</h2>
+    <p class="text-muted">Set a space's owner (by email) and its monthly price to make it paid. A space can only be paid when it has an owner. The platform keeps {{ space_fee_percent }}% of each subscription (Admin &gt; Settings &gt; Paid-Space Platform Fee); the owner keeps the rest, paid to their Stripe Connect account. Members keep access until the end of the paid period when they cancel.</p>
+    {% if spaces %}
+    <table class="table table-stack-mobile">
+        <thead><tr><th>Space</th><th>Members</th><th>Owner</th><th>Paid</th><th>Price / month (CAD)</th><th></th></tr></thead>
+        <tbody>
+        {% for space in spaces %}
+        <tr>
+            <td data-label="Space"><a href="{{ url_for('social.space_detail', slug=space.slug) }}">{{ space.name }}</a><br><span class="text-muted small">{{ space.slug }}</span></td>
+            <td data-label="Members">{{ space.member_count }}</td>
+            <td data-label="Owner">
+                <form method="POST" action="{{ url_for('admin.edit_space', id=space.id) }}" class="d-flex flex-column gap-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="email" name="owner_email" class="form-control form-control-sm" placeholder="owner@example.com" value="{{ space.owner.email if space.owner else '' }}">
+                    <label class="small mb-0"><input type="checkbox" name="is_paid" {{ 'checked' if space.is_paid }}> Paid space</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" name="price" class="form-control" min="0" step="0.01" placeholder="9.99" value="{{ space.price_display or '' }}">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary align-self-start">Save</button>
+                </form>
+            </td>
+            <td data-label="Paid">{% if space.is_paid %}<span class="badge bg-warning text-dark">Paid</span>{% else %}<span class="badge bg-secondary">Free</span>{% endif %}</td>
+            <td data-label="Price / month">{% if space.price_display %}${{ space.price_display }}{% else %}—{% endif %}</td>
+            <td data-label=""></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No spaces yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

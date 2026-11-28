@@ -954,6 +954,19 @@ def on_connect_ready(connect):
         link_url='/payments/payouts',
     )
     retry_pending_payouts(connect.user_id)
+    # Tips: a tip paid while this user had no Connect account waits
+    # as a pending tip — pay it out now that onboarding is complete
+    # (same hook as the payout retry above; lazy import — utils.tips
+    # imports utils.payments, so a top-level import would be circular).
+    from utils.tips import retry_pending_tips
+    retry_pending_tips(connect.user_id)
+    # Paid spaces: same — a space-owner share that waited as
+    # 'pending_stripe' while the owner had no Connect account is
+    # transferred now that onboarding is complete (same hook as the
+    # retries above; lazy import — utils.paid_spaces imports
+    # utils.payments, so a top-level import would be circular).
+    from utils.paid_spaces import retry_pending_space_payouts
+    retry_pending_space_payouts(connect.user_id)
 
 
 def handle_account_updated(account_obj):

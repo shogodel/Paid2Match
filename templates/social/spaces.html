@@ -20,6 +20,9 @@
                     {% if space.description %}
                     <p class="text-muted small">{{ space.description }}</p>
                     {% endif %}
+                    {% if space.is_paid and space.price_display %}
+                    <p class="mb-1"><span class="badge bg-warning text-dark">{{ _('Paid') }} — ${{ space.price_display }} / {{ _('month') }}</span></p>
+                    {% endif %}
                     <p class="text-muted small mb-3">{{ space.member_count }} {{ _('members') }} &middot; {{ space.post_count }} {{ _('posts') }}</p>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{{ url_for('social.space_detail', slug=space.slug) }}" class="btn btn-sm btn-outline-primary">{{ _('Open space') }}</a>

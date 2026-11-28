@@ -304,6 +304,7 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
     from blueprints.video_vouches import video_vouches_bp
     from blueprints.intro_bounties import intro_bounties_bp
     from blueprints.staked_vouches import staked_vouches_bp
+    from blueprints.tips import tips_bp
     from blueprints.wins import wins_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -320,6 +321,7 @@ def create_app(config_name: str = None, config_overrides: dict = None) -> Flask:
     app.register_blueprint(video_vouches_bp, url_prefix='/video-vouches')
     app.register_blueprint(intro_bounties_bp, url_prefix='/intros')
     app.register_blueprint(staked_vouches_bp, url_prefix='/stakes')
+    app.register_blueprint(tips_bp)
     app.register_blueprint(wins_bp, url_prefix='/wins')
 
     # Security headers on every response. The nginx config in

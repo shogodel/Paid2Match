@@ -13,6 +13,7 @@ from flask import (
     Blueprint, Response, abort, flash, jsonify, redirect, render_template,
     request, session, url_for,
 )
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 from sqlalchemy import desc, or_
 from werkzeug.utils import secure_filename
@@ -417,8 +418,21 @@ def spaces():
 @social_bp.route('/spaces/<slug>')
 def space_detail(slug):
     """GET /social/spaces/<slug> — a space's own feed (chronological),
-    plus join/leave and the per-space notification setting."""
+    plus join/leave and the per-space notification setting. A paid
+    space shows non-members a pitch page instead of the posts."""
     space = Space.query.filter_by(slug=slug).first_or_404()
+    viewer = current_user if current_user.is_authenticated else None
+    membership = None
+    if current_user.is_authenticated:
+        membership = SpaceMembership.query.filter_by(
+            user_id=current_user.id, space_id=space.id,
+        ).first()
+    if not space.can_view(viewer):
+        return render_template(
+            'social/space_pitch.html',
+            space=space,
+            membership=membership,
+        )
     page = request.args.get('page', 1, type=int)
     viewer_id = current_user.id if current_user.is_authenticated else None
     from utils.feed import _visible_posts_query
@@ -430,11 +444,6 @@ def space_detail(slug):
     posts = pagination.items
     post_ids = [p.id for p in posts]
     liked_ids, shared_ids = _liked_and_shared_ids(post_ids)
-    membership = None
-    if current_user.is_authenticated:
-        membership = SpaceMembership.query.filter_by(
-            user_id=current_user.id, space_id=space.id,
-        ).first()
     return render_template(
         'social/space_detail.html',
         space=space,
@@ -452,12 +461,85 @@ def space_detail(slug):
     )
 
 
+def _start_paid_space_checkout(space):
+    """Start a paid-space subscription Checkout (shared by the join
+    and subscribe routes). Returns a redirect response."""
+    from utils.paid_spaces import create_paid_space_checkout
+    from utils.payments import stripe_enabled
+    if not stripe_enabled():
+        flash(_('Payments are currently unavailable.'), 'warning')
+        return redirect(url_for('social.space_detail', slug=space.slug))
+    base = request.host_url.rstrip('/')
+    checkout_url = create_paid_space_checkout(
+        current_user, space,
+        success_url=f'{base}{url_for("social.space_detail", slug=space.slug)}',
+        cancel_url=f'{base}{url_for("social.space_detail", slug=space.slug)}',
+    )
+    if not checkout_url:
+        flash(_('Stripe is not configured — please try again later.'), 'danger')
+        return redirect(url_for('social.space_detail', slug=space.slug))
+    return redirect(checkout_url)
+
+
+@social_bp.route('/spaces/<slug>/subscribe', methods=['POST'])
+@login_required
+def subscribe_space(slug):
+    """POST /social/spaces/<slug>/subscribe — start a paid-space
+    subscription via Stripe Checkout. The webhook creates the
+    membership; a free space just joins directly."""
+    space = Space.query.filter_by(slug=slug).first_or_404()
+    if not space.is_paid:
+        return redirect(url_for('social.join_space', slug=slug))
+    membership = SpaceMembership.query.filter_by(
+        user_id=current_user.id, space_id=space.id,
+    ).first()
+    if membership is not None and membership.is_active:
+        flash(_('You are already a member of %(name)s.', name=space.name), 'info')
+        return redirect(url_for('social.space_detail', slug=slug))
+    return _start_paid_space_checkout(space)
+
+
+@social_bp.route('/spaces/<slug>/cancel', methods=['POST'])
+@login_required
+def cancel_space_subscription(slug):
+    """POST /social/spaces/<slug>/cancel — cancel a paid-space
+    subscription at the end of the current period (access continues
+    until then; the webhook lapses the membership)."""
+    from utils.paid_spaces import cancel_space_subscription_at_period_end
+    space = Space.query.filter_by(slug=slug).first_or_404()
+    membership = SpaceMembership.query.filter_by(
+        user_id=current_user.id, space_id=space.id,
+    ).first()
+    if membership is None or not membership.is_paid or not membership.is_active:
+        flash(_('You do not have an active subscription to this space.'), 'info')
+        return redirect(url_for('social.space_detail', slug=slug))
+    if membership.cancel_at_period_end:
+        flash(_('Your subscription is already set to cancel at the end of the period.'), 'info')
+        return redirect(url_for('social.space_detail', slug=slug))
+    ok, error = cancel_space_subscription_at_period_end(membership)
+    db.session.commit()
+    if ok:
+        flash(_('Your subscription will cancel at the end of the current period — you keep access until then.'), 'success')
+    else:
+        flash(_('Could not cancel your subscription: %(error)s', error=error), 'danger')
+    return redirect(url_for('social.space_detail', slug=slug))
+
+
 @social_bp.route('/spaces/<slug>/join', methods=['POST'])
 @login_required
 def join_space(slug):
     """POST /social/spaces/<slug>/join — join a space (default
-    notification level: all posts). Idempotent."""
+    notification level: all posts). Idempotent. A paid space sends
+    the user to subscription Checkout instead of joining free."""
     space = Space.query.filter_by(slug=slug).first_or_404()
+    if space.is_paid:
+        membership = SpaceMembership.query.filter_by(
+            user_id=current_user.id, space_id=space.id,
+        ).first()
+        if membership is not None and membership.is_active:
+            flash(_('You are already a member of %(name)s.', name=space.name), 'info')
+            return redirect(url_for('social.space_detail', slug=slug))
+        return _start_paid_space_checkout(space)
     if not SpaceMembership.query.filter_by(
         user_id=current_user.id, space_id=space.id,
     ).first():
@@ -465,22 +547,28 @@ def join_space(slug):
             user_id=current_user.id, space_id=space.id,
         ))
         db.session.commit()
-        flash(f'You joined {space.name}.', 'success')
+        flash(_('You joined %(name)s.', name=space.name), 'success')
     return redirect(url_for('social.space_detail', slug=slug))
 
 
 @social_bp.route('/spaces/<slug>/leave', methods=['POST'])
 @login_required
 def leave_space(slug):
-    """POST /social/spaces/<slug>/leave — leave a space."""
+    """POST /social/spaces/<slug>/leave — leave a space. An active
+    paid membership cannot be left this way — leaving would orphan
+    a live subscription that keeps charging. Cancel the
+    subscription first; the membership lapses at period end."""
     space = Space.query.filter_by(slug=slug).first_or_404()
     membership = SpaceMembership.query.filter_by(
         user_id=current_user.id, space_id=space.id,
     ).first()
     if membership:
+        if membership.is_paid and membership.is_active:
+            flash(_('This is a paid space — cancel your subscription to leave. You keep access until the end of the paid period.'), 'info')
+            return redirect(url_for('social.space_detail', slug=slug))
         db.session.delete(membership)
         db.session.commit()
-        flash(f'You left {space.name}.', 'info')
+        flash(_('You left %(name)s.', name=space.name), 'info')
     return redirect(url_for('social.space_detail', slug=slug))
 
 
@@ -541,6 +629,18 @@ def new_post():
         space = None
         if form.space_id.data:
             space = db.session.get(Space, form.space_id.data)
+        # Paid spaces: only members, the owner and admins may post
+        # there — a non-member's post is rejected, not silently
+        # re-homed to the general feed.
+        if space is not None and space.is_paid and not space.can_view(current_user):
+            if _wants_json():
+                return jsonify({'ok': False, 'error': _(
+                    'This is a paid space — join it to post here.'
+                )}), 403
+            flash(_('This is a paid space — join it to post here.'), 'warning')
+            return render_template(
+                'social/post_form.html', form=form, post=None,
+                spaces=Space.query.order_by(Space.name).all())
         # Phase 2: poll options, one per line (2–6 options).
         poll_opts, poll_error = parse_poll_options(
             form.poll_options.data or ''
@@ -677,6 +777,21 @@ def post_detail(post_id):
     if not _post_is_public(post):
         flash('This referral need is not public yet.', 'warning')
         return redirect(url_for('social.feed'))
+    # Paid spaces: a post inside one is only readable by people who
+    # can see the space (members, owner, admins) — plus its author.
+    if post.space_id:
+        space = db.session.get(Space, post.space_id)
+        viewer = current_user if current_user.is_authenticated else None
+        if (
+            space is not None and space.is_paid
+            and not space.can_view(viewer)
+            and not (
+                current_user.is_authenticated
+                and current_user.id == post.author_id
+            )
+        ):
+            flash(_('This post is in a paid space — join the space to read it.'), 'warning')
+            return redirect(url_for('social.space_detail', slug=space.slug))
 
     viewed = session.get('viewed_posts', [])
     if post_id not in viewed:

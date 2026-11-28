@@ -1,0 +1,85 @@
+{# Tip button + amount-picker modal for one recipient.
+   Expects: tip_user (the recipient), tip_modal_id (unique per
+   inclusion — the post card includes this once per post, the
+   profile once), and optionally tip_post_id (the post the tip
+   started on, so Stripe returns there). The caller only renders
+   this when the viewer is logged in and is not the recipient.
+   The quick-amount JS is delegated on the document and registers
+   exactly once (window.__tipPickerInit), however many times this
+   partial is included on the page. #}
+{% from 'partials/icon.html' import icon %}
+<button type="button" class="{{ tip_button_class | default('post-action') }} tip-btn" data-bs-toggle="modal" data-bs-target="#{{ tip_modal_id }}" aria-label="{{ _('Tip %(name)s', name=tip_user.full_name or tip_user.email) }}">
+    {{ icon('banknote', 18) }} <span class="action-label">{{ _('Tip') }}</span>
+</button>
+
+<div class="modal fade tip-modal" id="{{ tip_modal_id }}" tabindex="-1" aria-labelledby="{{ tip_modal_id }}-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="{{ tip_modal_id }}-label">{{ _('Tip %(name)s', name=tip_user.full_name or tip_user.email) }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+            </div>
+            <form method="POST" action="{{ url_for('tips.create_tip', user_id=tip_user.id) }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% if tip_post_id %}
+                    <input type="hidden" name="post_id" value="{{ tip_post_id }}">
+                    {% endif %}
+                    <p class="text-muted small">{{ _('Tips are final — the recipient keeps 80%, the platform keeps 20% to keep the lights on. Charged in CAD.') }}</p>
+                    <div class="mb-3">
+                        <label class="form-label">{{ _('Amount') }}</label>
+                        <div class="btn-group w-100 mb-2" role="group" aria-label="{{ _('Quick amounts') }}">
+                            {% for cents in [200, 500, 1000, 2500] %}
+                            <button type="button" class="btn btn-outline-primary tip-quick-amount{% if loop.first %} active{% endif %}" data-tip-amount="{{ cents // 100 }}">{{ '$%d'|format(cents // 100) }}</button>
+                            {% endfor %}
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="amount" class="form-control tip-amount-input" value="2" min="2" step="0.01" required aria-label="{{ _('Custom amount in dollars') }}">
+                            <select name="currency" class="form-select tip-currency-select" style="max-width: 6.5rem;" aria-label="{{ _('Currency') }}">
+                                {% for code in ['CAD', 'EUR', 'USD'] %}
+                                <option value="{{ code }}"{% if code == 'CAD' %} selected{% endif %}>{{ code }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-text">{{ _('Minimum $2. The amount is charged in CAD — the currency is how the tip is shown, not converted.') }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ tip_modal_id }}-message">{{ _('Message (optional)') }}</label>
+                        <input type="text" id="{{ tip_modal_id }}-message" name="message" class="form-control" maxlength="280" placeholder="{{ _('Say thanks...') }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ icon('banknote', 16) }} {{ _('Send tip') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    if (window.__tipPickerInit) return;
+    window.__tipPickerInit = true;
+    document.addEventListener('click', function (event) {
+        var btn = event.target.closest('.tip-quick-amount');
+        if (!btn) return;
+        var modal = btn.closest('.tip-modal');
+        if (!modal) return;
+        modal.querySelectorAll('.tip-quick-amount').forEach(function (b) {
+            b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        var input = modal.querySelector('.tip-amount-input');
+        if (input) input.value = btn.getAttribute('data-tip-amount');
+    });
+    document.addEventListener('input', function (event) {
+        if (!event.target.classList || !event.target.classList.contains('tip-amount-input')) return;
+        var modal = event.target.closest('.tip-modal');
+        if (!modal) return;
+        modal.querySelectorAll('.tip-quick-amount').forEach(function (b) {
+            b.classList.remove('active');
+        });
+    });
+})();
+</script>

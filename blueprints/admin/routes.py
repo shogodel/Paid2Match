@@ -19,6 +19,7 @@ from models.endorsement import Pledge
 from models.employer_pledge import EmployerPledge
 from models.linked_account import LinkedAccount
 from models.payout import Payout
+from models.tip import Tip
 from models.profile import Profile
 from models.audit_log import AuditLog
 from models.verification import VerificationRequest
@@ -36,6 +37,7 @@ from utils.moderation import (
 from utils.notifications import notify
 from email_validator import validate_email, EmailNotValidError
 from utils.payments import get_platform_fee_percent, record_manual_payout
+from utils.tips import get_tip_fee_percent
 from werkzeug.security import generate_password_hash
 
 admin_bp = Blueprint('admin', __name__)
@@ -87,6 +89,13 @@ class SettingsForm(FlaskForm):
     # M2: platform fee percentage (0–50, default 20). Validated in the
     # settings route so a bad value flashes a clear error.
     platform_fee_percent = IntegerField('Platform Fee (%)')
+    # Tips: the platform fee on tips (0–50, default 20) — a SEPARATE
+    # setting from the hire platform fee above; the two rates are
+    # set independently.
+    tip_fee_percent = IntegerField('Tip Fee (%)')
+    # Paid spaces: the platform fee on paid-space subscriptions is
+    # its own setting (0-50, default 20) — never the hire fee above.
+    space_platform_fee_percent = IntegerField('Paid-Space Platform Fee (%)')
     # M3 moderation v1: auto-hide threshold (default 3 reports) and
     # daily post limits by trust level (Newcomer 3, Member+ 10).
     auto_hide_threshold = IntegerField('Auto-hide report threshold')
@@ -109,6 +118,8 @@ SETTINGS_MAP = {
     'sendgrid_api_key': 'SENDGRID_API_KEY',
     'linkedin_api_token': 'LINKEDIN_API_TOKEN',
     'platform_fee_percent': 'PLATFORM_FEE_PERCENT',
+    'tip_fee_percent': 'TIP_PLATFORM_FEE_PERCENT',
+    'space_platform_fee_percent': 'SPACE_PLATFORM_FEE_PERCENT',
     'auto_hide_threshold': 'AUTO_HIDE_REPORT_THRESHOLD',
     'post_limit_newcomer': 'POST_LIMIT_NEWCOMER',
     'post_limit_member': 'POST_LIMIT_MEMBER',
@@ -637,6 +648,26 @@ def record_manual_payout_route(match_id):
     return redirect(url_for('admin.payouts'))
 
 
+@admin_bp.route('/tips')
+@admin_required
+def tips():
+    """GET /admin/tips - All tips, newest first, filterable by
+    status. Tips are final — there is no refund action here; a
+    'failed' tip means the transfer failed after capture and the
+    platform holds the money until it is resolved."""
+    status = request.args.get('status')
+
+    query = Tip.query
+    if status:
+        query = query.filter_by(status=status)
+
+    tips_list = query.order_by(desc(Tip.created_at)).all()
+
+    return render_template('admin/tips.html',
+                           tips=tips_list,
+                           status=status)
+
+
 @admin_bp.route('/reports')
 @moderator_required
 def reports():
@@ -741,6 +772,26 @@ def settings():
             if fee_value is None or not 0 <= fee_value <= 50:
                 flash('Platform fee must be a whole number between 0 and 50.', 'danger')
                 return redirect(url_for('admin.settings'))
+        # Tips: the tip fee is validated the same way (0–50).
+        tip_fee_raw = (request.form.get('tip_fee_percent') or '').strip()
+        if tip_fee_raw:
+            try:
+                tip_fee_value = int(tip_fee_raw)
+            except ValueError:
+                tip_fee_value = None
+            if tip_fee_value is None or not 0 <= tip_fee_value <= 50:
+                flash('Tip fee must be a whole number between 0 and 50.', 'danger')
+                return redirect(url_for('admin.settings'))
+        # Paid spaces: same 0-50 validation for the space fee.
+        space_fee_raw = (request.form.get('space_platform_fee_percent') or '').strip()
+        if space_fee_raw:
+            try:
+                space_fee_value = int(space_fee_raw)
+            except ValueError:
+                space_fee_value = None
+            if space_fee_value is None or not 0 <= space_fee_value <= 50:
+                flash('Paid-space platform fee must be a whole number between 0 and 50.', 'danger')
+                return redirect(url_for('admin.settings'))
         # M3: moderation settings — whole numbers, at least 1.
         for field_name, label in [
             ('auto_hide_threshold', 'Auto-hide threshold'),
@@ -767,6 +818,11 @@ def settings():
     # secret, so it shows directly — unlike the API keys, which load
     # via AJAX reveal).
     form.platform_fee_percent.data = get_platform_fee_percent()
+    # Tips: prefill the tip fee the same way (not a secret).
+    form.tip_fee_percent.data = get_tip_fee_percent()
+    # Paid spaces: prefill the space fee the same way.
+    from utils.paid_spaces import get_space_platform_fee_percent
+    form.space_platform_fee_percent.data = int(get_space_platform_fee_percent())
     # M3: prefill the moderation settings the same way.
     form.auto_hide_threshold.data = get_auto_hide_threshold()
     form.post_limit_newcomer.data = AdminSettings.get(
@@ -803,6 +859,127 @@ def all_settings():
         else:
             keys_and_values[key] = '***' if val else ''
     return jsonify(keys_and_values)
+
+
+@admin_bp.route('/spaces')
+@admin_required
+def spaces():
+    """GET /admin/spaces — all spaces with owner / paid status, and
+    the form to set each space's owner and monthly price."""
+    from models.space import Space
+    from utils.paid_spaces import get_space_platform_fee_percent
+    spaces_list = Space.query.order_by(Space.name).all()
+    return render_template(
+        'admin/spaces.html',
+        spaces=spaces_list,
+        space_fee_percent=get_space_platform_fee_percent(),
+    )
+
+
+@admin_bp.route('/spaces/<id>/edit', methods=['POST'])
+@admin_required
+def edit_space(id):
+    """POST /admin/spaces/<id>/edit — set a space's owner and paid
+    status + monthly price. A space can only be switched to paid
+    when it has an owner (looked up by email — the admin types the
+    owner's email, no new user-picker UI). Turning paid off keeps
+    the stored price, so re-enabling is one click; existing paid
+    memberships are untouched (their subscriptions keep running
+    until the member cancels — the space going free does not refund
+    them, it just stops new checkouts)."""
+    from sqlalchemy import func as _func
+
+    from models.space import Space
+    from utils.payments import to_cents
+
+    space = get_or_404(Space, id)
+    owner_email = (request.form.get('owner_email') or '').strip().lower()
+    owner = None
+    if owner_email:
+        owner = User.query.filter_by(email=owner_email).first()
+        if owner is None:
+            owner = User.query.filter(
+                _func.lower(User.email) == owner_email
+            ).first()
+        if owner is None:
+            flash(f'No user found with email {owner_email}.', 'danger')
+            return redirect(url_for('admin.spaces'))
+    make_paid = request.form.get('is_paid') == 'on'
+    price_cents = space.price_cents
+    if make_paid:
+        if owner is None:
+            flash('A paid space needs an owner — enter the owner\'s email first.', 'danger')
+            return redirect(url_for('admin.spaces'))
+        price_raw = (request.form.get('price') or '').strip()
+        try:
+            price_value = float(price_raw)
+        except ValueError:
+            price_value = None
+        if price_value is None or price_value <= 0:
+            flash('Enter a monthly price greater than 0 for a paid space.', 'danger')
+            return redirect(url_for('admin.spaces'))
+        price_cents = to_cents(price_value)
+    was_paid = bool(space.is_paid)
+    if was_paid and not make_paid:
+        # Refuse to turn a paid space free while subscriptions are
+        # live: members would keep paying Stripe, the space would be
+        # open to everyone, and the invoice handler would record no
+        # owner split — the money would sit in the platform balance
+        # unrecorded. The admin cancels the subscriptions first
+        # (members keep access to period end), then frees the space.
+        from models.space import SpaceMembership as _Membership
+        live = _Membership.query.filter_by(
+            space_id=space.id, status='active',
+        ).filter(
+            _Membership.stripe_subscription_id.isnot(None)
+        ).count()
+        if live:
+            flash(
+                f'This space still has {live} active paid membership(s) — '
+                'cancel those subscriptions first, then make the space free.',
+                'danger',
+            )
+            return redirect(url_for('admin.spaces'))
+    space.owner_id = owner.id if owner else None
+    space.is_paid = make_paid
+    space.price_cents = price_cents
+    # Checkout charges CAD only (see models/space.py) — the currency
+    # column stays 'cad' until a multi-currency step lands.
+    space.currency = 'cad'
+    db.session.commit()
+    if make_paid and not was_paid and owner is not None:
+        from models import ConnectAccount
+        account = ConnectAccount.query.filter_by(user_id=owner.id).first()
+        if not account or not account.is_ready:
+            notify(
+                owner.id, 'payout_pending',
+                f'You now own the paid space "{space.name}"',
+                'Members pay monthly and your share goes to your '
+                'Stripe payout account — finish setting up payouts '
+                'to receive it.',
+                link_url='/payments/connect',
+            )
+        else:
+            notify(
+                owner.id, 'space_paid',
+                f'You now own the paid space "{space.name}"',
+                'Members pay monthly and your share goes to your '
+                'Stripe payout account.',
+                link_url=url_for('social.space_detail', slug=space.slug),
+            )
+    AuditLog.log(
+        admin_id=current_user.id,
+        action='edit_space',
+        target_type='space',
+        target_id=id,
+        details=(
+            f'Set space {space.slug} owner='
+            f'{owner.email if owner else None} paid={make_paid} '
+            f'price_cents={price_cents}'
+        ),
+    )
+    flash(f'Space "{space.name}" updated.', 'success')
+    return redirect(url_for('admin.spaces'))
 
 
 @admin_bp.route('/create-admin', methods=['GET', 'POST'])

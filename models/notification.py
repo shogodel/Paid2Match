@@ -35,6 +35,9 @@ class Notification(db.Model):
         # Phase 2: @mentions, and new posts in a space you follow
         # (members with notification level 'all' only).
         'mention', 'space_post',
+        # Paid spaces: the owner is told when a space becomes paid
+        # with them as owner.
+        'space_paid',
     ]
     # Types that also send an email to the recipient.
     EMAIL_TYPES = {

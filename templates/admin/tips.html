@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Tips - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Tips</h1>
+    <p class="text-muted">
+        Tips are final — there is no refund path. A 'pending' tip was
+        paid but the recipient has not finished Stripe Connect
+        onboarding yet (it pays out automatically when they do); a
+        'failed' tip means the transfer failed after capture and the
+        platform holds the money until it is resolved.
+    </p>
+    <div class="btn-group admin-filter-group mb-3" role="group">
+        <a href="{{ url_for('admin.tips') }}" class="btn btn-sm btn-outline-primary {% if not status %}active{% endif %}">All</a>
+        {% for s in ['pending', 'completed', 'failed'] %}
+        <a href="{{ url_for('admin.tips', status=s) }}" class="btn btn-sm btn-outline-primary {% if status == s %}active{% endif %}">{{ s|title }}</a>
+        {% endfor %}
+    </div>
+
+    {% if tips %}
+    <div class="card mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-stack-mobile mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tipper</th>
+                            <th>Recipient</th>
+                            <th>Amount</th>
+                            <th>Fee</th>
+                            <th>Net</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tip in tips %}
+                        <tr>
+                            <td data-label="Tipper">{{ tip.tipper.email if tip.tipper else tip.tipper_id }}</td>
+                            <td data-label="Recipient">{{ tip.recipient.email if tip.recipient else tip.recipient_id }}</td>
+                            <td data-label="Amount"><strong>{{ (tip.amount_cents / 100)|money(tip.currency) }}</strong></td>
+                            <td data-label="Fee">{% if tip.platform_fee_cents is not none %}{{ (tip.platform_fee_cents / 100)|money(tip.currency) }}{% else %}—{% endif %}</td>
+                            <td data-label="Net">{% if tip.net_cents is not none %}{{ (tip.net_cents / 100)|money(tip.currency) }}{% else %}—{% endif %}</td>
+                            <td data-label="Message">{{ tip.message or '—' }}</td>
+                            <td data-label="Status">
+                                <span class="badge {% if tip.status == 'completed' %}bg-success{% elif tip.status == 'failed' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{{ tip.status|title }}</span>
+                                {% if tip.failure_reason %}
+                                <div class="small text-danger">{{ tip.failure_reason }}</div>
+                                {% endif %}
+                            </td>
+                            <td data-label="Date">{{ tip.created_at.strftime('%Y-%m-%d %H:%M') if tip.created_at else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No tips yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

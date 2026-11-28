@@ -74,6 +74,22 @@
                             {% endif %}
                             <div class="form-text">Share of each reward kept by the platform (0–50). Default 20%. Founding referrers always pay 15% instead — toggle the flag on the user in the Users list. The rate is locked in when a match is created.</div>
                         </div>
+                        <div class="mb-3">
+                            {{ form.tip_fee_percent.label(class="form-label") }}
+                            {{ form.tip_fee_percent(class="form-control", id="tip_fee_percent", min=0, max=50) }}
+                            {% if form.tip_fee_percent.errors %}
+                            <div class="text-danger small">{{ form.tip_fee_percent.errors[0] }}</div>
+                            {% endif %}
+                            <div class="form-text">Share of each tip kept by the platform (0–50). Default 20%. Separate from the hire platform fee above. The rate is locked in when a tip is paid out.</div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.space_platform_fee_percent.label(class="form-label") }}
+                            {{ form.space_platform_fee_percent(class="form-control", id="space_platform_fee_percent", min=0, max=50) }}
+                            {% if form.space_platform_fee_percent.errors %}
+                            <div class="text-danger small">{{ form.space_platform_fee_percent.errors[0] }}</div>
+                            {% endif %}
+                            <div class="form-text">Share of each paid-space subscription kept by the platform (0–50). Default 20%. This is a separate setting from the hire fee above — changing one never changes the other. Applies to the next invoice; past splits are already recorded.</div>
+                        </div>
                     </div>
                 </div>
 

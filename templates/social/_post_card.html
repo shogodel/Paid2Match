@@ -152,6 +152,13 @@
             <button type="button" class="post-action post-save-btn {{ 'is-active' if post.id in saved_ids }}" data-save-url="{{ url_for('social.save_post', post_id=post.id) }}" data-saved="{{ '1' if post.id in saved_ids else '0' }}" aria-label="{{ _('Save') }}">
                 {{ icon('bookmark', 18) }} <span class="action-label">{{ _('Save') }}</span>
             </button>
+            {% if current_user.is_authenticated and current_user.id != post.author_id %}
+            {% set tip_user = post.author %}
+            {% set tip_post_id = post.id %}
+            {% set tip_modal_id = 'tip-modal-post-' ~ post.id %}
+            {% set tip_button_class = 'post-action' %}
+            {% include 'partials/tip_button.html' %}
+            {% endif %}
         </div>
 
         <div class="collapse mt-2" id="share-{{ post.id }}">
